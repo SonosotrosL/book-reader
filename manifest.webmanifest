@@ -1,0 +1,19 @@
+{
+  "name": "Leitor Portátil — Estante & Nuvem",
+  "short_name": "Leitor",
+  "description": "Leitor portátil de livros e mangás (.epub, .mobi, .azw3, .pdf, .cbz) com estante compartilhada na nuvem, perfil Skoob e cache offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#181a1d",
+  "theme_color": "#181a1d",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

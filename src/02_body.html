@@ -1,0 +1,2316 @@
+</style>
+</head>
+<body class="is-shelf-home">
+
+  <!-- Barra de Ferramentas Superior Organizada e Intuitiva -->
+  <header class="toolbar">
+    <!-- 1. Esquerda: Sumário, Estante, Fechar Livro, Abrir e Navegação de Páginas -->
+    <div class="toolbar-group">
+      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnSidebar" title="Abrir/Fechar Sumário, Marcadores, Busca e Anki (Tecla T)">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span>Sumário</span>
+      </button>
+
+      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnShowShelf" title="Ir para Minha Estante de Livros">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Estante</span>
+      </button>
+
+      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnCloseBook" title="Fechar este livro e voltar para a Estante" style="border-color:rgba(239,68,68,0.4); color:#ef4444; font-weight:600;">
+        <svg class="icon" viewBox="0 0 24 24" style="stroke:#ef4444;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <span>Fechar</span>
+      </button>
+
+      <label class="tb-btn tb-btn-solid" for="fileInput" title="Abrir arquivo do computador (.epub, .mobi, .azw3, .pdf, .docx, .odt, .rtf, .cbz, .fb2, .md, .txt)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>+ Abrir</span>
+      </label>
+      <input type="file" id="fileInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.cbz,.zip,.fb2,.md,.markdown,.txt,.html,.htm,.srt,.vtt" class="hidden" />
+
+      <div class="toolbar-divider reader-only-ctrl"></div>
+
+      <!-- Controles de Navegação -->
+      <div class="page-stepper reader-only-ctrl">
+        <button class="tb-btn tb-btn-icon" id="btnPrev" title="Página / Seção Anterior (Seta Esquerda)">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <input type="text" class="page-input" id="inputSectionNum" value="0" autocomplete="off" inputmode="numeric" title="Digite o número da página/seção e pressione Enter" />
+        <span id="lblTotalSections">/ 0</span>
+        <button class="tb-btn tb-btn-icon" id="btnNext" title="Próxima Página / Seção (Seta Direita)">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <button class="tb-btn tb-btn-icon reader-only-ctrl" id="btnQuickSearch" title="Pesquisar no livro ou na estante (Ctrl+F)">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </div>
+
+    <!-- 2. Centro: Título do Livro -->
+    <div class="doc-header">
+      <div class="doc-title" id="headerTitle">Estante de Livros</div>
+      <div class="doc-meta" id="headerMeta">EPUB · MOBI · AZW3 · PDF · FB2 · CBZ · MD</div>
+    </div>
+
+    <!-- 3. Direita: Seletor Livro vs Mangá + Modos de Página + Menus Agrupados -->
+    <div class="toolbar-group">
+      <!-- Seletor Principal: Modo Livro vs Modo Mangá -->
+      <div class="segmented reader-only-ctrl" id="readingModeSwitch" title="Alternar entre Modo Livro tradicional e Modo Mangá/Quadrinhos">
+        <button class="active" id="btnModeBook" type="button">Livro</button>
+        <button id="btnModeManga" type="button">Mangá</button>
+      </div>
+
+      <!-- Controles exclusivos de PDF (aparecem só quando há PDF aberto) -->
+      <div class="toolbar-group hidden" id="pdfControls">
+        <button class="tb-btn tb-btn-icon" id="btnZoomOut" title="Reduzir Zoom (-)">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <span id="lblZoom" style="font-size:11px; min-width:34px; text-align:center;">100%</span>
+        <button class="tb-btn tb-btn-icon" id="btnZoomIn" title="Ampliar Zoom (+)">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+        <button class="tb-btn tb-btn-solid" id="btnPdfViewMode" title="Alternar entre Página Original do PDF e Modo Texto">
+          PDF: Original
+        </button>
+        <button class="tb-btn tb-btn-solid" id="btnPdfTintToolbar" title="Ativar/Desativar inversão de cor em PDF de texto no modo Escuro">
+          Cor Original
+        </button>
+      </div>
+
+      <!-- Controles de Visualização de Página (Contínuo do início ao fim vs Capítulo vs 1 Pág vs 2 Págs) -->
+      <div class="segmented reader-only-ctrl" id="flowModeGroup" title="Formato de visualização das páginas">
+        <button data-flow="scroll-all" title="Ler o livro inteiro do começo ao fim só rolando para baixo, sem divisões">Contínuo</button>
+        <button class="active" data-flow="scroll" title="Mostrar uma seção/capítulo por vez com rolagem">Capítulo</button>
+        <button data-flow="paginated-1" title="Paginado: 1 página por vez">1 Pág</button>
+        <button data-flow="paginated-2" title="Livro aberto: 2 páginas lado a lado">2 Págs</button>
+      </div>
+
+      <!-- Controle exclusivo do Modo Mangá (oculto no Modo Livro comum!) -->
+      <button class="tb-btn tb-btn-solid hidden" id="btnMangaRtl" title="Alternar sentido de leitura do Mangá: Direita → Esquerda (Oriental) ou Esquerda → Direita">
+        <span id="lblMangaDir">Mangá Japonês (Direita ← Esquerda)</span>
+      </button>
+      <button class="tb-btn tb-btn-solid hidden" id="btnMangaStrip" title="Modo Tira Vertical Contínua (ideal para WEBTOON e Tapas sem espaços entre imagens)">
+        <span>Tira Webtoon</span>
+      </button>
+
+      <div class="toolbar-divider reader-only-ctrl"></div>
+
+      <!-- Marcar Página + Definir Capa + Pomodoro -->
+      <button class="tb-btn tb-btn-icon reader-only-ctrl" id="btnBookmark" title="Salvar/Remover Marcador nesta página (Ctrl+D)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnSetPageAsCover" title="Usar a página/imagem atual (PDF ou CBZ) como capa do livro na Estante" style="font-size:11px;">Capa Pág.</button>
+      <div id="ambientAudioWidget" style="display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border-color); border-radius:4px; padding:0 6px; height:28px; background:var(--bg-page);">
+        <span style="font-size:11px;" title="Sons Ambiente 100% offline para leitura">Som</span>
+        <select id="selectAmbientSound" style="border:none; background:transparent; color:var(--text-primary); font-size:11px; outline:none;">
+          <option value="off">Off</option>
+          <option value="rain">Chuva Suave</option>
+          <option value="brown">Ruído Marrom</option>
+          <option value="fire">Lareira / Vento</option>
+        </select>
+        <input type="range" id="rangeAmbientVol" min="0" max="100" value="35" title="Volume do som ambiente" style="width:46px; accent-color:var(--accent);" />
+      </div>
+      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnCornellToggle" title="Abrir Notas no Método Cornell (Palavras-chave, Anotações e Resumo)" style="font-size:11px;">Cornell</button>
+      <div id="pomodoroWidget" class="hidden" style="display:inline-flex; align-items:center; gap:2px;">
+        <button class="tb-btn tb-btn-solid" id="btnPomodoroToggle" title="Iniciar / Pausar Timer Pomodoro" style="font-size:11px;">
+          <span id="lblPomodoroTimer">⏱ 25:00</span>
+        </button>
+        <button class="tb-btn tb-btn-icon" id="btnPomodoroReset" title="Reiniciar Pomodoro" style="font-size:11px; width:24px;">↺</button>
+      </div>
+
+      <!-- Aparência do Site/App e Preferências do Livro -->
+      <button class="tb-btn tb-btn-solid" id="btnTypography" title="Aparência do Site/App e Preferências de Leitura">
+        <span id="lblTypographyBtn">Tema / Visual</span>
+      </button>
+
+      <!-- Menu Organizado de Ferramentas & Recursos -->
+      <button class="tb-btn tb-btn-solid" id="btnToolsMenuToggle" title="Abrir menu de Recursos: Ouvir (TTS), Leitura Paralela, Conversor PDF/MOBI/EPUB, Tradutor e Anki">
+        <span>Recursos ▾</span>
+      </button>
+
+      <!-- Conta do Usuário, Perfil & Biblioteca Compartilhada na Nuvem -->
+      <div class="user-menu-wrap">
+        <button class="user-menu-btn" id="btnUserMenu" title="Meu Perfil, Conta na Nuvem e Biblioteca Compartilhada">
+          <span class="user-avatar-sm" id="toolbarUserAvatar">L</span>
+          <span id="toolbarUserGreeting">Conta</span>
+          <span style="font-size:10px; opacity:0.8;">▾</span>
+        </button>
+      </div>
+
+      <!-- Modo Leitura Imersivo (Ocultar Barras) -->
+      <button class="tb-btn tb-btn-icon reader-only-ctrl" id="btnImmersive" title="Modo Leitura Imersivo (oculta barra superior e rodapé — ideal no celular deitado)">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="13" y2="17"/></svg>
+      </button>
+
+      <!-- Tela Cheia -->
+      <button class="tb-btn tb-btn-icon" id="btnFullscreen" title="Tela Cheia (F11)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+    </div>
+  </header>
+  <button class="exit-immersive-pill" id="btnExitImmersive" title="Mostrar barra superior e controles (Esc)">✕ Mostrar Controles</button>
+
+  <!-- Menu Dropdown do Perfil & Nuvem (Estilo Skoob no tema do site) -->
+  <div class="user-dropdown" id="userProfileDropdown">
+    <div class="user-dropdown-head">
+      <strong id="dropdownUserTitle">Leitor</strong>
+      <span id="dropdownAccountMeta">Nuvem pronta para conectar</span>
+    </div>
+    <button class="menu-item-btn" id="btnMenuOpenProfile">
+      <span>Meu perfil</span>
+      <span class="menu-item-sub">Estatísticas &amp; Metas</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnMenuOpenShelf">
+      <span>Minha estante</span>
+      <span class="menu-item-sub">Livros</span>
+    </button>
+    <button class="menu-item-btn" id="btnCloudSync">
+      <span>Nuvem &amp; Sincronização</span>
+      <span class="menu-item-sub">Bancos &amp; Backup</span>
+    </button>
+    <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <button class="menu-item-btn" id="btnMenuSignOut">
+      <span>Sair da conta</span>
+      <span class="menu-item-sub">Sessão</span>
+    </button>
+  </div>
+
+  <!-- Menu Dropdown de Recursos -->
+  <div class="tools-dropdown" id="toolsDropdown">
+    <div class="reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Leitura &amp; Recursos do Livro</div>
+    <button class="menu-item-btn reader-only-ctrl" id="btnWordWiseToggle">
+      <span>Word Wise (Dicas Acima de Palavras)</span>
+      <span class="menu-item-sub" id="lblWordWiseState">Desativado</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnPageFlipOpen">
+      <span>Page Flip (Folhear Livro c/ Pino)</span>
+      <span class="menu-item-sub">Grade</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioXray">
+      <span>Raio-X do Livro (Personagens &amp; Termos)</span>
+      <span class="menu-item-sub">Auto X-Ray</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioReviews">
+      <span>Avaliação (Estrelas) &amp; Resenha</span>
+      <span class="menu-item-sub">Notas</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnTtsToggle">
+      <span>Ouvir Livro (Narração por Voz)</span>
+      <span class="menu-item-sub">TTS</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnParallelToggle">
+      <span>Leitura Paralela (Lado a Lado)</span>
+      <span class="menu-item-sub">2 Telas</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnRulerToggle">
+      <span>Régua de Foco Visual</span>
+      <span class="menu-item-sub">Guia</span>
+    </button>
+    <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Ferramentas &amp; Utilidades</div>
+    <button class="menu-item-btn" id="btnToolsStudio" data-open-studio-tab="paneStudioConvert">
+      <span>Central de Ferramentas ↗</span>
+      <span class="menu-item-sub">KCC · NotebookLM · IA · Metas</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnMenuQrCode">
+      <span>Continuar no Celular</span>
+      <span class="menu-item-sub">QR Code de Leitura</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenVocab">
+      <span>Meus Cartões Salvos (Anki)</span>
+      <span class="menu-item-sub">Aba Lateral</span>
+    </button>
+    <button class="menu-item-btn" id="btnMenuAnkiLogin">
+      <span>Conexão Direta Anki</span>
+      <span class="menu-item-sub">AnkiConnect</span>
+    </button>
+  </div>
+
+  <!-- Popover de Aparência do Site/App e Preferências do Livro -->
+  <div class="popover" id="typoPopover">
+    <div class="popover-section-title">Aparência do Site &amp; Estante</div>
+    <div class="prop-row">
+      <div class="prop-label"><span>Tema do Site / App</span></div>
+      <div class="prop-controls">
+        <button data-theme-val="light">Claro</button>
+        <button class="active" data-theme-val="sepia">Sépia</button>
+        <button data-theme-val="dark">Escuro</button>
+      </div>
+    </div>
+
+    <div class="prop-row">
+      <div class="prop-label"><span>Cor de Destaque</span></div>
+      <div class="accent-swatch-row" id="accentSwatchRow">
+        <button type="button" class="accent-swatch-btn active" data-accent-val="default" style="background:#7c3f1c;" title="Marrom Editorial (Padrão)"></button>
+        <button type="button" class="accent-swatch-btn" data-accent-val="blue" style="background:#2563eb;" title="Azul"></button>
+        <button type="button" class="accent-swatch-btn" data-accent-val="green" style="background:#16a34a;" title="Verde"></button>
+        <button type="button" class="accent-swatch-btn" data-accent-val="purple" style="background:#7c3aed;" title="Roxo"></button>
+        <button type="button" class="accent-swatch-btn" data-accent-val="amber" style="background:#d97706;" title="Âmbar"></button>
+        <button type="button" class="accent-swatch-btn" data-accent-val="rose" style="background:#db2777;" title="Rosa"></button>
+      </div>
+    </div>
+
+    <div class="prop-row">
+      <div class="prop-label"><span>Tamanho da Grade da Estante</span></div>
+      <div class="prop-controls">
+        <button class="density-opt" data-density="compact">Compacta</button>
+        <button class="density-opt active" data-density="normal">Padrão</button>
+        <button class="density-opt" data-density="large">Grande</button>
+      </div>
+    </div>
+
+    <div class="prop-row">
+      <div class="prop-label">
+        <span>Luz Âmbar (Tela Inteira)</span>
+        <span id="lblWarmthVal">0%</span>
+      </div>
+      <div class="prop-controls" style="align-items:center; gap:8px;">
+        <input type="range" id="inputWarmthLevel" min="0" max="100" value="0" style="flex:1; accent-color:var(--accent); cursor:pointer;" />
+      </div>
+    </div>
+
+    <div class="prop-row">
+      <div class="prop-label"><span>Pacotes de Ferramentas (Interface Limpa)</span></div>
+      <div class="prop-controls" style="flex-direction:column; align-items:flex-start; gap:6px;">
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+          <input type="checkbox" id="chkEnableStudyTools" /> Habilitar Ferramentas de Estudo (Cornell, Quiz, Dossiê, Citações)
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+          <input type="checkbox" id="chkEnableLangTools" /> Habilitar Ferramentas de Idiomas (Tradução rápida, SRS, Frequência, Shadowing)
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+          <input type="checkbox" id="chkEnableAmbientAudio" /> Exibir Sons Ambiente na Barra
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+          <input type="checkbox" id="chkEnableBionic" /> Habilitar Leitura Biônica (Destaque guiado nas primeiras letras)
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;" title="Quando desativado (padrão), o app NÃO baixa nenhum capítulo sozinho; só baixa quando você clica em Próximo Capítulo">
+          <input type="checkbox" id="chkAutoPrefetchChapter" /> Pré-carregar próximo capítulo online automaticamente
+        </label>
+      </div>
+    </div>
+
+    <div class="prop-row">
+      <div class="prop-label"><span>Timer Pomodoro na Barra</span></div>
+      <div class="prop-controls" style="align-items:center; justify-content:space-between; gap:8px;">
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+          <input type="checkbox" id="chkEnablePomodoro" /> Exibir Pomodoro
+        </label>
+        <select id="selectPomodoroMinutes" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px; padding:0 6px;">
+          <option value="15">15 min</option>
+          <option value="25" selected>25 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="book-only-pref">
+      <div class="popover-section-title" style="margin-top:10px;">Aparência &amp; Tipografia do Livro</div>
+      <div class="prop-row">
+        <div class="prop-label"><span>Papel da Folha do Livro</span></div>
+        <div class="prop-controls">
+          <button class="book-theme-opt active" data-book-theme="same" title="Segue o mesmo tema escolhido para o site">Site</button>
+          <button class="book-theme-opt" data-book-theme="light">Claro</button>
+          <button class="book-theme-opt" data-book-theme="sepia">Sépia</button>
+          <button class="book-theme-opt" data-book-theme="dark">Escuro</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label">
+          <span>Tamanho da Fonte</span>
+          <span id="lblFontSize">18px</span>
+        </div>
+        <div class="prop-controls">
+          <button id="btnFontDec">A−</button>
+          <button id="btnFontReset">Padrão</button>
+          <button id="btnFontInc">A+</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Tipografia</span></div>
+        <div class="prop-controls">
+          <select id="selectFontFamily">
+            <option value="'Bookerly', Georgia, 'Times New Roman', serif">Bookerly (Kindle Serif)</option>
+            <option value="'Caecilia', 'PMN Caecilia', Rockwell, Georgia, serif">Caecilia (Kindle Slab)</option>
+            <option value="Georgia, 'Times New Roman', serif">Geórgia (Serifada)</option>
+            <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino (Editorial)</option>
+            <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif">Segoe UI / Inter (Sem Serifa)</option>
+            <option value="Verdana, Geneva, sans-serif">Verdana (Alta Legibilidade)</option>
+            <option value="'OpenDyslexic', 'Comic Sans MS', Verdana, sans-serif">OpenDyslexic (Acessível)</option>
+            <option value="Consolas, 'Courier New', monospace">Consolas (Monoespaçada)</option>
+            <option value="'Noto Serif CJK JP', 'Yu Mincho', 'Source Han Serif SC', 'Hiragino Mincho ProN', serif">Mincho / CJK Serif (Japonês/Chinês)</option>
+            <option value="'Noto Sans CJK JP', 'Meiryo', 'Hiragino Sans', 'Source Han Sans SC', sans-serif">Gothic / CJK Sans (Japonês/Chinês/Coreano)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Espaçamento entre Linhas</span></div>
+        <div class="prop-controls">
+          <button class="line-opt" data-lh="1.45">Compacto</button>
+          <button class="line-opt active" data-lh="1.72">Normal</button>
+          <button class="line-opt" data-lh="2.0">Amplo</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Largura da Coluna (Rolagem)</span></div>
+        <div class="prop-controls">
+          <button class="width-opt" data-mw="580px">Estreita</button>
+          <button class="width-opt active" data-mw="720px">Média</button>
+          <button class="width-opt" data-mw="920px">Larga</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Alinhamento &amp; Opções PDF</span></div>
+        <div class="prop-controls">
+          <button class="align-opt active" data-align="justify">Justificado</button>
+          <button class="align-opt" data-align="left">À Esquerda</button>
+          <button id="btnPdfTint" title="Inverter fundo branco de PDFs de texto no modo Escuro/Sépia">Inverter PDF</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Orientação de Leitura</span></div>
+        <div class="prop-controls">
+          <button id="btnTextOrientHorizontal" class="active" title="Texto horizontal padrão ocidental">Horizontal</button>
+          <button id="btnTextOrientVertical" title="Texto vertical japonês/chinês da direita p/ esquerda (縦書き)">Vertical (縦書き)</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Formatação do Livro</span></div>
+        <div class="prop-controls">
+          <button id="btnStyleAdapted" class="active" title="Padroniza fonte, espaçamento e margens no estilo editorial do leitor">Adaptado</button>
+          <button id="btnStyleOriginal" title="Preserva ao máximo a diagramação, CSS e estilos originais de fábrica do livro">Original do Livro</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Largura Webtoon / Long Strip</span><span id="lblWebtoonWidth">100%</span></div>
+        <input type="range" id="inputWebtoonWidth" min="55" max="100" step="5" value="100" style="width:100%; accent-color:var(--accent);" />
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>PDF Escaneado: Contraste / Brilho</span><span id="lblPdfAdjust">100% / 100%</span></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="range" id="inputPdfContrast" min="85" max="160" step="5" value="100" title="Contraste do PDF" style="flex:1; accent-color:var(--accent);" />
+          <input type="range" id="inputPdfBrightness" min="75" max="130" step="5" value="100" title="Brilho do PDF" style="flex:1; accent-color:var(--accent);" />
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;">
+          <input type="checkbox" id="chkTapZones" />
+          <span><strong>Toque nas bordas &amp; Deslizar</strong> (tocar ou arrastar o dedo vira página)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra Flutuante de Seleção de Texto (Destaque, Personagem/Nota X-Ray, Dicionário, Tradutor, TTS e Anki) -->
+  <div class="selection-toolbar" id="selectionToolbar">
+    <button class="hl-dot yellow" data-hl-color="yellow" title="Destacar em Amarelo"></button>
+    <button class="hl-dot green" data-hl-color="green" title="Destacar em Verde"></button>
+    <button class="hl-dot blue" data-hl-color="blue" title="Destacar em Azul"></button>
+    <button class="hl-dot pink" data-hl-color="pink" title="Destacar em Rosa"></button>
+    <div class="toolbar-divider"></div>
+    <button class="tb-btn tb-btn-solid" id="btnSelEntityNote" title="Anotar quem é este Personagem, Lugar ou Conceito (aparecerá sublinhado sempre que o nome surgir no livro!)" style="border-color:var(--accent); color:var(--accent); font-weight:600;">+ Nota / Personagem</button>
+    <button class="tb-btn" id="btnSelDict" title="Consultar Dicionário / Wiktionary">Dicionário</button>
+    <button class="tb-btn" id="btnSelTrans" title="Traduzir trecho selecionado">Traduzir</button>
+    <button class="tb-btn" id="btnSelSpeak" title="Ouvir pronúncia/leitura deste trecho">Ouvir</button>
+    <span id="selectionQuickTransBadge" class="quick-trans-pill hidden" title="Tradução instantânea"></span>
+    <button class="tb-btn tb-btn-solid" id="btnSelAnki" title="Salvar palavra ou frase para o Anki">+ Anki</button>
+  </div>
+
+  <!-- Card Flutuante (X-Ray Popover) que abre ao clicar no nome de um Personagem / Nota no livro -->
+  <div class="entity-popover" id="entityNotePopover">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+      <div>
+        <span class="entity-badge" id="popEntityCategory">Personagem</span>
+        <div id="popEntityName" style="font-size:15px; font-weight:700; margin-top:4px; color:var(--text-primary);"></div>
+        <div id="popEntityAliases" style="font-size:11px; color:var(--text-muted);"></div>
+      </div>
+      <button class="tb-btn tb-btn-icon" id="btnCloseEntityPopover" title="Fechar">✕</button>
+    </div>
+    <div id="popEntityNoteBody" style="font-size:12.5px; line-height:1.55; color:var(--text-primary); background:var(--bg-page); padding:8px 10px; border-radius:5px; border:1px solid var(--border-color); white-space:pre-wrap; max-height:180px; overflow-y:auto;"></div>
+    <div id="popEntityMeta" style="font-size:10.5px; color:var(--text-muted);"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; padding-top:4px; border-top:1px solid var(--border-color);">
+      <button class="tb-btn tb-btn-solid" id="btnPopEntitySearch" style="height:25px; font-size:11px;" title="Listar todas as páginas em que este nome aparece">Ver Aparições</button>
+      <div style="display:flex; gap:4px;">
+        <button class="tb-btn tb-btn-solid" id="btnPopEntityEdit" style="height:25px; font-size:11px;">Editar Nota</button>
+        <button class="tb-btn" id="btnPopEntityDelete" style="height:25px; font-size:11px; color:#ef4444;" title="Excluir nota">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Criar / Editar Nota de Personagem, Lugar ou Termo (Estilo Kindle X-Ray) -->
+  <div class="modal-backdrop" id="entityNoteModal">
+    <div class="modal-card" style="max-width:500px;">
+      <div class="modal-header">
+        <span>Ficha de Personagem / Nota no Livro</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseEntityModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:12px; color:var(--text-secondary); background:var(--bg-toolbar); padding:8px 10px; border-radius:4px; border:1px solid var(--border-color);">
+          Sempre que este nome (ou apelido) aparecer em <strong>qualquer página do livro</strong>, ele ficará sublinhado. Basta clicar nele durante a leitura para abrir sua anotação!
+        </div>
+        <input type="hidden" id="inputEntityId" value="" />
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px;">
+          <div class="modal-field">
+            <label>Nome do Personagem, Lugar ou Termo</label>
+            <input type="text" id="inputEntityName" placeholder="Ex: Bill Denbrough" />
+          </div>
+          <div class="modal-field">
+            <label>Tipo / Categoria</label>
+            <select id="selectEntityCategory">
+              <option value="character" selected>Personagem</option>
+              <option value="place">Lugar / Facção</option>
+              <option value="concept">Conceito / Objeto</option>
+              <option value="note">Nota de Trecho</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label>Apelidos ou Outros Nomes (opcional, separados por vírgula — também serão reconhecidos no livro!)</label>
+          <input type="text" id="inputEntityAliases" placeholder="Ex: Big Bill, Gago" />
+        </div>
+        <div class="modal-field">
+          <label>Sua Anotação (Quem é, relações, características ou lembretes)</label>
+          <textarea id="inputEntityNote" style="min-height:100px;" placeholder="Ex: Irmão mais velho de Georgie e líder do Clube dos Otários..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span style="font-size:11px; color:var(--text-muted);">Salvo neste livro e sincronizado na nuvem</span>
+        <div style="display:flex; gap:6px;">
+          <button class="tb-btn" id="btnCancelEntityModal">Cancelar</button>
+          <button class="tb-btn tb-btn-solid" id="btnSaveEntityNote" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Salvar Nota no Livro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra Flutuante de Narração TTS (Read-Along) -->
+  <div class="tts-bar" id="ttsBar">
+    <span style="font-size:11.5px; font-weight:600; color:var(--accent);">Narração (TTS):</span>
+    <span id="lblTtsStatus" style="font-size:11px; color:var(--text-muted);">Pronto</span>
+    <button class="tb-btn tb-btn-solid" id="btnTtsPlayPause">▶ Ler Capítulo</button>
+    <button class="tb-btn tb-btn-solid" id="btnExportChapterAudio" title="Exportar áudio narrado deste capítulo para ouvir no celular ou carro" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Baixar Áudio (.mp3)</button>
+    <button class="tb-btn" id="btnTtsPrevPara" title="Parágrafo Anterior">⏮</button>
+    <button class="tb-btn" id="btnTtsNextPara" title="Próximo Parágrafo">⏭</button>
+    <button class="tb-btn" id="btnTtsStop" title="Parar">⏹</button>
+    <select id="selectTtsRate" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;">
+      <option value="0.85">0.85x</option>
+      <option value="1" selected>1.0x</option>
+      <option value="1.25">1.25x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2.0x</option>
+    </select>
+    <select id="selectTtsSleepTimer" title="Sleep Timer: parar narração automaticamente" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px;">
+      <option value="0">Timer: Off</option>
+      <option value="15">15 min</option>
+      <option value="30">30 min</option>
+      <option value="60">60 min</option>
+    </select>
+    <label style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-secondary); cursor:pointer;" title="Avançar automaticamente para o próximo capítulo ao terminar de narrar">
+      <input type="checkbox" id="chkTtsAutoNext" checked /> Auto-Cap
+    </label>
+    <select id="selectTtsVoice" style="height:26px; max-width:160px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;"></select>
+    <button class="tb-btn" id="btnShadowingRec" title="Gravar sua pronúncia (Shadowing) para comparar com o áudio">🎙 Shadowing</button>
+    <audio id="audioShadowingPlayback" controls class="hidden" style="height:26px; max-width:170px;"></audio>
+    <button class="tb-btn tb-btn-icon" id="btnTtsClose">✕</button>
+  </div>
+
+  <!-- Régua de Foco Visual -->
+  <div class="reading-ruler" id="readingRuler"></div>
+
+  <!-- Lightbox e Ampliador de Imagens com Zoom, Rotação e Download -->
+  <div class="img-lightbox" id="imgLightbox">
+    <div class="lightbox-toolbar" id="lightboxToolbar" onclick="event.stopPropagation();">
+      <span id="lblLightboxTitle" style="color:#fff; font-size:12px; font-weight:600; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Imagem Ampliada</span>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <span id="lblLightboxZoomPct" style="color:#cbd5e1; font-size:11px; min-width:40px; text-align:right;">100%</span>
+        <button class="tb-btn tb-btn-solid" id="btnLightboxZoomOut" title="Diminuir Zoom (-)" style="height:26px; padding:0 8px; font-size:13px; font-weight:bold;">−</button>
+        <button class="tb-btn tb-btn-solid" id="btnLightboxZoomReset" title="Tamanho Original (100%)" style="height:26px; padding:0 8px; font-size:11px;">1:1</button>
+        <button class="tb-btn tb-btn-solid" id="btnLightboxZoomIn" title="Aumentar Zoom (+)" style="height:26px; padding:0 8px; font-size:13px; font-weight:bold;">+</button>
+        <button class="tb-btn tb-btn-solid" id="btnLightboxRotate" title="Girar 90°" style="height:26px; padding:0 8px; font-size:11px;">⟳ Girar</button>
+        <button class="tb-btn tb-btn-solid" id="btnLightboxCopy" title="Copiar Imagem p/ Área de Transferência" style="height:26px; padding:0 8px; font-size:11px;">Copiar</button>
+        <button class="tb-btn tb-btn-solid" id="btnLightboxDownload" title="Baixar esta Imagem no seu Computador" style="height:26px; padding:0 10px; font-size:11px; border-color:var(--accent); color:var(--accent); font-weight:600;">Baixar Imagem</button>
+        <button class="tb-btn tb-btn-icon" id="btnCloseLightbox" title="Fechar (Esc)" style="color:#fff; font-size:14px; width:26px; height:26px;">✕</button>
+      </div>
+    </div>
+    <div class="lightbox-stage" id="lightboxStage">
+      <img id="imgLightboxTarget" src="" alt="Visualização Ampliada" draggable="false" />
+    </div>
+    <div class="lightbox-hint">Use a roda do mouse (scroll) para Zoom · Arraste para explorar detalhes · Esc ou clique fora para fechar</div>
+  </div>
+
+  <!-- Modal Integrado de Dicionário, Tradutor, Wikipédia e Cartão Anki Direto -->
+  <div class="modal-backdrop" id="lookupModal">
+    <div class="modal-card" style="max-width:560px;">
+      <div class="modal-header">
+        <span id="modalTitle">Dicionário · Tradutor · Wikipédia · Anki Direto</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseModal" title="Fechar (Esc)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          <select id="selectTargetLang" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); color:var(--text-primary); padding:0 6px; font-size:12px;">
+            <option value="pt">Traduzir p/ Português</option>
+            <option value="en">Traduzir p/ Inglês</option>
+            <option value="es">Traduzir p/ Espanhol</option>
+            <option value="ja">Traduzir p/ Japonês</option>
+            <option value="fr">Traduzir p/ Francês</option>
+            <option value="de">Traduzir p/ Alemão</option>
+          </select>
+          <button class="tb-btn tb-btn-solid" id="btnModalFetchDict">Dicionário</button>
+          <button class="tb-btn tb-btn-solid" id="btnModalFetchTrans">Traduzir</button>
+          <button class="tb-btn tb-btn-solid" id="btnModalFetchWiki">Wikipédia</button>
+        </div>
+
+        <div class="modal-field">
+          <label>Frente do Cartão (Palavra ou Expressão)</label>
+          <input type="text" id="inputAnkiFront" placeholder="Palavra ou frase selecionada..." />
+        </div>
+
+        <div class="modal-field">
+          <label>Verso do Cartão (Definição / Tradução / Resumo Wikipédia)</label>
+          <textarea id="inputAnkiBack" placeholder="A tradução, definição do dicionário ou resumo da Wikipédia aparecerá aqui automaticamente..."></textarea>
+        </div>
+
+        <div class="modal-field">
+          <label>Frase de Contexto no Livro</label>
+          <textarea id="inputAnkiContext" placeholder="Frase original do livro onde a palavra apareceu..."></textarea>
+        </div>
+
+        <!-- Baralho de Destino no Anki -->
+        <div style="display:flex; gap:8px; align-items:center; background:var(--bg-toolbar); padding:8px; border-radius:4px; border:1px solid var(--border-color); flex-wrap:wrap;">
+          <span style="font-size:11.5px; font-weight:600; color:var(--text-secondary);">Baralho Anki:</span>
+          <select id="selectAnkiDeckModal" style="height:26px; flex:1; min-width:140px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px; padding:0 6px;">
+            <option value="Default">Default (Padrão)</option>
+          </select>
+          <button class="tb-btn tb-btn-solid" id="btnOpenAnkiSettingsFromModal" style="height:26px; font-size:11px;">Configurar Login Anki</button>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:6px; padding-top:2px;">
+          <span style="font-size:11px; color:var(--text-muted); align-self:center;">Abrir externo:</span>
+          <button class="tb-btn tb-btn-solid" id="btnExtDicio" style="height:24px; font-size:11px;">Dicio (PT)</button>
+          <button class="tb-btn tb-btn-solid" id="btnExtWiktionary" style="height:24px; font-size:11px;">Wiktionary</button>
+          <button class="tb-btn tb-btn-solid" id="btnExtWikipedia" style="height:24px; font-size:11px;">Wikipédia</button>
+          <button class="tb-btn tb-btn-solid" id="btnExtGoogleTrans" style="height:24px; font-size:11px;">Google Tradutor</button>
+          <button class="tb-btn tb-btn-solid" id="btnExtDeepL" style="height:24px; font-size:11px;">DeepL</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="modalStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto</span>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="tb-btn" id="btnModalCancel">Fechar</button>
+          <button class="tb-btn tb-btn-solid" id="btnModalSaveAnki">Salvar na Lista</button>
+          <button class="tb-btn tb-btn-solid" id="btnModalSendAnkiDirect" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Adicionar Direto no Anki</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Login / Conexão Direta com o Anki (AnkiConnect + Conta AnkiWeb) -->
+  <div class="modal-backdrop" id="ankiAccountModal">
+    <div class="modal-card" style="max-width:580px;">
+      <div class="modal-header">
+        <span>Integração Direta com o Anki (AnkiConnect & Conta AnkiWeb)</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseAnkiAccountModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Opção 1: AnkiConnect -->
+        <div style="border:1px solid var(--border-color); border-radius:5px; padding:12px; background:var(--bg-toolbar);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-weight:600; color:var(--text-primary);">1. Conexão Direta com Anki Aberto (AnkiConnect)</span>
+            <span id="ankiConnectBadge" style="font-size:11px; padding:2px 8px; border-radius:10px; background:var(--bg-page); border:1px solid var(--border-color);">Não testado</span>
+          </div>
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px; line-height:1.45;">
+            Adiciona cartões com 1 clique diretamente nos seus baralhos do Anki e já dispara a sincronização com o AnkiWeb. No Anki do PC, vá em <strong>Ferramentas → Complementos → Obter Complementos</strong> e coloque o código <code>2055492159</code> (AnkiConnect). Em <em>Config</em> do AnkiConnect, adicione <code>"*"</code> em <code>webCorsOriginList</code>.
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div class="modal-field">
+              <label>Endereço do AnkiConnect</label>
+              <input type="text" id="inputAnkiConnectUrl" value="http://127.0.0.1:8765" />
+            </div>
+            <div class="modal-field">
+              <label>Baralho Padrão (Deck)</label>
+              <input type="text" id="inputAnkiDefaultDeck" value="Leitura" placeholder="ex: Inglês::Livros" />
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="tb-btn tb-btn-solid" id="btnTestAnkiConnect" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Conectar e Carregar Meus Baralhos</button>
+            <button class="tb-btn tb-btn-solid" id="btnSyncAllVocabToAnki">Enviar Todos os Cartões Salvos p/ o Anki Agora</button>
+          </div>
+        </div>
+
+        <!-- Opção 2: Login na Conta AnkiWeb Online -->
+        <div style="border:1px solid var(--border-color); border-radius:5px; padding:12px; background:var(--bg-toolbar);">
+          <div style="font-weight:600; margin-bottom:6px; color:var(--text-primary);">2. Login na Conta AnkiWeb (Adição Online via Servidor / Proxy)</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px; line-height:1.45;">
+            Para adicionar cartões direto na sua conta <strong>ankiweb.net</strong> pelo celular ou navegador sem abrir o Anki no PC (funciona automaticamente quando hospedado na Vercel/Netlify através da rota integrada <code>/api/ankiweb</code>):
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+            <div class="modal-field">
+              <label>E-mail da sua conta AnkiWeb</label>
+              <input type="email" id="inputAnkiWebUser" placeholder="seu-email@exemplo.com" />
+            </div>
+            <div class="modal-field">
+              <label>Senha do AnkiWeb</label>
+              <input type="password" id="inputAnkiWebPass" placeholder="••••••••" />
+            </div>
+          </div>
+          <div class="modal-field" style="margin-bottom:8px;">
+            <label>Endpoint da API AnkiWeb (Padrão automático na Vercel/Netlify: <code>/api/ankiweb</code>)</label>
+            <input type="text" id="inputAnkiWebEndpoint" value="/api/ankiweb" />
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="tb-btn tb-btn-solid" id="btnSaveAnkiAccount">Salvar Credenciais Anki</button>
+            <button class="tb-btn tb-btn-solid" id="btnTestAnkiWebLogin">Testar Login AnkiWeb</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="ankiModalStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto</span>
+        <button class="tb-btn" id="btnCloseAnkiAccountFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtro de Luz Âmbar e Pino de Retorno Page Flip -->
+  <div class="warmth-overlay" id="warmthOverlay"></div>
+  <div class="pageflip-return-pill" id="pageFlipReturnPill">
+    <span id="lblPageFlipOrigin"> Posição original salva</span>
+    <button class="tb-btn tb-btn-solid" id="btnReturnPinnedPage" style="height:22px; font-size:11px; border-color:var(--accent); color:var(--accent);">Voltar</button>
+    <button class="tb-btn tb-btn-icon" id="btnDismissPinnedPage" style="width:20px; height:20px; font-size:11px;" title="Fechar pino">✕</button>
+  </div>
+
+  <!-- Modal de Page Flip (Visão Panorâmica de Capítulos e Páginas) -->
+  <div class="modal-backdrop" id="pageFlipModal">
+    <div class="modal-card" style="max-width:780px; width:94%;">
+      <div class="modal-header">
+        <span>Page Flip — Folhear Capítulos & Páginas (Sua página atual fica fixada no pino de retorno)</span>
+        <button class="tb-btn tb-btn-icon" id="btnClosePageFlipModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span id="lblPageFlipInfo" style="font-size:12px; color:var(--text-secondary);">Clique em qualquer página abaixo para espiar. Um botão flutuante permitirá voltar imediatamente para onde você estava lendo.</span>
+          <input type="range" id="inputPageFlipScrubber" min="1" max="1" value="1" style="width:220px; accent-color:var(--accent); cursor:pointer;" />
+        </div>
+        <div class="pageflip-grid" id="pageFlipGrid"></div>
+      </div>
+      <div class="modal-footer">
+        <span style="font-size:11px; color:var(--text-muted);">Dica: sempre que você pular de capítulo pelo Sumário ou Busca, o pino de retorno também aparece automaticamente.</span>
+        <button class="tb-btn" id="btnClosePageFlipFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ferramentas de Leitura, Conversão, Raio-X e Metas (Design Sóbrio Integrado) -->
+  <div class="modal-backdrop" id="toolsModal">
+    <div class="studio-modal-card">
+      <div class="modal-header">
+        <span>Ferramentas — Conversor · Raio-X · Resumidor · Tradutor · Revisor · Citações · Metas</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseToolsModal">✕</button>
+      </div>
+      <div class="studio-layout">
+        <!-- Menu Lateral Sóbrio -->
+        <aside class="studio-sidebar">
+          <div class="studio-brand">
+            <span>Ferramentas</span>
+          </div>
+          <button class="studio-nav-btn active" data-studio-pane="paneStudioConvert">Conversor de Formatos</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioNotebookLM">NotebookLM (IA &amp; Estudo)</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioXray">Raio-X (Personagens)</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioSummary">Resumidor & Quiz</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioTranslate">Tradutor de Texto</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioProofread">Revisor Gramatical</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioQuotes">Citações & Destaques</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioReviews">Notas & Resenhas</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioInsights">Hábito & Metas</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioKindle">Conta Kindle</button>
+          <div style="height:1px; background:var(--border-color); margin:6px 4px;"></div>
+          <button class="studio-nav-btn" id="btnStudioGoReader">Voltar ao Leitor</button>
+        </aside>
+
+        <!-- Área Principal das Ferramentas -->
+        <div class="studio-main">
+          <!-- ABA 1: CONVERSOR DE EBOOKS -->
+          <div class="studio-pane active" id="paneStudioConvert">
+            <div>
+              <h2 style="margin:0 0 4px 0; font-size:17px;">Conversor de Formatos</h2>
+              <div style="font-size:12px; color:var(--text-muted);">Converta o livro aberto atualmente ou selecione outro arquivo do computador.</div>
+            </div>
+
+            <div class="studio-upload-box" id="convDropZone">
+              <div style="font-size:13.5px; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Arraste um arquivo aqui ou clique para selecionar</div>
+              <div id="convSelectedFileLabel" style="font-size:12px; color:var(--accent);">
+                Usando o livro aberto atualmente no leitor (ou clique aqui para escolher outro arquivo)
+              </div>
+              <input type="file" id="convUploadInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.fb2,.cbz,.md,.txt,.html,.htm" class="hidden" />
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--bg-toolbar); padding:10px 12px; border:1px solid var(--border-color); border-radius:6px;">
+              <span style="font-size:12px; color:var(--text-secondary);">Formato de destino:</span>
+              <select id="selectConvertFormat" style="height:30px; border:1px solid var(--border-strong); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 10px; font-size:12px;">
+                <option value="azw3">AZW3 (Kindle .azw3)</option>
+                <option value="mobi">MOBI (Kindle .mobi)</option>
+                <option value="epub" selected>EPUB Padrão (.epub)</option>
+                <option value="pdf">PDF Paginado (.pdf)</option>
+                <option value="docx">Word (.doc)</option>
+                <option value="rtf">Rich Text (.rtf)</option>
+                <option value="odt">OpenDocument (.odt)</option>
+                <option value="html">HTML Página Única (.html)</option>
+                <option value="md">Markdown (.md)</option>
+                <option value="txt">Texto Puro (.txt)</option>
+              </select>
+              <button class="studio-btn-primary" id="btnRunConvert">Converter e Baixar</button>
+              <button class="tb-btn tb-btn-solid" id="btnConvClearFile" title="Voltar a usar o livro aberto no leitor">Usar Livro Aberto</button>
+            </div>
+
+            <div>
+              <div style="font-weight:600; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Atalhos Diretos de Conversão</div>
+              <div class="conv-presets-grid">
+                <button class="conv-preset-btn" data-conv-target="pdf">EPUB para PDF</button>
+                <button class="conv-preset-btn" data-conv-target="azw3">EPUB para AZW3</button>
+                <button class="conv-preset-btn" data-conv-target="mobi">EPUB para MOBI</button>
+                <button class="conv-preset-btn" data-conv-target="epub">PDF para EPUB</button>
+                <button class="conv-preset-btn" data-conv-target="azw3">PDF para AZW3</button>
+                <button class="conv-preset-btn" data-conv-target="docx">PDF para WORD</button>
+                <button class="conv-preset-btn" data-conv-target="txt">PDF para TXT</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">WORD para PDF</button>
+                <button class="conv-preset-btn" data-conv-target="rtf">WORD para RTF</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">DOC para PDF</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">RTF para PDF</button>
+                <button class="conv-preset-btn" data-conv-target="txt">RTF para TXT</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">ODT para PDF</button>
+                <button class="conv-preset-btn" data-conv-target="docx">ODT para WORD</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">TXT para PDF</button>
+              </div>
+            </div>
+
+            <!-- Conversor de Mangás p/ Kindle (KCC Web & Calibre RTL) -->
+            <div class="kcc-converter-card" id="kccConverterBox">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">Conversor de Mangás p/ Kindle (KCC Web &amp; Calibre RTL)</div>
+                <span style="font-size:11px; color:var(--text-muted);">Compatível com Send to Kindle da Amazon</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+                Converte arquivos <strong>.CBZ / .ZIP de imagens</strong> ou corrige <strong>.EPUB de mangá</strong> para abrir no Kindle na ordem tradicional japonesa (Direita para a Esquerda / RTL) com layout fixo e sem quebras de página.
+              </div>
+              <div class="kcc-options-row">
+                <span style="font-weight:600; color:var(--text-secondary);">Sentido de Leitura:</span>
+                <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                  <input type="radio" name="kccDirection" value="rtl" checked /> Mangá Japonês (Direita ← Esquerda / RTL)
+                </label>
+                <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                  <input type="radio" name="kccDirection" value="ltr" /> HQ Ocidental (Esquerda → Direita / LTR)
+                </label>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+                <button class="studio-btn-primary" id="btnRunKccConvert">Converter p/ Mangá Kindle (.EPUB RTL)</button>
+                <button class="tb-btn tb-btn-solid" id="btnKccSendKindle">Enviar p/ Kindle (Amazon Web)</button>
+                <button class="tb-btn" id="btnKccUseOpenBook" style="font-size:11px;">Usar Mangá Aberto</button>
+              </div>
+              <div id="kccStatusMsg" style="font-size:11.5px; color:var(--accent); font-weight:600; min-height:16px;"></div>
+            </div>
+
+            <div style="border:1px solid var(--border-color); border-radius:6px; padding:12px; background:var(--bg-toolbar);">
+              <div style="font-weight:600; font-size:12px; margin-bottom:6px; color:var(--text-secondary);">Importar Artigo Web ou Catálogo OPDS</div>
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                <input type="text" id="inputClipWebUrl" placeholder="Cole a URL de um artigo, capítulo web ou catálogo OPDS..." style="flex:1; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <button class="tb-btn tb-btn-solid" id="btnClipWebPage" style="height:30px;">Importar para o Leitor</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA NOTEBOOK LM (IA, CHAT GROUNDED, PODCAST DO CAPÍTULO E GUIA DE ESTUDO) -->
+          <div class="studio-pane" id="paneStudioNotebookLM">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">NotebookLM (Estudo Inteligente &amp; Podcast)</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Converse com o livro aberto, ouça o debate de 2 apresentadores sobre o capítulo e gere dossiês completos.</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="tb-btn tb-btn-solid" id="btnNlmStudyGuide">Gerar Guia de Estudo Completo</button>
+                <button class="tb-btn tb-btn-solid" id="btnNlmPodcastGen">Gerar Podcast do Capítulo</button>
+                <button class="tb-btn" id="btnNlmExportMarkdown" style="font-size:11px;" title="Exportar para Obsidian / Notion / Markdown">Exportar .MD</button>
+              </div>
+            </div>
+
+            <!-- Seção de Chave de IA / Modo Offline -->
+            <div style="border:1px solid var(--border-color); border-radius:6px; padding:10px 12px; background:var(--bg-toolbar); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
+                <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">Chave Gemini API (Opcional):</span>
+                <input type="password" id="inputGeminiApiKey" placeholder="Cole sua chave gratuita do Google AI Studio..." style="flex:1; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px;" />
+                <button class="tb-btn tb-btn-solid" id="btnSaveGeminiKey" style="height:28px; font-size:11px;">Salvar Chave</button>
+              </div>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="font-size:11px; color:var(--accent); text-decoration:none;">Obter chave gratuita (Google AI Studio) ↗</a>
+            </div>
+
+            <!-- Bloco de Podcast de Áudio (2 Apresentadores) -->
+            <div class="nlm-podcast-card" id="nlmPodcastBox" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <div style="font-weight:700; font-size:13px; color:var(--text-primary);">Audio Overview: Podcast de 2 Apresentadores</div>
+                <div style="display:flex; gap:6px;">
+                  <button class="studio-btn-primary" id="btnPlayPodcastAudio" style="height:28px; font-size:11px;">▶ Ouvir Conversa (Vozes Alternadas)</button>
+                  <button class="tb-btn tb-btn-solid" id="btnStopPodcastAudio" style="height:28px; font-size:11px; display:none;">⏹ Parar</button>
+                </div>
+              </div>
+              <div id="nlmPodcastScript" style="max-height:180px; overflow-y:auto; padding:6px; background:var(--bg-page); border-radius:4px; border:1px solid var(--border-color);"></div>
+            </div>
+
+            <!-- Caixa de Chat Grounded com o Livro -->
+            <div class="nlm-chat-box">
+              <div class="nlm-chat-messages" id="nlmChatList">
+                <div class="nlm-msg ai">
+                  <strong>NotebookLM Livro:</strong> Olá! Estou pronto para responder suas dúvidas sobre a obra aberta no leitor. Pergunte sobre acontecimentos, personagens, conceitos ou conexões entre capítulos!
+                </div>
+              </div>
+              <div style="display:flex; padding:8px; border-top:1px solid var(--border-color); background:var(--bg-toolbar); gap:6px;">
+                <input type="text" id="inputNlmQuestion" placeholder="Pergunte ao livro (ex: Por que o personagem tomou essa decisão?)..." style="flex:1; height:32px; padding:0 10px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <button class="studio-btn-primary" id="btnSendNlmQuestion" style="height:32px; padding:0 14px;">Enviar</button>
+              </div>
+            </div>
+
+            <!-- Área de Guia de Estudo / Dossiê Gerado -->
+            <div id="nlmStudyGuideContainer" style="display:none; border:1px solid var(--border-color); border-radius:6px; padding:12px; background:var(--bg-toolbar);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h3 style="margin:0; font-size:14px;">Dossiê &amp; Guia de Estudo NotebookLM</h3>
+                <button class="tb-btn tb-btn-solid" id="btnCopyNlmGuide" style="height:26px; font-size:11px;">Copiar Texto</button>
+              </div>
+              <div id="nlmStudyGuideContent" style="font-size:12.5px; line-height:1.6; max-height:260px; overflow-y:auto; padding:8px; background:var(--bg-page); border:1px solid var(--border-color); border-radius:4px;"></div>
+            </div>
+          </div>
+          <div class="studio-pane" id="paneStudioXray">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">Raio-X do Livro (Personagens, Termos & Aparições por Capítulo)</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Analisa o livro automaticamente para identificar personagens e nomes recorrentes, exibindo onde cada um aparece.</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="studio-btn-primary" id="btnRunAutoXray">Analisar Livro Atual (Auto X-Ray)</button>
+                <button class="tb-btn tb-btn-solid" id="btnAddManualXray">+ Nova Ficha Manual</button>
+              </div>
+            </div>
+
+            <div id="xraySavedContainer" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <div id="xrayDetectedContainer" style="display:flex; flex-direction:column; gap:8px;">
+              <div style="padding:14px; background:var(--bg-toolbar); border:1px solid var(--border-color); border-radius:6px; font-size:12.5px; color:var(--text-muted);">
+                Clique em <strong>"Analisar Livro Atual (Auto X-Ray)"</strong> para escanear os capítulos do livro aberto, listar os personagens mais citados com gráfico de frequência por capítulo e salvar fichas clicáveis com 1 clique.
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA 3: RESUMIDOR DE TEXTO & GERADOR DE QUIZ -->
+          <div class="studio-pane" id="paneStudioSummary">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">Resumidor de Texto & Gerador de Quiz</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Extraia os pontos-chave do capítulo atual ou de qualquer documento e gere perguntas de revisão.</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <label style="display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; cursor:pointer; color:var(--text-primary);">
+                  <input type="checkbox" id="chkSumQuiz" checked /> Gerar Quiz de Revisão
+                </label>
+                <button class="tb-btn tb-btn-solid" id="btnSumUseChapter">Usar Capítulo Atual</button>
+                <button class="tb-btn tb-btn-solid" id="btnSumUseBook">Usar Livro Todo</button>
+                <label class="tb-btn tb-btn-solid" for="sumUploadInput" style="cursor:pointer;">Abrir Documento</label>
+                <input type="file" id="sumUploadInput" accept=".epub,.mobi,.azw3,.pdf,.docx,.doc,.odt,.rtf,.fb2,.txt,.md,.html" class="hidden" />
+              </div>
+            </div>
+
+            <textarea id="inputSumSource" placeholder="Cole o texto aqui ou clique em 'Usar Capítulo Atual'..." style="width:100%; height:160px; padding:10px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); color:var(--text-primary); font-family:var(--ui-font); font-size:13px; line-height:1.5; resize:vertical;"></textarea>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:12px; color:var(--text-secondary);">Extensão do resumo:</span>
+                <select id="selectSumLength" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 10px; font-size:12px;">
+                  <option value="short">Curto (3 tópicos)</option>
+                  <option value="medium" selected>Médio (6 tópicos)</option>
+                  <option value="long">Detalhado (10 tópicos)</option>
+                </select>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <button class="studio-btn-primary" id="btnGenerateSummary">Gerar Resumo</button>
+                <select id="selectSumExportFmt" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;">
+                  <option value="pdf">PDF</option>
+                  <option value="docx">Word (.doc)</option>
+                  <option value="md">Markdown (.md)</option>
+                  <option value="txt">TXT</option>
+                </select>
+                <button class="tb-btn tb-btn-solid" id="btnExportSummary" style="height:30px;">Baixar Resumo</button>
+              </div>
+            </div>
+
+            <div id="summaryOutput" style="font-size:12.5px; color:var(--text-primary); padding:14px; background:var(--bg-toolbar); border:1px solid var(--border-color); border-radius:6px; line-height:1.6;">
+              Clique em <strong>"Usar Capítulo Atual"</strong> ou <strong>"Gerar Resumo"</strong> para visualizar os pontos principais e estatísticas de leitura.
+            </div>
+            <div id="quizOutputContainer" class="hidden" style="padding:14px; background:var(--bg-toolbar); border:1px solid var(--border-color); border-radius:6px;"></div>
+          </div>
+
+          <!-- ABA 4: TRADUTOR DE TEXTOS -->
+          <div class="studio-pane" id="paneStudioTranslate">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">Tradutor de Textos & Capítulos</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Traduza trechos ou capítulos inteiros em mais de 15 idiomas ou exiba lado a lado no leitor.</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="tb-btn tb-btn-solid" id="btnTransLoadChapter">Puxar Capítulo Atual</button>
+                <button class="tb-btn tb-btn-solid" id="btnTranslateChapterParallel">Traduzir Lado a Lado no Leitor</button>
+                <button class="tb-btn tb-btn-solid" id="btnTranslateChapterInline">Inserir Abaixo dos Parágrafos</button>
+              </div>
+            </div>
+
+            <div class="trans-dual-grid">
+              <div class="trans-box">
+                <div class="trans-box-header">
+                  <button class="tb-btn" id="btnClearTransSrc" title="Limpar texto" style="height:24px; font-size:11px;">Limpar</button>
+                  <select id="selectStudioSrcLang" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px; padding:0 8px;">
+                    <option value="auto" selected>Detectar Idioma (Auto)</option>
+                    <option value="en">Inglês</option>
+                    <option value="pt">Português</option>
+                    <option value="es">Espanhol</option>
+                    <option value="fr">Francês</option>
+                    <option value="de">Alemão</option>
+                    <option value="it">Italiano</option>
+                    <option value="ja">Japonês</option>
+                    <option value="zh-CN">Chinês</option>
+                    <option value="ru">Russo</option>
+                    <option value="ko">Coreano</option>
+                    <option value="ar">Árabe</option>
+                    <option value="nl">Holandês</option>
+                    <option value="pl">Polonês</option>
+                    <option value="tr">Turco</option>
+                  </select>
+                </div>
+                <textarea id="inputStudioTransSrc" placeholder="Digite ou cole o texto para traduzir..."></textarea>
+                <div class="trans-box-footer">
+                  <span id="lblTransSrcCount">0 / 5000</span>
+                  <div style="display:flex; gap:4px;">
+                    <button class="tb-btn tb-btn-solid" id="btnSpeakTransSrc" style="height:24px; font-size:11px;">Ouvir</button>
+                    <button class="tb-btn tb-btn-solid" id="btnCopyTransSrc" style="height:24px; font-size:11px;">Copiar</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="trans-box">
+                <div class="trans-box-header">
+                  <button class="tb-btn" id="btnClearTransOut" title="Limpar tradução" style="height:24px; font-size:11px;">Limpar</button>
+                  <select id="selectChapterTransLang" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px; padding:0 8px;">
+                    <option value="pt" selected>Português</option>
+                    <option value="en">Inglês</option>
+                    <option value="es">Espanhol</option>
+                    <option value="fr">Francês</option>
+                    <option value="de">Alemão</option>
+                    <option value="it">Italiano</option>
+                    <option value="ja">Japonês</option>
+                    <option value="zh-CN">Chinês</option>
+                    <option value="ru">Russo</option>
+                    <option value="ko">Coreano</option>
+                    <option value="ar">Árabe</option>
+                    <option value="nl">Holandês</option>
+                    <option value="pl">Polonês</option>
+                    <option value="tr">Turco</option>
+                    <option value="hi">Hindi</option>
+                  </select>
+                </div>
+                <textarea id="outputStudioTrans" placeholder="A tradução aparecerá aqui..." readonly></textarea>
+                <div class="trans-box-footer">
+                  <span id="lblTransOutCount">0 / 5000</span>
+                  <div style="display:flex; gap:4px;">
+                    <button class="tb-btn tb-btn-solid" id="btnSpeakTransOut" style="height:24px; font-size:11px;">Ouvir</button>
+                    <button class="tb-btn tb-btn-solid" id="btnCopyTransOut" style="height:24px; font-size:11px;">Copiar</button>
+                    <button class="tb-btn tb-btn-solid" id="btnSaveTransToAnki" style="height:24px; font-size:11px;">+ Anki</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px;">
+              <button class="tb-btn tb-btn-solid" id="btnSwapStudioLangs" style="height:30px; padding:0 12px;">Inverter Idiomas</button>
+              <button class="studio-btn-primary" id="btnRunStudioTranslate">Traduzir Agora</button>
+            </div>
+          </div>
+
+          <!-- ABA 5: REVISOR GRAMATICAL & ESTILO -->
+          <div class="studio-pane" id="paneStudioProofread">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">Revisor Gramatical & Ortográfico</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Verifique gramática, ortografia, pontuação e concordância com sugestões de correção.</div>
+              </div>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <select id="selectProofLang" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px; padding:0 8px;">
+                  <option value="auto" selected>Auto-detectar Idioma</option>
+                  <option value="pt-BR">Português (Brasil)</option>
+                  <option value="pt-PT">Português (Portugal)</option>
+                  <option value="en-US">Inglês (EUA)</option>
+                  <option value="es">Espanhol</option>
+                  <option value="fr">Francês</option>
+                  <option value="de-DE">Alemão</option>
+                </select>
+                <button class="tb-btn tb-btn-solid" id="btnProofLoadChapter">Puxar Trecho do Capítulo</button>
+              </div>
+            </div>
+
+            <div class="trans-box">
+              <div class="trans-box-header">
+                <button class="tb-btn" id="btnClearProofText" style="height:24px; font-size:11px;">Limpar</button>
+                <span style="font-size:11.5px; color:var(--text-muted);">Cole ou digite o texto abaixo para revisar</span>
+              </div>
+              <textarea id="inputProofText" placeholder="Digite ou cole o texto para revisar..."></textarea>
+              <div class="trans-box-footer">
+                <span id="lblProofCharCount">0 / 5000</span>
+                <div style="display:flex; gap:6px;">
+                  <button class="tb-btn tb-btn-solid" id="btnSpeakProofText" style="height:26px;">Ouvir</button>
+                  <button class="tb-btn tb-btn-solid" id="btnCopyProofText" style="height:26px;">Copiar</button>
+                  <button class="studio-btn-primary" id="btnRunProofread" style="height:26px;">Revisar Texto</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="proofResultBox" class="hidden" style="border:1px solid var(--border-color); border-radius:6px; padding:14px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <span id="lblProofSummary" style="font-weight:700; font-size:13px;">Resultado da Revisão</span>
+                <div style="display:flex; gap:6px;">
+                  <button class="studio-btn-primary" id="btnApplyAllProofFixes" style="height:26px; font-size:11.5px;">Aplicar Correções</button>
+                  <button class="tb-btn tb-btn-solid" id="btnCopyCorrectedText" style="height:26px; font-size:11.5px;">Copiar Versão Corrigida</button>
+                </div>
+              </div>
+              <div id="proofIssuesList" style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;"></div>
+              <div>
+                <div style="font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:4px;">VERSÃO CORRIGIDA SUGERIDA:</div>
+                <div id="proofCorrectedPreview" style="padding:10px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); font-size:13px; line-height:1.55; white-space:pre-wrap;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA 6: GERENCIADOR DE CITAÇÕES E DESTAQUES -->
+          <div class="studio-pane" id="paneStudioQuotes">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">Gerenciador de Citações & Destaques</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Consulte, filtre e exporte todas as citações grifadas nos seus livros.</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <input type="text" id="inputFilterQuotes" placeholder="Filtrar citações ou livros..." style="height:28px; width:190px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <button class="tb-btn tb-btn-solid" id="btnExportQuotesMd" style="height:28px;">Exportar .MD</button>
+                <button class="tb-btn tb-btn-solid" id="btnExportQuotesDoc" style="height:28px;">Exportar .DOC</button>
+                <button class="studio-btn-primary" id="btnExportQuotesPdf" style="height:28px;">Exportar .PDF</button>
+              </div>
+            </div>
+
+            <div style="border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); padding:10px;">
+              <table class="recent-table" id="quotesBooksTable">
+                <thead>
+                  <tr>
+                    <th>Livro</th>
+                    <th>Citações & Marcadores</th>
+                    <th style="text-align:right;">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="quotesBooksTableBody"></tbody>
+              </table>
+            </div>
+
+            <div id="quotesDetailedList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+
+          <!-- ABA 7: HÁBITO & METAS DE LEITURA (KINDLE READING INSIGHTS) -->
+          <div class="studio-pane" id="paneStudioInsights">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">Hábito & Metas de Leitura (Reading Insights)</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Acompanhe sua ofensiva de dias seguidos lendo, tempo diário, velocidade de leitura e livros concluídos.</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span style="font-size:12px; color:var(--text-secondary);">Meta Diária (min):</span>
+                <input type="number" id="inputDailyGoalMin" min="5" max="300" value="20" style="width:64px; height:28px; padding:0 6px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <button class="tb-btn tb-btn-solid" id="btnSaveDailyGoal" style="min-height:28px; height:auto;">Salvar Meta</button>
+                <button class="studio-btn-primary" id="btnMarkBookFinished" style="min-height:28px; height:auto; white-space:nowrap;">Marcar Livro Atual Concluído</button>
+              </div>
+            </div>
+
+            <div id="insightsCardsGrid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;"></div>
+
+            <div style="border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); padding:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Progresso da Meta de Hoje</span>
+                <span id="lblInsightsGoalStatus" style="font-size:12px; color:var(--accent); font-weight:600;">0 / 20 min</span>
+              </div>
+              <div style="height:8px; background:var(--bg-page); border:1px solid var(--border-color); border-radius:4px; overflow:hidden;">
+                <div id="insightsGoalFill" style="height:100%; width:0%; background:var(--accent); transition:width 0.25s;"></div>
+              </div>
+            </div>
+
+            <div class="gh-heatmap-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <span id="lblHeatmapHeadline" style="font-size:13px; font-weight:600; color:var(--text-primary);">0 minutos de leitura no último ano</span>
+                <span id="lblHeatmapHoverInfo" style="font-size:11.5px; color:var(--text-muted);">Passe o mouse ou toque em um dia para ver os detalhes</span>
+              </div>
+              <div class="gh-heatmap-scroll">
+                <div id="ghHeatmapMonths" class="gh-heatmap-months"></div>
+                <div class="gh-heatmap-body">
+                  <div class="gh-heatmap-weekdays">
+                    <span></span><span>Seg</span><span></span><span>Qua</span><span></span><span>Sex</span><span></span>
+                  </div>
+                  <div id="ghHeatmapGrid" class="gh-heatmap-grid"></div>
+                </div>
+              </div>
+              <div class="gh-heatmap-footer">
+                <span>Frequência anual adaptada ao hábito diário de leitura</span>
+                <div class="gh-heatmap-legend">
+                  <span>Menos</span>
+                  <span class="gh-heatmap-cell" data-level="0" style="cursor:default;"></span>
+                  <span class="gh-heatmap-cell" data-level="1" style="cursor:default;"></span>
+                  <span class="gh-heatmap-cell" data-level="2" style="cursor:default;"></span>
+                  <span class="gh-heatmap-cell" data-level="3" style="cursor:default;"></span>
+                  <span class="gh-heatmap-cell" data-level="4" style="cursor:default;"></span>
+                  <span>Mais</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); padding:14px;">
+              <div style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; margin-bottom:10px;">Últimos 7 Dias de Leitura</div>
+              <div id="insightsWeekChart" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; align-items:end; height:110px; padding-top:10px;"></div>
+            </div>
+
+            <div style="border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); padding:14px;">
+              <div style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; margin-bottom:8px;">Livros Concluídos</div>
+              <div id="insightsFinishedList" style="font-size:12.5px; color:var(--text-muted);"></div>
+            </div>
+          </div>
+
+          <!-- ABA 8: NOTAS (ESTRELAS) & RESENHAS DOS LIVROS -->
+          <div class="studio-pane" id="paneStudioReviews">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 style="margin:0 0 4px 0; font-size:17px;">Avaliação (Estrelas) & Resenha do Livro</h2>
+                <div style="font-size:12px; color:var(--text-muted);">Dê sua nota de 1 a 5 estrelas, registre o status de leitura e escreva sua resenha pessoal.</div>
+              </div>
+              <button class="tb-btn tb-btn-solid" id="btnExportReviewsMd" style="height:28px;">Exportar Resenhas (.MD)</button>
+            </div>
+
+            <div style="border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); padding:14px; display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="flex:1; min-width:200px;">
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;">Livro Selecionado</div>
+                  <select id="selectReviewBook" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;"></select>
+                </div>
+                <div>
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;">Status</div>
+                  <select id="selectReviewStatus" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;">
+                    <option value="reading">Lendo atualmente</option>
+                    <option value="finished">Concluído</option>
+                    <option value="paused">Pausado</option>
+                    <option value="reread">Quero reler</option>
+                  </select>
+                </div>
+                <div>
+                  <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px;">Nota (<span id="lblStarRatingValue">0</span>/5)</div>
+                  <div class="star-rating-row" id="reviewStarRow"></div>
+                </div>
+              </div>
+
+              <textarea id="inputReviewText" placeholder="Escreva aqui sua resenha, impressões sobre a história, pontos fortes, personagens favoritos ou aprendizados do livro..." style="width:100%; height:130px; padding:10px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-family:var(--ui-font); font-size:13px; line-height:1.5; resize:vertical;"></textarea>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span id="lblReviewSavedInfo" style="font-size:11.5px; color:var(--text-muted);">Selecione um livro ou abra um arquivo para avaliar.</span>
+                <div style="display:flex; gap:6px;">
+                  <button class="tb-btn" id="btnDeleteReview" style="height:30px;">Limpar Nota</button>
+                  <button class="studio-btn-primary" id="btnSaveBookReview" style="height:30px;">Salvar Nota & Resenha</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; margin-bottom:8px;">Livros Avaliados & Resenhas Salvas</div>
+              <div id="reviewsSavedList" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+          </div>
+
+          <!-- ABA 9: CONTA KINDLE & SEND TO KINDLE -->
+          <div class="studio-pane" id="paneStudioKindle">
+            <div>
+              <h2 style="margin:0 0 4px 0; font-size:17px;">Enviar Livro para o Kindle (Conta Amazon)</h2>
+              <div style="font-size:12px; color:var(--text-muted);">Use uma das opções simples abaixo (sem precisar de API Key!) ou configure o envio automático com seu Gmail.</div>
+            </div>
+
+            <!-- JEITO MAIS FÁCIL: SEM NENHUMA CHAVE OU API -->
+            <div style="border:1px solid var(--accent); border-radius:6px; background:var(--bg-toolbar); padding:14px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font-size:12.5px; font-weight:700; color:var(--accent);">Opção 1 — Sem Chave Nenhuma (Mais Fácil · Arquivos até 200 MB)</div>
+              <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
+                O leitor converte automaticamente o livro aberto para <code>.epub</code> (formato oficial do Kindle) e abre a página oficial da Amazon ou o seu Gmail já preenchido:
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="studio-btn-primary" id="btnSendKindleAmazonWeb">1. Baixar .EPUB + Abrir Amazon Send to Kindle (BR)</button>
+                <button class="tb-btn tb-btn-solid" id="btnSendKindleAmazonGlobal" title="Se sua conta Amazon for americana (.com)">Amazon.com (.com)</button>
+                <button class="tb-btn tb-btn-solid" id="btnShareKindleNative">2. Enviar pelo Gmail / App Kindle</button>
+              </div>
+            </div>
+
+            <!-- ENVIO AUTOMÁTICO POR E-MAIL DIRETO -->
+            <div style="border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); padding:14px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font-size:12.5px; font-weight:700; color:var(--text-primary);">Opção 2 — Envio Automático em 1 Clique (Gmail ou API Gratuita)</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="modal-field">
+                  <label>Seu E-mail Send-to-Kindle (@kindle.com)</label>
+                  <input type="email" id="inputKindleDestEmail" autocomplete="off" placeholder="ex: seu_nome_123@kindle.com" />
+                </div>
+                <div class="modal-field">
+                  <label>Nome do Aparelho Kindle (Opcional)</label>
+                  <input type="text" id="inputKindleDeviceName" autocomplete="off" placeholder="ex: Kindle Paperwhite" />
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                <div class="modal-field">
+                  <label>Modo de Envio Automático</label>
+                  <select id="selectKindleEmailProvider">
+                    <option value="gmail">Gmail Direto (Senha de App Google — Sem site externo)</option>
+                    <option value="brevo">Brevo API Gratuita (xkeysib-...)</option>
+                    <option value="resend">Resend API (Só c/ domínio próprio)</option>
+                  </select>
+                </div>
+                <div class="modal-field">
+                  <label>Seu Gmail / Remetente Aprovado na Amazon</label>
+                  <input type="email" id="inputKindleSenderEmail" autocomplete="off" placeholder="seu-email@gmail.com" />
+                </div>
+                <div class="modal-field">
+                  <label id="lblKindleSecretField">Senha de App Google (16 letras — NÃO é sua senha normal!)</label>
+                  <input type="password" id="inputKindleApiKey" autocomplete="new-password" data-lpignore="true" placeholder="16 letras da Senha de App Google" />
+                </div>
+              </div>
+
+              <div id="lblKindleProviderGuide" style="font-size:11.5px; color:var(--text-secondary); background:var(--bg-page); padding:9px 11px; border-radius:4px; border:1px solid var(--border-color); line-height:1.55;">
+                <strong>Como conseguir a Senha de App do Google (1 minuto):</strong><br/>
+                1. Acesse <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">myaccount.google.com/apppasswords</a> (precisa estar com verificação em 2 etapas ativa no Google).<br/>
+                2. Crie um nome (ex: <code>Kindle</code>), copie a senha de 16 letras gerada e cole acima.<br/>
+                3. Na Amazon (<a href="https://www.amazon.com.br/hz/mycd/myx#/home/settings/payment" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">Gerenciar Dispositivos → Preferências → Documentos Pessoais</a>), adicione seu Gmail na lista de e-mails aprovados.
+              </div>
+
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="tb-btn tb-btn-solid" id="btnSaveKindleConfig">Salvar Conta Kindle</button>
+                <button class="studio-btn-primary" id="btnSendDirectToKindle">Enviar Livro Atual Direto Agora</button>
+              </div>
+              <div id="lblKindleStatus" style="font-size:12px; color:var(--text-muted);">Pronto.</div>
+            </div>
+
+            <div style="border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); padding:14px;">
+              <div style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; margin-bottom:8px;">Histórico de Envios para o Kindle</div>
+              <div id="kindleHistoryList" style="font-size:12px; color:var(--text-muted);">Nenhum livro enviado para o Kindle ainda.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="toolsModalStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto</span>
+        <button class="tb-btn" id="btnCloseToolsFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Biblioteca na Nuvem, Login de Conta e Sincronização (Supabase / Firebase / JSON) -->
+  <div class="modal-backdrop" id="cloudModal">
+    <div class="modal-card" style="max-width:640px;">
+      <div class="modal-header">
+        <span>Conta na Nuvem, Estante Online & Sincronização Entre Dispositivos</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseCloudModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:12px; color:var(--text-secondary); background:var(--bg-toolbar); padding:10px; border-radius:4px; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div>
+            <strong>Estante Sincronizada na Nuvem:</strong> Já vem pré-conectada ao servidor! Entre com seu e-mail ou defina um nome de pasta (Chave da Estante) e seus livros aparecerão direto na sua Estante principal com a página exata onde parou.
+          </div>
+          <label style="display:inline-flex; align-items:center; gap:5px; font-weight:600; color:var(--accent); cursor:pointer;">
+            <input type="checkbox" id="chkAutoCloudSync" checked /> Auto-Sincronizar ao virar página
+          </label>
+        </div>
+
+        <!-- Seletor Rápido de Múltiplos Bancos de Dados / Contas -->
+        <div style="border:1px solid var(--border-color); border-radius:4px; padding:10px 12px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <span style="font-size:11.5px; font-weight:600; color:var(--text-primary);">Banco de Dados Ativo (Troque com 1 clique ou conecte vários)</span>
+            <span id="lblCloudProfilesCount" style="font-size:11px; color:var(--text-muted);"></span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <select id="selectCloudProfile" style="flex:1; min-width:170px; height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;"></select>
+            <button class="tb-btn tb-btn-solid" id="btnAddCloudProfile" style="height:30px;">+ Adicionar Outro Banco</button>
+            <button class="tb-btn" id="btnDeleteCloudProfile" style="height:30px;" title="Remover banco selecionado da lista">Remover</button>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding-top:2px;">
+            <span style="font-size:11px; color:var(--text-muted);">Nuvem pessoal (seus livros na sua própria conta):</span>
+            <button class="tb-btn tb-btn-solid" id="btnQuickConnectGDrive" style="height:28px; font-size:11.5px; border-color:var(--accent); color:var(--accent); font-weight:600;">+ Google Drive (15 GB)</button>
+            <button class="tb-btn tb-btn-solid" id="btnQuickConnectOneDrive" style="height:28px; font-size:11.5px; border-color:var(--accent); color:var(--accent); font-weight:600;">+ Microsoft OneDrive (5 GB)</button>
+          </div>
+          <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;">
+            <input type="checkbox" id="chkCombineAllCloudBanks" checked />
+            <span>Unir livros e barras de espaço de <strong>todos</strong> os bancos conectados ao mesmo tempo</span>
+          </label>
+        </div>
+
+        <!-- Painel Interativo OAuth para Google Drive / Microsoft OneDrive + Guia com Links -->
+        <div id="oauthProviderSetupBox" class="hidden" style="border:1px solid var(--accent); border-radius:4px; padding:12px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <strong id="lblOAuthSetupTitle" style="font-size:12.5px; color:var(--accent);">Conectar Nuvem Pessoal</strong>
+            <span id="lblOAuthAuthBadge" style="font-size:11px; color:var(--text-muted);">Não conectado</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="inputOAuthClientId" placeholder="Cole o Client ID aqui (só 1 vez)..." style="flex:1; min-width:200px; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+            <button class="studio-btn-primary" id="btnConnectOAuthNow" style="height:30px;">Conectar Conta Agora</button>
+            <button class="tb-btn tb-btn-solid hidden" id="btnBrowsePersonalDriveFolders" style="height:30px; border-color:var(--accent); color:var(--accent); font-weight:600;">Explorar Pastas do Drive</button>
+            <button class="tb-btn" id="btnDisconnectOAuth" style="height:30px;">Desconectar</button>
+            <button class="tb-btn tb-btn-solid" id="btnToggleOAuthGuide" style="height:30px; font-size:11.5px;">Como conseguir o Client ID?</button>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:11px; color:var(--text-secondary);">
+            <span>Sua URL de redirecionamento:</span>
+            <input type="text" id="inputOAuthRedirectUri" readonly style="flex:1; min-width:180px; height:26px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px; font-family:monospace;" />
+            <button class="tb-btn tb-btn-solid" id="btnCopyOAuthRedirect" style="height:26px; font-size:11px;">Copiar URL</button>
+          </div>
+          <div id="oauthGuideSteps" style="font-size:11.5px; color:var(--text-secondary); background:var(--bg-page); padding:10px 12px; border-radius:4px; border:1px solid var(--border-color); line-height:1.55;"></div>
+        </div>
+
+        <!-- Login com E-mail e Senha ou Pasta da Estante -->
+        <div style="border:1px solid var(--border-color); border-radius:4px; padding:12px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:var(--text-primary);">Sua Conta / Acesso Multi-Dispositivo</span>
+            <span id="cloudUserAuthBadge" style="font-size:11px; color:var(--text-muted);">Pronto para sincronizar</span>
+          </div>
+          <div id="supabaseAuthRow" style="display:flex; gap:6px; flex-wrap:wrap;">
+            <input type="email" id="inputAuthEmail" placeholder="Seu e-mail..." style="flex:1; min-width:150px; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+            <input type="password" id="inputAuthPass" placeholder="Sua senha..." style="flex:1; min-width:110px; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+            <button class="studio-btn-primary" id="btnCloudSignIn" style="height:30px;">Entrar</button>
+            <button class="tb-btn tb-btn-solid" id="btnCloudSignUp" style="height:30px;">Criar Conta</button>
+            <button class="tb-btn" id="btnCloudForgotPass" style="height:30px;" title="Enviar link de redefinição de senha para o seu e-mail">Esqueci senha</button>
+            <button class="tb-btn" id="btnCloudSignOut" style="height:30px;">Sair</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-top:4px; border-top:1px solid var(--border-color);">
+            <span style="font-size:11.5px; color:var(--text-secondary);">Pasta / Banco Compartilhado:</span>
+            <input type="text" id="inputCloudSyncKey" value="minha-estante" placeholder="ex: minha-estante" style="width:145px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+            <button class="tb-btn" id="btnUseDefaultSharedKey" style="height:28px;" title="Voltar para a pasta compartilhada padrão (minha-estante)">Usar minha-estante</button>
+            <button class="tb-btn tb-btn-solid" id="btnCopyMobileCloudLink" style="height:28px;" title="Copia um link pronto que abre no celular já conectado à sua estante e livros sem digitar nada!">Copiar Link Direto p/ Celular</button>
+          </div>
+          <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;">
+            <input type="checkbox" id="chkCloudPerUserProgress" checked />
+            <span><strong>Banco Compartilhado:</strong> ao entrar com e-mail, manter a pasta acima compartilhada e salvar meu progresso/perfil individualmente</span>
+          </label>
+        </div>
+
+        <!-- Medidor de Espaço dos Bancos Conectados (1 GB grátis por banco) -->
+        <div style="border:1px solid var(--border-color); border-radius:4px; padding:9px 12px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px; gap:8px; flex-wrap:wrap;">
+            <span id="lblCloudQuotaTitle" style="font-weight:600; color:var(--text-primary);">Espaço Usado nos Bancos Conectados (1 GB = 1.024 MB por banco)</span>
+            <span id="lblCloudStorageQuota" style="color:var(--accent); font-weight:600;">Calculando...</span>
+          </div>
+          <div class="profile-progress-track" style="height:8px;">
+            <div class="profile-progress-fill" id="cloudStorageQuotaFill" style="width:0%;"></div>
+          </div>
+          <div id="cloudMultiQuotaList" style="display:flex; flex-direction:column; gap:5px; margin-top:2px;"></div>
+        </div>
+
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="tb-btn tb-btn-solid" id="btnSyncProgressCloud" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Sincronizar Tudo Agora</button>
+          <button class="tb-btn tb-btn-solid" id="btnUploadCurrentBookCloud">Subir Livro Atual p/ Estante na Nuvem</button>
+          <button class="tb-btn tb-btn-solid" id="btnListCloudBooks">Atualizar Estante da Nuvem</button>
+        </div>
+
+        <!-- Configurações Avançadas do Servidor (recolhido por padrão para não poluir!) -->
+        <details style="border:1px solid var(--border-color); border-radius:4px; padding:8px 10px; background:var(--bg-toolbar);">
+          <summary style="cursor:pointer; font-size:11.5px; font-weight:600; color:var(--text-secondary);">Configuração Avançada do Servidor (Supabase / Firebase / Google Drive / OneDrive)</summary>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
+            <div class="modal-field">
+              <label>Provedor de Nuvem</label>
+              <select id="selectCloudProvider">
+                <option value="supabase">Supabase (Auth + Storage + Banco)</option>
+                <option value="firebase">Firebase Realtime Database</option>
+                <option value="gdrive">Google Drive Pessoal (OAuth 2.0 · 15 GB)</option>
+                <option value="onedrive">Microsoft OneDrive Pessoal (OAuth 2.0 · 5 GB)</option>
+              </select>
+            </div>
+            <div class="modal-field">
+              <label>Bucket Storage (Supabase)</label>
+              <input type="text" id="inputCloudBucket" value="books" placeholder="books" />
+            </div>
+            <div class="modal-field">
+              <label>URL do Projeto</label>
+              <input type="text" id="inputCloudUrl" placeholder="https://seu-projeto.supabase.co" />
+            </div>
+            <div class="modal-field">
+              <label>Chave Pública (Publishable / Anon Key)</label>
+              <input type="password" id="inputCloudKey" placeholder="sb_publishable_... ou eyJ..." />
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+            <button class="tb-btn tb-btn-solid" id="btnSaveCloudConfig">Salvar Servidor</button>
+            <button class="tb-btn tb-btn-solid" id="btnTestCloudConn">Testar Conexão (Banco + Bucket)</button>
+          </div>
+        </details>
+
+        <div class="modal-field">
+          <label>Livros na sua Estante da Nuvem (Clique em "Baixar e Ler" para abrir direto de onde parou)</label>
+          <div id="cloudBooksList" style="max-height:130px; overflow-y:auto; border:1px solid var(--border-color); border-radius:4px; padding:8px; background:var(--bg-toolbar); font-size:12px; color:var(--text-muted);">
+            Configure a conexão acima e clique em "Ver Livros na Nuvem".
+          </div>
+        </div>
+
+        <!-- Convidar Pessoas / Compartilhar Estante -->
+        <div style="border:1px solid var(--border-color); border-radius:4px; padding:10px 12px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:6px;">
+          <div style="font-size:12px; font-weight:600; color:var(--text-primary);">Convidar Outra Pessoa para Ver ou Sugerir Livros</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.45;">
+            Envie um link de convite seguro: seus convidados podem entrar/criar a própria conta de usuário, ler os livros do banco compartilhado com o próprio progresso/foto e <strong>sugerir</strong> ou <strong>subir livros direto</strong> (tudo registrado no histórico).
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <select id="selectInviteRole" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
+              <option value="viewer">Somente Ver e Baixar/Ler (+ Login Próprio)</option>
+              <option value="contributor">Ver + Sugerir livros p/ aprovação (+ Login Próprio)</option>
+              <option value="member">Membro Completo: Ver + Subir livros direto (+ Login Próprio)</option>
+            </select>
+            <input type="email" id="inputInviteNotifyEmail" placeholder="Seu e-mail p/ aviso opcional (via Conta Kindle/Resend)..." style="flex:1; min-width:160px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
+            <button class="tb-btn tb-btn-solid" id="btnGenerateInviteLink" style="height:28px; border-color:var(--accent); color:var(--accent); font-weight:600;">Copiar Link de Convite</button>
+          </div>
+          <div id="ownerMembersManageBox" class="hidden" style="margin-top:6px; padding-top:8px; border-top:1px dashed var(--border-color); display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+              <strong style="font-size:11.5px; color:var(--accent);">Gerenciar Membros com Acesso Total (Supabase)</strong>
+              <button class="tb-btn" id="btnRefreshOwnerMembers" style="height:24px; font-size:11px;">Atualizar Lista</button>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <input type="email" id="inputOwnerAddMemberEmail" placeholder="E-mail do amigo para liberar acesso total..." style="flex:1; min-width:170px; height:26px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
+              <button class="tb-btn tb-btn-solid" id="btnOwnerAddMember" style="height:26px; font-size:11px;">Promover a Membro</button>
+            </div>
+            <div id="ownerMembersList" style="display:flex; flex-direction:column; gap:4px; font-size:11.5px; color:var(--text-secondary);"></div>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border-color); padding-top:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+          <span style="font-size:11.5px; color:var(--text-muted);">Backup Manual (Progresso + Destaques + Anki):</span>
+          <div style="display:flex; gap:6px;">
+            <button class="tb-btn tb-btn-solid" id="btnExportFullBackup">Exportar Dados (.json)</button>
+            <label class="tb-btn tb-btn-solid" for="importBackupInput" style="cursor:pointer;">Importar Dados (.json)</label>
+            <input type="file" id="importBackupInput" accept=".json" class="hidden" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="cloudStatusMsg" style="font-size:11.5px; color:var(--text-muted);">Pronto</span>
+        <button class="tb-btn" id="btnCloseCloudFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Seletor de Banco(s) de Destino para Upload (1 ou vários ao mesmo tempo) -->
+  <div class="modal-backdrop" id="cloudUploadDestModal">
+    <div class="modal-card" style="max-width:500px;">
+      <div class="modal-header">
+        <span>Escolher Banco(s) de Destino</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseUploadDestModal">✕</button>
+      </div>
+      <div class="modal-body" style="gap:10px;">
+        <div id="lblUploadDestBookInfo" style="font-size:12.5px; font-weight:600; color:var(--text-primary);"></div>
+        <div style="font-size:11.5px; color:var(--text-secondary);">Marque em quais nuvens/bancos conectados deseja salvar uma cópia deste livro:</div>
+        <div id="cloudUploadDestList" style="display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;"></div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="tb-btn tb-btn-solid" id="btnUploadDestSelectAll" style="height:26px; font-size:11px;">Marcar Todos</button>
+          <button class="tb-btn" id="btnUploadDestSelectActive" style="height:26px; font-size:11px;">Só o Banco Ativo</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="tb-btn" id="btnCancelUploadDest">Cancelar</button>
+        <button class="studio-btn-primary" id="btnConfirmUploadDest">Enviar p/ Selecionados</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Explorador de Pastas do Google Drive / OneDrive (Ler livros já existentes dentro do app) -->
+  <div class="modal-backdrop" id="cloudDriveBrowserModal">
+    <div class="modal-card" style="max-width:680px;">
+      <div class="modal-header">
+        <span id="lblDriveBrowserTitle">Explorar Pastas da Nuvem Pessoal</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseDriveBrowserModal">✕</button>
+      </div>
+      <div class="modal-body" style="gap:10px;">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+          <button class="tb-btn tb-btn-solid" id="btnDriveBrowserBack" style="height:28px;">← Voltar</button>
+          <span id="driveBrowserBreadcrumb" style="flex:1; min-width:140px; font-size:12px; font-weight:600; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Meu Drive</span>
+          <input type="text" id="inputFilterDriveBrowser" placeholder="Filtrar pasta ou livro..." style="width:170px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+          <button class="tb-btn tb-btn-solid" id="btnDriveBrowserImportFolder" style="height:28px; border-color:var(--accent); color:var(--accent); font-weight:600;">Baixar Pasta p/ Estante</button>
+          <button class="tb-btn" id="btnDriveBrowserRefresh" style="height:28px;">Atualizar</button>
+        </div>
+        <div id="driveBrowserList" style="display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; border:1px solid var(--border-color); border-radius:4px; padding:8px; background:var(--bg-toolbar); font-size:12px;">
+          Carregando pastas...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="lblDriveBrowserStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto</span>
+        <button class="tb-btn" id="btnCloseDriveBrowserFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Gerenciador de Capa do Livro (Pegar do Arquivo, Buscar Online, Enviar Imagem ou Baixar) -->
+  <div class="modal-backdrop" id="coverModal">
+    <div class="modal-card" style="max-width:620px;">
+      <div class="modal-header">
+        <span id="coverModalTitle">Capa do Livro</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseCoverModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+          <div id="coverPreviewBox" style="width:120px; height:176px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; font-size:11px; color:var(--text-muted); text-align:center; padding:6px;">
+            Sem capa ainda
+          </div>
+          <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.45;">
+              Você pode extrair a capa que já veio dentro do arquivo (<code>.epub</code>, <code>.mobi</code>, <code>.azw3</code>, <code>.pdf</code>, <code>.cbz</code>), buscar uma capa online ou escolher uma imagem do seu dispositivo.
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+              <button class="studio-btn-primary" id="btnExtractBuiltinCover" style="height:28px;">Pegar Capa do Arquivo</button>
+              <button class="tb-btn tb-btn-solid" id="btnDownloadBookCover" style="height:28px;">Baixar Imagem</button>
+              <label class="tb-btn tb-btn-solid" for="inputCustomCoverFile" style="height:28px; cursor:pointer;">Enviar do Computador</label>
+              <input type="file" id="inputCustomCoverFile" accept="image/*" class="hidden" />
+              <button class="tb-btn" id="btnRemoveBookCover" style="height:28px;">Remover</button>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:6px; align-items:center;">
+              <input type="url" id="inputCoverImageUrl" placeholder="Ou cole o link direto de uma imagem na web..." style="flex:1; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
+              <button class="tb-btn tb-btn-solid" id="btnApplyCoverUrl" style="height:28px; font-size:11px;">Aplicar Link</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border-color); padding-top:10px; display:flex; flex-direction:column; gap:8px;">
+          <div style="font-size:12px; font-weight:600; color:var(--text-primary);">Buscar Capa Online (Google Books &amp; Open Library)</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <input type="text" id="inputCoverSearchQuery" placeholder="Título e/ou autor do livro..." style="flex:1; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+            <button class="tb-btn tb-btn-solid" id="btnSearchCoversOnline" style="height:30px;">Buscar Capas</button>
+          </div>
+          <div id="coverSearchResults" class="cover-search-grid hidden"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="lblCoverModalStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto</span>
+        <button class="tb-btn" id="btnCloseCoverFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Expandido de Detalhes do Livro / Mangá do Catálogo & Web-Scraper -->
+  <div class="modal-backdrop" id="catalogDetailModal">
+    <div class="modal-card" style="max-width:920px; width:95vw; max-height:90vh;">
+      <div class="modal-header" style="gap:8px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="tb-btn tb-btn-solid" id="btnBackCatalogDetail" style="height:28px;">← Voltar aos Resultados</button>
+          <span id="catalogDetailHeaderTitle" style="font-weight:700;">Detalhes da Obra</span>
+        </div>
+        <button class="tb-btn tb-btn-icon" id="btnCloseCatalogDetail" title="Fechar (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="gap:16px;">
+        <div class="catalog-detail-hero">
+          <div class="catalog-detail-cover" id="catalogDetailCover">CAPA</div>
+          <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;" id="catalogDetailBadges"></div>
+            <h2 id="catalogDetailTitle" style="margin:0; font-size:20px; line-height:1.25; color:var(--text-primary);"></h2>
+            <div id="catalogDetailAuthor" style="font-size:13.5px; color:var(--text-secondary); font-weight:500;"></div>
+            <div id="catalogDetailTags" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px;">
+              <div id="catalogDetailPrimaryActions" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+              <button class="tb-btn tb-btn-solid hidden" id="btnFollowCatalogSeries" style="height:30px;">🔔 Acompanhar Série</button>
+            </div>
+            <div style="margin-top:4px;">
+              <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Sinopse / Informações</div>
+              <div id="catalogDetailDesc" style="font-size:13px; line-height:1.58; color:var(--text-secondary); background:var(--bg-toolbar); border:1px solid var(--border-color); border-radius:5px; padding:10px 12px; max-height:165px; overflow-y:auto; white-space:pre-wrap;">Carregando informações...</div>
+            </div>
+          </div>
+        </div>
+        <div id="catalogDetailChaptersWrap" style="border-top:1px solid var(--border-color); padding-top:12px; display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span id="catalogDetailChaptersLabel" style="font-size:12px; font-weight:700; color:var(--text-primary); text-transform:uppercase;">Capítulos / Arquivos</span>
+            <div id="catalogDetailChaptersControls" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;"></div>
+          </div>
+          <div id="catalogDetailChapters" class="catalog-detail-ch-list"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="catalogDetailStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto</span>
+        <button class="tb-btn tb-btn-solid" id="btnFooterBackCatalogDetail">← Voltar à Busca</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal "Sobre o Livro" (Ficha Completa inspirada no ReadEra + Metadados + Sinopse + Nota/Resenha) -->
+  <div class="modal-backdrop" id="bookInfoModal">
+    <div class="modal-card" style="max-width:680px;">
+      <div class="modal-header">
+        <span>Sobre o Livro</span>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="btn primary" id="btnInfoReadNow" style="height:26px;">Ler / Continuar</button>
+          <button class="tb-btn tb-btn-icon" id="btnCloseBookInfoModal">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" style="gap:14px;">
+        <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+          <div id="infoCoverBox" style="width:110px; height:162px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:12px; color:var(--text-muted); cursor:pointer;" title="Clique para alterar ou baixar a capa"></div>
+          <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:6px;">
+            <h2 id="infoBookTitle" style="margin:0; font-size:18px; line-height:1.3; color:var(--text-primary);"></h2>
+            <div id="infoBookAuthor" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:4px;">
+              <button class="btn" id="btnInfoFavToggle">Favorito</button>
+              <select id="selectInfoBookStatus" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
+                <option value="reading">Lendo agora</option>
+                <option value="wishlist">Quero ler</option>
+                <option value="finished">Lido (Concluído)</option>
+                <option value="rereading">Relendo</option>
+                <option value="paused">Abandonei / Parei</option>
+              </select>
+              <div class="star-rating-row" id="infoStarRow"></div>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+              <button class="btn" id="btnInfoExtractMetadata">Extrair do Arquivo &amp; Buscar Online</button>
+              <button class="btn" id="btnInfoEditCover">Capa</button>
+              <button class="btn" id="btnInfoSendCloud">Nuvem</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; background:var(--bg-toolbar); padding:8px 10px; border-radius:5px; border:1px solid var(--border-color);">
+          <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Grupo / Coleção Personalizada:</span>
+          <input type="text" id="inputInfoCustomGroup" list="customBookGroupsDatalist" placeholder="Crie ou escolha um grupo (ex: Stephen King, Faculdade)..." style="flex:1; min-width:170px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+          <datalist id="customBookGroupsDatalist"></datalist>
+          <button class="btn primary" id="btnSaveInfoCustomGroup" style="height:28px;">Salvar Grupo</button>
+          <button class="btn" id="btnClearInfoCustomGroup" style="height:28px;">Tirar do Grupo</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(175px, 1fr)); gap:8px; background:var(--bg-toolbar); padding:10px 12px; border-radius:5px; border:1px solid var(--border-color); font-size:12px;">
+          <div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Idioma</div><div id="infoMetaLanguage" style="font-weight:500;">—</div></div>
+          <div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Editora / Ano</div><div id="infoMetaPublisher" style="font-weight:500;">—</div></div>
+          <div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Progresso / Leitura</div><div id="infoMetaProgress" style="font-weight:500;">—</div></div>
+          <div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Formato &amp; Tamanho</div><div id="infoMetaFormatSize" style="font-weight:500;">—</div></div>
+          <div style="grid-column:1 / -1;"><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Identificador / Arquivo (SHA-1)</div><div id="infoMetaFileHash" style="font-size:11px; color:var(--text-secondary); word-break:break-all;">—</div></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Sinopse / Descrição do Livro</div>
+          <div id="infoMetaDescription" style="font-size:12.5px; line-height:1.55; color:var(--text-secondary); background:var(--bg-toolbar); border:1px solid var(--border-color); border-radius:5px; padding:10px; max-height:140px; overflow-y:auto; white-space:pre-wrap;">Nenhuma sinopse extraída ainda. Clique em "Extrair do Arquivo &amp; Buscar Online" acima.</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Minha Resenha &amp; Anotações sobre o Livro</div>
+          <textarea id="inputInfoBookReview" placeholder="Adicionar uma resenha ou opinião sobre este livro..." style="width:100%; height:88px; padding:8px 10px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-family:var(--ui-font); font-size:12.5px; resize:vertical;"></textarea>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span id="lblBookInfoStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto.</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <select id="selectCitationStyle" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px; padding:0 6px;">
+                <option value="ABNT">ABNT</option>
+                <option value="APA">APA</option>
+                <option value="BIBTEX">BibTeX</option>
+              </select>
+              <button class="btn" id="btnCopyBookCitation" title="Copiar citação bibliográfica formatada">Copiar Citação</button>
+              <button class="btn" id="btnExportBookStudyDossier" title="Baixar resumo em .md com seus destaques, notas do Raio-X e resenha deste livro">Exportar Dossiê (.md)</button>
+              <button class="btn primary" id="btnSaveInfoBookReview">Salvar Resenha</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:6px; border-top:1px solid var(--border-color); padding-top:10px;">
+          <div style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Notas &amp; Resenhas dos Amigos no Clube</div>
+          <div id="infoClubReviewsBox" style="display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--text-secondary);">Nenhuma resenha compartilhada neste livro ainda.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Perfil do Usuário (Estilo Skoob no tema do leitor + Atividades Compartilhadas) -->
+  <!-- Modal de Perfil Público de Amigo do Clube -->
+  <div class="modal-backdrop" id="friendProfileModal" style="z-index:1150;">
+    <div class="modal-card" style="max-width:520px; width:94%;">
+      <div class="modal-header">
+        <span id="friendProfileModalTitle">Perfil do Membro</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseFriendProfileModal">✕</button>
+      </div>
+      <div class="modal-body" id="friendProfileModalBody" style="display:flex; flex-direction:column; gap:12px; max-height:70vh; overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="profileModal">
+    <div class="modal-card" style="max-width:960px; max-height:92vh;">
+      <div class="modal-header">
+        <span>Meu Perfil de Leitor &amp; Biblioteca Compartilhada</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseProfileModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-layout">
+          <!-- Coluna Esquerda: Foto, Nome, Bio, Progresso do Perfil -->
+          <div class="profile-left-col">
+            <div class="profile-avatar-lg" id="profileAvatarPreview">L</div>
+            <div style="display:flex; gap:6px; justify-content:center;">
+              <button class="tb-btn tb-btn-solid" id="btnProfileAvatarUpload" style="height:26px; font-size:11px;">Alterar Foto</button>
+              <button class="tb-btn" id="btnProfileAvatarRemove" style="height:26px; font-size:11px;">Remover</button>
+              <input type="file" id="inputProfileAvatarFile" accept="image/*" class="hidden" />
+            </div>
+
+            <div class="modal-field">
+              <label>Nome de Exibição</label>
+              <input type="text" id="inputProfileDisplayName" placeholder="Seu nome (ex: Antônio)" />
+            </div>
+            <div class="modal-field">
+              <label>Nome de Usuário (@)</label>
+              <input type="text" id="inputProfileUsername" placeholder="ex: paivax00" />
+            </div>
+            <div class="modal-field">
+              <label>Bio / Sobre você</label>
+              <textarea id="inputProfileBio" placeholder="Conte o que você gosta de ler..." style="width:100%; height:64px; padding:6px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-family:var(--ui-font); font-size:12px; resize:vertical;"></textarea>
+            </div>
+            <button class="studio-btn-primary" id="btnSaveUserProfile" style="width:100%; height:30px;">Salvar Perfil</button>
+
+            <div style="border-top:1px solid var(--border-color); padding-top:8px; display:flex; flex-direction:column; gap:5px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary);">
+                <span>Complete o seu perfil</span>
+                <strong id="lblProfileCompletePct" style="color:var(--accent);">0%</strong>
+              </div>
+              <div class="profile-progress-track">
+                <div class="profile-progress-fill" id="profileCompleteFill" style="width:0%;"></div>
+              </div>
+              <div id="lblProfileCompleteHint" style="font-size:10.5px; color:var(--text-muted); line-height:1.35;"></div>
+            </div>
+
+            <button class="tb-btn tb-btn-solid" id="btnProfileOpenCloud" style="width:100%; height:28px; justify-content:center;">Nuvem, Convites &amp; Conta</button>
+            <button class="tb-btn tb-btn-solid" id="btnProfileOpenInsights" style="width:100%; height:28px; justify-content:center;">Estatísticas &amp; Calendário</button>
+          </div>
+
+          <!-- Coluna Direita: Paginômetro, Contadores, Meta Anual & Feed Compartilhado -->
+          <div class="profile-right-col">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div>
+                <h2 id="lblProfileDisplayHeading" style="margin:0; font-size:19px; color:var(--text-primary);">Leitor</h2>
+                <div id="lblProfileSubMeta" style="font-size:12px; color:var(--text-muted);">Perfil sincronizado na nuvem</div>
+              </div>
+              <button class="tb-btn tb-btn-solid" id="btnProfileGoShelf" style="height:28px;">Abrir Minha Estante</button>
+            </div>
+
+            <!-- 7 Cards Estilo Skoob -->
+            <div class="profile-stats-grid">
+              <div class="profile-stat-card">
+                <span class="profile-stat-label">Paginômetro</span>
+                <span class="profile-stat-val" id="statProfilePages">0</span>
+                <span class="profile-stat-sub">seções/págs</span>
+              </div>
+              <div class="profile-stat-card">
+                <span class="profile-stat-label">Lido</span>
+                <span class="profile-stat-val" id="statProfileRead">0</span>
+                <span class="profile-stat-sub">livros</span>
+              </div>
+              <div class="profile-stat-card">
+                <span class="profile-stat-label">Lendo</span>
+                <span class="profile-stat-val" id="statProfileReading">0</span>
+                <span class="profile-stat-sub">livros</span>
+              </div>
+              <div class="profile-stat-card">
+                <span class="profile-stat-label">Quero ler</span>
+                <span class="profile-stat-val" id="statProfileWishlist">0</span>
+                <span class="profile-stat-sub">livros</span>
+              </div>
+              <div class="profile-stat-card">
+                <span class="profile-stat-label">Relendo</span>
+                <span class="profile-stat-val" id="statProfileRereading">0</span>
+                <span class="profile-stat-sub">livros</span>
+              </div>
+              <div class="profile-stat-card">
+                <span class="profile-stat-label">Abandonei</span>
+                <span class="profile-stat-val" id="statProfileAbandoned">0</span>
+                <span class="profile-stat-sub">livros</span>
+              </div>
+              <div class="profile-stat-card">
+                <span class="profile-stat-label">Resenhas</span>
+                <span class="profile-stat-val" id="statProfileReviews">0</span>
+                <span class="profile-stat-sub">resenhas</span>
+              </div>
+            </div>
+
+            <!-- Faixa de Resumo -->
+            <div class="profile-ribbon">
+              <span id="lblProfileRibbonFavs">Favoritos: 0</span>
+              <span id="lblProfileRibbonCloud">Na Nuvem: 0</span>
+              <span id="lblProfileRibbonMarks">Marcadores: 0</span>
+              <span id="lblProfileRibbonKindle">Envios Kindle: 0</span>
+              <span id="lblProfileRibbonGoal">Meta: 12</span>
+            </div>
+
+            <!-- Meta de Leitura Anual + Capas Clicáveis -->
+            <div class="profile-goal-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <strong id="lblProfileGoalYear" style="font-size:13.5px; color:var(--text-primary);">Meta de leitura anual</strong>
+                <div style="display:flex; align-items:center; gap:6px; font-size:12px;">
+                  <span>Livros/ano:</span>
+                  <input type="number" id="inputProfileAnnualGoal" min="1" max="500" value="12" style="width:60px; height:26px; padding:0 6px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary);" />
+                  <button class="tb-btn tb-btn-solid" id="btnSaveProfileGoal" style="height:26px;">Definir</button>
+                </div>
+              </div>
+              <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <div class="profile-goal-covers" id="profileGoalCovers" style="flex:1; min-width:200px;"></div>
+                <div id="lblProfileGoalStats" style="min-width:140px; padding:10px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-page); font-size:12px; line-height:1.55;"></div>
+              </div>
+            </div>
+
+            <!-- Histórico do Banco Compartilhado & Envios para Kindle -->
+            <div class="profile-activity-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <strong style="font-size:13px; color:var(--text-primary);">Histórico do Banco Compartilhado &amp; Envios p/ Kindle</strong>
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                  <div class="shelf-tabs-row" id="profileActivityTabs" style="margin:0; border:none; padding:0;">
+                    <button class="shelf-tab-btn active" data-profile-act="all">Geral</button>
+                    <button class="shelf-tab-btn" data-profile-act="kindle">Envios Kindle</button>
+                    <button class="shelf-tab-btn" data-profile-act="uploads">Uploads &amp; Sugestões</button>
+                  </div>
+                  <button class="tb-btn tb-btn-solid" id="btnRefreshProfileActivity" style="height:26px;">Atualizar</button>
+                </div>
+              </div>
+              <div id="profileActivityList" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;"></div>
+            </div>
+
+            <!-- Backup Completo de Dados (.json) -->
+            <div class="profile-activity-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div>
+                  <strong style="font-size:13px; color:var(--text-primary);">Backup Geral da Biblioteca (.JSON)</strong>
+                  <div style="font-size:11px; color:var(--text-muted);">Baixe ou restaure em 1 clique seu progresso, resenhas, metas e cartões Anki.</div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button class="tb-btn tb-btn-solid" id="btnProfileExportBackup" style="height:26px; font-size:11px;">Exportar Backup</button>
+                  <label class="tb-btn tb-btn-solid" for="profileImportBackupInput" style="height:26px; font-size:11px; cursor:pointer;">Restaurar</label>
+                  <input type="file" id="profileImportBackupInput" accept=".json" class="hidden" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Leitura Conjunta do Clube (Livro do Mês / Comparação de %) -->
+            <div class="profile-activity-box" id="clubJointReadBox">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <strong style="font-size:13px; color:var(--text-primary);">Leitura Conjunta do Clube (Progresso Coletivo)</strong>
+                <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap;">
+                  <input type="text" id="inputJointBookTitle" placeholder="Título do livro conjunto..." style="height:26px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px; min-width:170px;" />
+                  <button class="tb-btn tb-btn-solid" id="btnSetJointBook" style="height:26px; font-size:11px;">Definir Livro Conjunto</button>
+                </div>
+              </div>
+              <div id="jointReadCurrentTitle" style="font-size:12px; color:var(--accent); font-weight:600; margin-top:4px;">Nenhum livro conjunto definido ainda.</div>
+              <div id="jointReadMembersList" style="display:flex; flex-direction:column; gap:4px; margin-top:6px;"></div>
+            </div>
+
+            <!-- Perfis Públicos dos Amigos (Estilo Skoob / Goodreads) -->
+            <div class="profile-activity-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <strong style="font-size:13px; color:var(--text-primary);">Clube de Leitura — Perfis &amp; Leituras Atuais</strong>
+                <button class="tb-btn tb-btn-solid" id="btnRefreshClubProfiles" style="height:26px;">Atualizar Clube</button>
+              </div>
+              <div id="clubProfilesList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px; max-height:220px; overflow-y:auto;"></div>
+            </div>
+
+            <!-- Chat do Clube de Leitura -->
+            <div class="profile-activity-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <strong style="font-size:13px; color:var(--text-primary);">Chat do Clube de Leitura</strong>
+                <button class="tb-btn" id="btnRefreshClubChat" style="height:24px; font-size:11px;">Atualizar Chat</button>
+              </div>
+              <div id="clubChatList" style="display:flex; flex-direction:column; gap:6px; max-height:170px; overflow-y:auto; padding:8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); font-size:12px;"></div>
+              <div style="display:flex; gap:6px;">
+                <input type="text" id="inputClubChatMsg" placeholder="Comente um livro, capítulo ou recomendação..." style="flex:1; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <button class="studio-btn-primary" id="btnSendClubChat" style="height:30px;">Enviar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="lblProfileStatus" style="font-size:11.5px; color:var(--text-muted);">Pronto.</span>
+        <button class="tb-btn" id="btnCloseProfileFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-bar" id="toastBar"></div>
+
+  <!-- Área Central -->
+  <div class="main-layout">
+    <!-- Barra Lateral -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="sidebar hidden-sidebar" id="sidebar">
+      <div class="sidebar-nav">
+        <button class="active" data-pane="paneToc">Sumário</button>
+        <button data-pane="paneBookmarks">Marcadores</button>
+        <button data-pane="paneSearch">Buscar</button>
+        <button data-pane="paneImages">Imagens</button>
+        <button data-pane="paneVocab">Anki</button>
+      </div>
+
+      <div class="sidebar-pane active" id="paneToc">
+        <div id="tocContainer" style="padding:10px; color:var(--text-muted);">
+          Abra um livro para exibir o sumário.
+        </div>
+      </div>
+
+      <div class="sidebar-pane" id="paneBookmarks">
+        <div style="padding:6px; border-bottom:1px solid var(--border-color); display:flex; flex-direction:column; gap:5px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Personagens, Notas & Páginas</span>
+          </div>
+          <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            <button class="tb-btn tb-btn-solid" id="btnNewEntitySidebar" style="flex:1; height:25px; font-size:11px; justify-content:center; border-color:var(--accent); color:var(--accent); font-weight:600;">+ Personagem / Nota</button>
+            <button class="tb-btn tb-btn-solid" id="btnAutoXraySidebar" style="height:25px; font-size:11px;" title="Detectar personagens recorrentes do livro automaticamente">Auto Raio-X</button>
+            <button class="tb-btn tb-btn-solid" id="btnAddPageBookmark" style="height:25px; font-size:11px;">+ Marcar Pág.</button>
+          </div>
+        </div>
+        <div id="bookmarksContainer" style="padding:8px; color:var(--text-muted);">
+          Nenhum personagem, nota ou marcador salvo neste livro.
+        </div>
+      </div>
+
+      <div class="sidebar-pane" id="paneSearch">
+        <div style="padding:0 0 6px;">
+          <select id="selectSearchScope" style="width:100%; height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px; padding:0 6px;">
+            <option value="book">Buscar no Livro Atual</option>
+            <option value="shelf">Buscar em Todos os Livros da Estante</option>
+          </select>
+        </div>
+        <div class="search-box">
+          <input type="text" id="inputSearch" placeholder="Localizar palavra ou frase..." />
+          <button class="tb-btn tb-btn-solid" id="btnRunSearch">Ir</button>
+        </div>
+        <div id="searchContainer" style="color:var(--text-muted); font-size:12px; padding:4px;">
+          Digite um termo e pressione Enter.
+        </div>
+      </div>
+
+      <div class="sidebar-pane" id="paneVocab">
+        <div style="display:flex; flex-direction:column; gap:5px; padding:4px 4px 8px; border-bottom:1px solid var(--border-color);">
+          <button class="tb-btn tb-btn-solid" id="btnOpenAnkiAccountPane" style="width:100%; justify-content:center; border-color:var(--accent); color:var(--accent); font-weight:600;">Conectar Anki / Enviar Direto</button>
+          <div style="display:flex; gap:4px;">
+            <button class="tb-btn tb-btn-solid" id="btnExportAnkiTsv" title="Baixar arquivo .tsv pronto para importar no Anki Desktop / AnkiDroid" style="flex:1; justify-content:center;">Baixar (.tsv)</button>
+            <button class="tb-btn tb-btn-solid" id="btnExportVocabCsv" title="Baixar planilha .csv" style="justify-content:center;">.CSV</button>
+            <button class="tb-btn tb-btn-solid" id="btnNewVocabCard" title="Criar novo cartão manualmente">+ Novo</button>
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button class="tb-btn tb-btn-solid" id="btnStartAnkiSrsReview" style="flex:1; justify-content:center; font-size:11px;">Revisar SRS</button>
+            <button class="tb-btn tb-btn-solid" id="btnStartClozeQuiz" style="flex:1; justify-content:center; font-size:11px;" title="Gerar quiz de lacunas ([...]) com seus destaques">Quiz Lacunas</button>
+          </div>
+          <button class="tb-btn" id="btnAnalyzeBookFreq" style="width:100%; justify-content:center; font-size:11px;" title="Listar palavras mais frequentes deste livro que ainda não estão no seu Anki">Vocabulário Frequente do Livro</button>
+        </div>
+        <div id="clozeQuizBox" class="hidden" style="margin:6px; padding:10px; border:1px solid var(--accent); border-radius:6px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:8px;"></div>
+        <div id="bookFreqList" class="hidden" style="margin:6px; padding:8px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-toolbar); max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;"></div>
+        <div id="ankiSrsBox" class="hidden" style="margin:6px; padding:10px; border:1px solid var(--accent); border-radius:6px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:8px;"></div>
+        <div id="vocabContainer" style="padding:6px; color:var(--text-muted); font-size:12px;">
+          Selecione qualquer palavra ou frase no texto para salvar ou enviar direto ao seu Anki.
+        </div>
+      </div>
+
+      <div class="sidebar-pane" id="paneImages">
+        <div style="padding:8px 10px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Galeria de Imagens &amp; Mapas</span>
+          <span id="lblImagesCount" style="font-size:11px; color:var(--text-muted);">0</span>
+        </div>
+        <div id="imagesGalleryGrid" style="padding:10px; display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; overflow-y:auto; max-height:calc(100vh - 120px);">
+          <div style="grid-column:1/-1; font-size:11.5px; color:var(--text-muted); text-align:center; padding:20px 0;">Abra um livro para ver todas as ilustrações, mapas e gravuras.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Viewport de Leitura -->
+    <main class="viewport" id="viewport">
+      <div id="subtitleMediaBar" class="subtitle-media-bar">
+        <span style="font-weight:600; color:var(--accent);">Legenda Sincronizada:</span>
+        <label class="tb-btn tb-btn-solid" for="subMediaInput" id="btnAttachSubMedia" style="height:24px; font-size:11px; padding:0 8px;">Vincular Vídeo/Áudio Local</label>
+        <input type="file" id="subMediaInput" accept="video/*,audio/*,.mp4,.mkv,.webm,.mp3,.m4a,.wav" class="hidden" />
+        <input type="url" id="inputSubYoutubeUrl" placeholder="ou link do YouTube..." style="height:24px; padding:0 7px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px; min-width:150px;" />
+        <button class="tb-btn tb-btn-solid" id="btnLoadSubYoutube" style="height:24px; font-size:11px; padding:0 8px;">Abrir YouTube</button>
+        <span id="lblSubMediaStatus" style="font-size:11px; color:var(--text-muted);">100% local (sem upload) — clique em qualquer frase para pular no vídeo</span>
+        <video id="subMediaPlayer" controls class="hidden" style="max-height:180px; max-width:320px; border-radius:6px; background:#000;"></video>
+        <iframe id="subYoutubeFrame" class="hidden" width="320" height="180" style="border:none; border-radius:6px;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <!-- Estante de Livros (Overlay Independente Salvo no Navegador IndexedDB + Nuvem) -->
+      <div class="empty-state" id="emptyState">
+        <div class="shelf-box" id="shelfBox">
+          <div class="empty-header">
+            <div>
+              <h1>Biblioteca & Estante de Livros</h1>
+              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                Salvo neste navegador · Livros sincronizados em outro dispositivo? Entre na Nuvem para continuar lendo.
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+              <span class="offline-pill" id="lblOfflineStatusBadge" title="Estado da conexão e cache offline">Online · Cache OK</span>
+              <button class="tb-btn tb-btn-solid hidden" id="btnInstallPwa" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Instalar App (Offline)</button>
+              <button class="tb-btn tb-btn-solid hidden" id="btnResumeLastBook" style="background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600;">▶ Continuar Lendo</button>
+              <button class="tb-btn tb-btn-solid" id="btnShelfCloud" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Entrar / Sincronizar Nuvem</button>
+              <button class="tb-btn tb-btn-solid hidden" id="btnCloseBookShelf" title="Fechar o livro aberto e permanecer na Estante" style="border-color:#ef4444; color:#ef4444; font-weight:600; padding:0 10px;">Fechar Livro</button>
+              <button class="tb-btn tb-btn-solid hidden" id="btnCloseShelf" title="Voltar para o livro que está aberto (Esc)" style="background:var(--bg-control-active); color:#fff; border-color:var(--accent); font-weight:600; padding:0 10px;">← Voltar p/ Livro</button>
+            </div>
+          </div>
+
+          <div class="drop-area" style="padding:18px 16px; margin-bottom:16px;">
+            <p style="margin-bottom:10px;">
+              Arraste e solte arquivos <strong>.epub</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.pdf</strong>, <strong>.fb2</strong>, <strong>.cbz</strong>, <strong>.md</strong> ou <strong>.txt</strong> aqui para adicionar à sua Estante:
+            </p>
+            <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;">
+              <label class="tb-btn tb-btn-solid" for="fileInput" style="height:32px; padding:0 14px; font-size:12.5px; border-color:var(--accent); color:var(--accent); font-weight:600;">
+                + Adicionar Livro do Computador
+              </label>
+              <div style="display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:center;">
+                <input type="text" id="inputBookUrl" placeholder="Ou cole um link direto (https://.../livro.epub)" style="height:32px; width:250px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <button class="tb-btn tb-btn-solid" id="btnLoadUrl" style="height:32px;">Abrir Link</button>
+                <label style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;" title="Envia o livro baixado diretamente para o banco compartilhado no Supabase">
+                  <input type="checkbox" id="chkSaveUrlToCloud" /> Salvar na Nuvem
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Busca Integrada em Catálogos OPDS Abertos & Acervos Públicos (Livros + Mangás PT-BR/EN) -->
+          <details class="opds-panel" id="opdsCatalogDetails">
+            <summary>Explorar Acervos Públicos &amp; Web-Scrapers (Livros · Mangás · Quadrinhos · Cartoons — PT-BR &amp; EN)</summary>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:10px;">
+              <select id="selectOpdsSource" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;">
+                <option value="mangadex">Mangás: MangaDex (PT-BR &amp; Inglês · Ler / Baixar .CBZ)</option>
+                <option value="webtoon-scrape">Web-Scraper Mangás: WEBTOON (Canvas &amp; Originals · .CBZ)</option>
+                <option value="tapas-comics">Web-Scraper Cartoons &amp; Quadrinhos: Tapas (PT-BR &amp; Inglês · .CBZ)</option>
+                <option value="archive-comics">Quadrinhos, HQs &amp; Cartoons: Internet Archive (.CBZ / .PDF · PT-BR &amp; Inglês)</option>
+                <option value="archive-manga">Mangás &amp; HQs: Internet Archive (.CBZ / .PDF Públicos)</option>
+                <option value="standardebooks-scrape">Web-Scraper Livros: Standard Ebooks (.EPUB HD · Sem Conta)</option>
+                <option value="archive-books">Livros: Internet Archive — Acervo Aberto (.EPUB / .PDF · PT/EN)</option>
+                <option value="gutendex">Livros: Project Gutenberg / Gutendex (EPUB · Domínio Público)</option>
+                <option value="gutenberg-opds">Livros: Gutenberg OPDS Oficial (70.000+ títulos)</option>
+                <option value="wikisource">Livros: Wikisource / Wikimedia (EPUB Direto · PT-BR &amp; EN)</option>
+                <option value="openlibrary">Livros: Open Library + OPDS 2.0 (Internet Archive)</option>
+                <option value="web-scrape-url">Web-Scraper por URL: Extrair Livros / Imagens / Capítulos de qualquer página</option>
+                <option value="custom">Feed OPDS Personalizado (XML 1.2 ou JSON 2.0 — Calibre / Kavita / URL)</option>
+              </select>
+              <select id="selectOpdsLang" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;">
+                <option value="pt-br,en">Idioma: PT-BR + Inglês</option>
+                <option value="pt-br">Só Português (PT-BR)</option>
+                <option value="en">Só Inglês (EN)</option>
+              </select>
+              <input type="text" id="inputOpdsCustomUrl" class="hidden" placeholder="URL do feed OPDS (https://.../opds)" style="flex:1; min-width:190px; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+              <input type="text" id="inputOpdsQuery" placeholder="Buscar mangá, livro ou autor (ex: Yotsubato, One Piece, Machado de Assis)..." style="flex:1; min-width:190px; height:30px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+              <label id="lblOpdsDataSaverWrap" style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;" title="Baixa imagens compactadas no modo mangá para economizar dados no celular">
+                <input type="checkbox" id="chkOpdsDataSaver" /> Economia de dados
+              </label>
+              <button class="studio-btn-primary" id="btnSearchOpds" style="height:30px;">Buscar Acervo</button>
+              <button class="tb-btn tb-btn-solid" id="btnCheckSeriesUpdates" style="height:30px;" title="Verificar se saíram capítulos novos nas séries que você acompanha">Novos Capítulos (<span id="lblFollowedSeriesCount">0</span>)</button>
+            </div>
+            <div id="lblOpdsStatus" style="font-size:11.5px; color:var(--text-muted); margin-top:6px;">
+              Escolha Mangás (PT-BR / Inglês) ou Livros públicos para ler na hora, baixar `.cbz`/`.epub` ou enviar direto para a Nuvem.
+            </div>
+            <div class="opds-grid" id="opdsResultsGrid"></div>
+          </details>
+
+          <!-- Estante de Livros Salvos na Memória (IndexedDB) -->
+          <div id="inviteActiveBanner" class="hidden" style="margin-bottom:10px; padding:8px 12px; border:1px solid var(--accent); background:var(--accent-subtle); border-radius:5px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px;">
+            <span id="lblInviteBannerText"></span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="tb-btn tb-btn-solid" id="btnGuestSignIn" style="height:26px;">Entrar / Criar Minha Conta</button>
+              <button class="tb-btn tb-btn-solid hidden" id="btnGuestSuggestBook" style="height:26px;">+ Sugerir Livro p/ Aprovação</button>
+              <input type="file" id="inputGuestUploadFile" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.cbz,.zip,.fb2,.md,.txt,.html" class="hidden" />
+              <button class="tb-btn" id="btnLeaveInviteMode" style="height:26px;">Voltar p/ Minha Estante</button>
+            </div>
+          </div>
+
+          <div id="inboxPendingPanel" class="hidden" style="margin-bottom:12px; padding:10px 12px; border:1px solid var(--accent); background:var(--bg-toolbar); border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:11.5px; font-weight:700; color:var(--accent); text-transform:uppercase;">Livros Sugeridos por Convidados (Aguardando Sua Aprovação)</span>
+              <button class="tb-btn" id="btnRefreshInbox" style="height:24px; font-size:11px;">Atualizar</button>
+            </div>
+            <div id="inboxPendingList" style="display:flex; flex-direction:column; gap:6px;"></div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Minha Estante (Local + Nuvem)</span>
+              <span id="lblLocalShelfSpace" style="font-size:11px; color:var(--text-muted);"></span>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+              <button class="tb-btn tb-btn-solid hidden" id="btnQuickRenewGDrive" style="height:26px; font-size:11px; border-color:#f59e0b; color:#f59e0b; font-weight:600;" title="Sua sessão do Google Drive expirou (1h). Clique para renovar em 1 toque">Renovar Google Drive</button>
+              <button class="tb-btn tb-btn-solid" id="btnShelfBatchMode" style="height:26px; font-size:11px;" title="Selecionar vários livros de uma vez para enviar, agrupar ou remover em lote">Selecionar Vários</button>
+              <button class="tb-btn tb-btn-solid" id="btnToggleShelfGroup" style="height:26px; font-size:11px;" title="Agrupar séries automáticas e seus grupos/coleções personalizados em pastas">Agrupar Séries / Grupos</button>
+              <button class="tb-btn tb-btn-solid" id="btnExtractAllShelfCovers" style="height:26px; font-size:11px;" title="Extrair automaticamente a capa e metadados originais de todos os livros salvos">Extrair Capas &amp; Info</button>
+              <select id="selectShelfOrigin" title="Filtrar livros por origem: Local, Nuvem ou Nos Dois" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
+                <option value="all">Origem: Todos (Local + Nuvem)</option>
+                <option value="local-only">Origem: Só Local (Offline)</option>
+                <option value="cloud-only">Origem: Só na Nuvem</option>
+                <option value="both">Origem: Sincronizados (Nos Dois)</option>
+              </select>
+              <select id="selectShelfFormat" title="Filtrar por Formato: Todos, Mangás, EPUB, PDF ou MOBI" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
+                <option value="all">Formato: Todos</option>
+                <option value="cbz">Só Mangás / HQ (.cbz)</option>
+                <option value="epub">Só EPUB</option>
+                <option value="pdf">Só PDF</option>
+                <option value="mobi">Só MOBI / AZW3</option>
+              </select>
+              <select id="selectShelfSort" title="Ordenar livros da Estante" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
+                <option value="recent">Ordem: Mais Recentes</option>
+                <option value="title">Ordem: Título (A–Z)</option>
+                <option value="author">Ordem: Autor (A–Z)</option>
+                <option value="progress">Ordem: Maior Progresso</option>
+              </select>
+              <input type="text" id="inputFilterShelf" placeholder="Filtrar livros na estante..." style="height:26px; width:200px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); color:var(--text-primary); font-size:11.5px;" />
+            </div>
+          </div>
+          <div class="shelf-tabs-row" id="shelfStatusTabs">
+            <button class="shelf-tab-btn active" data-shelf-tab="all">Todos</button>
+            <button class="shelf-tab-btn" data-shelf-tab="reading">Lendo Agora</button>
+            <button class="shelf-tab-btn" data-shelf-tab="wishlist">Quero Ler</button>
+            <button class="shelf-tab-btn" data-shelf-tab="finished">Lidos</button>
+            <button class="shelf-tab-btn" data-shelf-tab="rereading">Relendo</button>
+            <button class="shelf-tab-btn" data-shelf-tab="paused">Parei de Ler</button>
+            <button class="shelf-tab-btn" data-shelf-tab="favorites">Favoritos</button>
+          </div>
+          <div id="shelfBatchBar" class="hidden" style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-top:8px; padding:8px 12px; border:1px solid var(--accent); border-radius:5px; background:var(--accent-subtle); font-size:12px;">
+            <span id="lblShelfBatchCount" style="font-weight:600; color:var(--accent);">0 livro(s) selecionado(s)</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="tb-btn tb-btn-solid" id="btnBatchSelectAll" style="height:26px; font-size:11px;">Marcar Visíveis</button>
+              <button class="tb-btn tb-btn-solid" id="btnBatchUploadCloud" style="height:26px; font-size:11px;">Subir p/ Nuvem</button>
+              <button class="tb-btn tb-btn-solid" id="btnBatchMoveGroup" style="height:26px; font-size:11px;">Mover p/ Grupo</button>
+              <button class="tb-btn tb-btn-solid" id="btnBatchEvictLocal" style="height:26px; font-size:11px;">☁ Só Nuvem</button>
+              <button class="tb-btn tb-btn-solid" id="btnBatchCompileCbz" style="height:26px; font-size:11px;" title="Unir capítulos .cbz selecionados em um único volume .cbz">Compilar Volume (.cbz)</button>
+              <button class="tb-btn" id="btnBatchDelete" style="height:26px; font-size:11px; border-color:#ef4444; color:#ef4444;">Remover</button>
+              <button class="tb-btn" id="btnBatchClear" style="height:26px; font-size:11px;">Fechar</button>
+            </div>
+          </div>
+          <div id="bookshelfGrid" class="bookshelf-grid"></div>
+
+          <details id="recentBlock" class="hidden" style="margin-top:18px; border:1px solid var(--border-color); border-radius:5px; padding:8px 12px; background:var(--bg-toolbar);">
+            <summary style="cursor:pointer; font-size:11.5px; font-weight:600; color:var(--text-secondary);">Ver histórico detalhado de leituras anteriores</summary>
+            <table class="recent-table" style="margin-top:8px;">
+              <thead>
+                <tr>
+                  <th>Histórico Geral de Leitura</th>
+                  <th>Formato</th>
+                  <th>Posição Salva</th>
+                </tr>
+              </thead>
+              <tbody id="recentTableBody"></tbody>
+            </table>
+          </details>
+        </div>
+      </div>
+
+      <!-- Estágio Visual de PDF (Canvas Nativo HD + Camada de Texto Selecionável + Suporte a 2 Páginas) -->
+      <div class="pdf-stage" id="pdfStage">
+        <div class="pdf-page-container" id="pdfContainer">
+          <canvas id="pdfCanvas"></canvas>
+          <div class="pdf-text-layer" id="pdfTextLayer"></div>
+        </div>
+        <div class="pdf-page-container hidden" id="pdfContainer2">
+          <canvas id="pdfCanvas2"></canvas>
+          <div class="pdf-text-layer" id="pdfTextLayer2"></div>
+        </div>
+      </div>
+
+      <!-- Folha Editorial (EPUB, MOBI, AZW3, FB2, CBZ, MD, TXT e PDF Reflow) -->
+      <article class="page-sheet" id="pageSheet">
+        <div class="running-header">
+          <span id="sheetBookTitle">—</span>
+          <span id="sheetChapterTitle">—</span>
+        </div>
+
+        <div class="reader-flow" id="readerFlow"></div>
+
+        <div class="running-footer">
+          <button class="tb-btn" id="btnSheetPrev">← Anterior</button>
+          <span id="sheetFooterInfo">Seção 1 de 1</span>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="tb-btn" id="btnSheetNext">Próximo →</button>
+            <button class="tb-btn tb-btn-solid hidden" id="btnNextSeriesChapter" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Próximo Cap. →</button>
+          </div>
+        </div>
+      </article>
+    </main>
+
+    <!-- Painel de Leitura Paralela (Split-Screen 2º Livro ou Tradução Lado a Lado) -->
+    <aside class="parallel-pane" id="parallelPane">
+      <div class="parallel-header">
+        <span id="parallelTitle" style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Leitura Paralela</span>
+        <div style="display:flex; gap:4px; align-items:center;">
+          <select id="selectParallelSection" style="height:24px; max-width:150px; border:1px solid var(--border-color); border-radius:3px; background:var(--bg-page); color:var(--text-primary); font-size:11px;"></select>
+          <label style="display:inline-flex; align-items:center; gap:3px; font-size:10.5px; color:var(--text-secondary); cursor:pointer;" title="Sincronizar rolagem entre o livro principal e o painel paralelo">
+            <input type="checkbox" id="chkParallelSyncScroll" /> Sinc.
+          </label>
+          <label class="tb-btn tb-btn-solid" for="parallelFileInput" style="height:24px; font-size:11px; padding:0 6px;">Abrir 2º Livro</label>
+          <input type="file" id="parallelFileInput" accept=".epub,.mobi,.azw,.azw3,.prc,.fb2,.md,.txt,.html,.srt,.vtt" class="hidden" />
+          <button class="tb-btn tb-btn-icon" id="btnCloseParallel" title="Fechar Leitura Paralela">✕</button>
+        </div>
+      </div>
+      <div class="parallel-body" id="parallelBody">
+        Selecione outro capítulo acima, clique em <strong>Abrir 2º Livro</strong> para comparar dois livros lado a lado, ou use <strong>Ferramentas → Traduzir no Painel Lado a Lado</strong>.
+      </div>
+    </aside>
+
+    <!-- Painel de Notas no Método Cornell (Split-Screen) -->
+    <aside class="parallel-pane" id="cornellPane">
+      <div class="parallel-header">
+        <span style="font-weight:600;">Método Cornell</span>
+        <div style="display:flex; gap:4px; align-items:center;">
+          <button class="tb-btn tb-btn-solid" id="btnExportCornellMd" style="height:24px; font-size:11px; padding:0 8px;">Exportar .MD</button>
+          <button class="tb-btn tb-btn-icon" id="btnCloseCornell" title="Fechar Método Cornell">✕</button>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:8px; padding:10px; min-height:0; overflow-y:auto;">
+        <div class="cornell-grid">
+          <textarea id="cornellCues" placeholder="Palavras-chave, dúvidas &amp; perguntas..."></textarea>
+          <textarea id="cornellNotes" placeholder="Anotações principais da leitura ou aula..."></textarea>
+        </div>
+        <textarea id="cornellSummary" rows="3" placeholder="Resumo desta seção / ideia central em suas palavras..."></textarea>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Barra de Status Inferior -->
+  <footer class="statusbar">
+    <div id="statusLeft" style="display:flex; align-items:center; gap:8px;">
+      <span id="statusLeftText">Pronto</span>
+      <span id="lblCefrBadge" class="cefr-badge hidden" title="Nível estimado de vocabulário do livro">CEFR: B1</span>
+    </div>
+    <div class="status-progress">
+      <div class="status-bar-track" id="progressTrack" style="position:relative;" title="Clique para saltar para uma posição do livro">
+        <div class="status-bar-fill" id="progressFill"></div>
+      </div>
+      <span id="statusPercent">0%</span>
+    </div>
+    <div id="statusRight">Atalhos: ← / → Virar Página · Ctrl+F Buscar · Ctrl+D Marcar · Clique em imagens p/ Ampliar</div>
+  </footer>
+
+  <!-- Modal de Continuação no Celular / QR Code -->
+  <div class="modal-backdrop" id="qrCodeModal">
+    <div class="modal-card" style="max-width:380px; text-align:center;">
+      <div class="modal-header">
+        <span>Continuar no Celular</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseQrModal" title="Fechar (Esc)">✕</button>
+      </div>
+      <div style="padding:16px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <div style="font-size:12.5px; color:var(--text-secondary);">
+          Aponte a câmera do celular para continuar a leitura exatamente de onde parou:
+        </div>
+        <div id="qrCodeContainer" style="padding:12px; background:#fff; border-radius:8px; border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; width:200px; height:200px; margin:0 auto;"></div>
+        <div id="qrCodeLinkText" style="font-size:11px; color:var(--text-muted); word-break:break-all; max-width:100%;"></div>
+        <button class="tb-btn tb-btn-solid" id="btnCopyQrUrl" style="width:100%; border-color:var(--accent); color:var(--accent); font-weight:600;">Copiar Link de Leitura</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra Flutuante Persistente de Progresso de Download -->
+  <div class="floating-dl-bar" id="floatingDownloadBar" role="status" aria-live="polite">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <strong id="lblFloatingDlTitle" style="font-size:11.5px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Baixando arquivo...</strong>
+      <button class="tb-btn" id="btnCancelFloatingDl" style="height:22px; font-size:10.5px; padding:0 8px; border-color:#ef4444; color:#ef4444; flex-shrink:0;">Cancelar</button>
+    </div>
+    <div class="profile-progress-track" style="height:6px;">
+      <div class="profile-progress-fill" id="floatingDlFill" style="width:8%;"></div>
+    </div>
+    <div id="lblFloatingDlMeta" style="font-size:11px; color:var(--text-secondary); display:flex; justify-content:space-between;">
+      <span>Conectando...</span>
+      <span id="lblFloatingDlPct">0%</span>
+    </div>
+  </div>
+
+  <script>

@@ -1,0 +1,28 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/ankiweb"
+  to = "/.netlify/functions/ankiweb"
+  status = 200
+
+[[redirects]]
+  from = "/api/send-kindle"
+  to = "/.netlify/functions/send-kindle"
+  status = 200
+
+[[redirects]]
+  from = "/api/opds-proxy"
+  to = "/.netlify/functions/opds-proxy"
+  status = 200
+
+[[redirects]]
+  from = "/api/cloud-config"
+  to = "/.netlify/functions/cloud-config"
+  status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/portable_book_reader.html"
+  status = 200

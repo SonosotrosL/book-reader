@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/ankiweb", "destination": "/api/ankiweb.js" },
+    { "source": "/api/send-kindle", "destination": "/api/send-kindle.js" },
+    { "source": "/api/opds-proxy", "destination": "/api/opds-proxy.js" },
+    { "source": "/api/cloud-config", "destination": "/api/cloud-config.js" },
+    { "source": "/", "destination": "/portable_book_reader.html" }
+  ]
+}

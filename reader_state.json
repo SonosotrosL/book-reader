@@ -1,0 +1,16 @@
+{
+  "theme": "dark",
+  "font_family": "Georgia",
+  "font_size": 14,
+  "line_spacing": 7,
+  "page_margin": 64,
+  "books": {
+    "C:\\Users\\AntonioGamaPaiva\\Downloads\\The Fisherman (Langan John) (z-library.sk, 1lib.sk, z-lib.sk).azw3": {
+      "title": "The Fisherman",
+      "author": "John Langan",
+      "format": "MOBI",
+      "index": 20,
+      "total": 30
+    }
+  }
+}

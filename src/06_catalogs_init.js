@@ -407,6 +407,25 @@
       renderProfileActivityFeed();
     }
 
+    let clubChatPollInterval = null;
+    function startClubChatPolling() {
+      if (clubChatPollInterval) clearInterval(clubChatPollInterval);
+      clubChatPollInterval = setInterval(() => {
+        const modal = document.getElementById('profileModal');
+        if (modal && modal.classList.contains('open')) {
+          if (typeof pullClubChatMessages === 'function') pullClubChatMessages().catch(() => {});
+        } else {
+          stopClubChatPolling();
+        }
+      }, 7000);
+    }
+    function stopClubChatPolling() {
+      if (clubChatPollInterval) {
+        clearInterval(clubChatPollInterval);
+        clubChatPollInterval = null;
+      }
+    }
+
     async function openProfileModal() {
       const dd = document.getElementById('userProfileDropdown');
       if (dd) dd.classList.remove('open');
@@ -416,6 +435,7 @@
       if (typeof refreshOwnerMembersPanel === 'function') refreshOwnerMembersPanel().catch(() => {});
       if (typeof pullPublicClubProfiles === 'function') pullPublicClubProfiles().catch(() => {});
       if (typeof pullClubChatMessages === 'function') pullClubChatMessages().catch(() => {});
+      startClubChatPolling();
     }
 
     async function resizeAvatarFileToDataUrl(file) {
@@ -462,9 +482,11 @@
     });
 
     document.getElementById('btnCloseProfileModal').addEventListener('click', () => {
+      stopClubChatPolling();
       document.getElementById('profileModal').classList.remove('open');
     });
     document.getElementById('btnCloseProfileFooter').addEventListener('click', () => {
+      stopClubChatPolling();
       document.getElementById('profileModal').classList.remove('open');
     });
     document.getElementById('btnProfileOpenCloud').addEventListener('click', () => {

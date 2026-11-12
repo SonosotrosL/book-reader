@@ -5257,7 +5257,10 @@
             <div class="profile-activity-box">
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <strong style="font-size:13px; color:var(--text-primary);">Clube de Leitura — Perfis &amp; Leituras Atuais</strong>
-                <button class="tb-btn tb-btn-solid" id="btnRefreshClubProfiles" style="height:26px;">Atualizar Clube</button>
+                <div style="display:flex; gap:6px;">
+                  <button class="tb-btn tb-btn-solid" id="btnClubQuickInvite" style="height:26px; border-color:var(--accent); color:var(--accent); font-weight:600;" title="Copiar link direto para convidar amigos para este Clube">+ Convidar Amigo</button>
+                  <button class="tb-btn" id="btnRefreshClubProfiles" style="height:26px;">Atualizar Clube</button>
+                </div>
               </div>
               <div id="clubProfilesList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px; max-height:220px; overflow-y:auto;"></div>
             </div>
@@ -19927,6 +19930,18 @@ ${r.reviewText || '_Sem resenha escrita._'}
 
     const btnRefClubProfEl = document.getElementById('btnRefreshClubProfiles');
     if (btnRefClubProfEl) btnRefClubProfEl.addEventListener('click', pullPublicClubProfiles);
+    const btnClubInviteEl = document.getElementById('btnClubQuickInvite');
+    if (btnClubInviteEl) {
+      btnClubInviteEl.addEventListener('click', () => {
+        const btnCopy = document.getElementById('btnCopyMobileCloudLink');
+        if (btnCopy) {
+          btnCopy.click();
+          showToast('Link do Clube copiado! Envie para seus amigos no WhatsApp ou Telegram.');
+        } else {
+          showToast('Abra a aba Nuvem para gerar o convite.');
+        }
+      });
+    }
     const btnRefClubChatEl = document.getElementById('btnRefreshClubChat');
     if (btnRefClubChatEl) btnRefClubChatEl.addEventListener('click', pullClubChatMessages);
     const btnSendClubChatEl = document.getElementById('btnSendClubChat');
@@ -20350,6 +20365,25 @@ ${r.reviewText || '_Sem resenha escrita._'}
       renderProfileActivityFeed();
     }
 
+    let clubChatPollInterval = null;
+    function startClubChatPolling() {
+      if (clubChatPollInterval) clearInterval(clubChatPollInterval);
+      clubChatPollInterval = setInterval(() => {
+        const modal = document.getElementById('profileModal');
+        if (modal && modal.classList.contains('open')) {
+          if (typeof pullClubChatMessages === 'function') pullClubChatMessages().catch(() => {});
+        } else {
+          stopClubChatPolling();
+        }
+      }, 7000);
+    }
+    function stopClubChatPolling() {
+      if (clubChatPollInterval) {
+        clearInterval(clubChatPollInterval);
+        clubChatPollInterval = null;
+      }
+    }
+
     async function openProfileModal() {
       const dd = document.getElementById('userProfileDropdown');
       if (dd) dd.classList.remove('open');
@@ -20359,6 +20393,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       if (typeof refreshOwnerMembersPanel === 'function') refreshOwnerMembersPanel().catch(() => {});
       if (typeof pullPublicClubProfiles === 'function') pullPublicClubProfiles().catch(() => {});
       if (typeof pullClubChatMessages === 'function') pullClubChatMessages().catch(() => {});
+      startClubChatPolling();
     }
 
     async function resizeAvatarFileToDataUrl(file) {
@@ -20405,9 +20440,11 @@ ${r.reviewText || '_Sem resenha escrita._'}
     });
 
     document.getElementById('btnCloseProfileModal').addEventListener('click', () => {
+      stopClubChatPolling();
       document.getElementById('profileModal').classList.remove('open');
     });
     document.getElementById('btnCloseProfileFooter').addEventListener('click', () => {
+      stopClubChatPolling();
       document.getElementById('profileModal').classList.remove('open');
     });
     document.getElementById('btnProfileOpenCloud').addEventListener('click', () => {

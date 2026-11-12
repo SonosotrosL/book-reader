@@ -1904,7 +1904,10 @@
             <div class="profile-activity-box">
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <strong style="font-size:13px; color:var(--text-primary);">Clube de Leitura — Perfis &amp; Leituras Atuais</strong>
-                <button class="tb-btn tb-btn-solid" id="btnRefreshClubProfiles" style="height:26px;">Atualizar Clube</button>
+                <div style="display:flex; gap:6px;">
+                  <button class="tb-btn tb-btn-solid" id="btnClubQuickInvite" style="height:26px; border-color:var(--accent); color:var(--accent); font-weight:600;" title="Copiar link direto para convidar amigos para este Clube">+ Convidar Amigo</button>
+                  <button class="tb-btn" id="btnRefreshClubProfiles" style="height:26px;">Atualizar Clube</button>
+                </div>
               </div>
               <div id="clubProfilesList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px; max-height:220px; overflow-y:auto;"></div>
             </div>

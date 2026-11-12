@@ -4633,6 +4633,18 @@ ${r.reviewText || '_Sem resenha escrita._'}
 
     const btnRefClubProfEl = document.getElementById('btnRefreshClubProfiles');
     if (btnRefClubProfEl) btnRefClubProfEl.addEventListener('click', pullPublicClubProfiles);
+    const btnClubInviteEl = document.getElementById('btnClubQuickInvite');
+    if (btnClubInviteEl) {
+      btnClubInviteEl.addEventListener('click', () => {
+        const btnCopy = document.getElementById('btnCopyMobileCloudLink');
+        if (btnCopy) {
+          btnCopy.click();
+          showToast('Link do Clube copiado! Envie para seus amigos no WhatsApp ou Telegram.');
+        } else {
+          showToast('Abra a aba Nuvem para gerar o convite.');
+        }
+      });
+    }
     const btnRefClubChatEl = document.getElementById('btnRefreshClubChat');
     if (btnRefClubChatEl) btnRefClubChatEl.addEventListener('click', pullClubChatMessages);
     const btnSendClubChatEl = document.getElementById('btnSendClubChat');

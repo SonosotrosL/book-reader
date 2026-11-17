@@ -2643,7 +2643,8 @@
       }
 
       /* No celular, ocultar controles secundários para manter a barra limpa como um app */
-      body:not(.is-shelf-home) #btnShowShelf,
+      body.is-shelf-home #btnShowShelf,
+      body.is-shelf-home #btnCloseBook,
       body:not(.is-shelf-home) label[for="fileInput"],
       body:not(.is-shelf-home) .page-stepper,
       body:not(.is-shelf-home) .toolbar-divider,
@@ -2729,35 +2730,45 @@
         transform: translateX(-105%);
       }
 
-      /* Área de Leitura e Folha Editorial otimizadas para aproveitar 100% da tela do celular */
+      /* Área de Leitura e Folha Editorial Full-Bleed (Kindle / Apple Books Mobile) */
       .viewport {
-        padding: 8px 6px 28px;
+        padding: 0 !important;
+        background: var(--bg-page) !important;
         -webkit-overflow-scrolling: touch;
       }
-      .page-sheet {
-        padding: 18px 16px 16px;
-        border-radius: 4px;
-      }
       .viewport.paginated-mode {
-        padding: 4px;
+        padding: 0 !important;
+        background: var(--bg-page) !important;
       }
-      .viewport.paginated-mode .page-sheet {
-        width: 100%;
-        max-width: 100%;
-        height: calc(100dvh - 84px);
-        padding: 14px 16px 10px;
+      .viewport.paginated-mode .page-sheet,
+      .page-sheet {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: calc(100dvh - 76px) !important;
+        height: calc(100dvh - 76px) !important;
+        padding: 10px 18px 6px !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: var(--bg-page) !important;
+        margin: 0 !important;
         background-image: none !important;
       }
       .running-header {
-        margin-bottom: 12px;
-        padding-bottom: 6px;
-        font-size: 10.5px;
+        margin-bottom: 6px !important;
+        padding-bottom: 4px !important;
+        font-size: 10px !important;
+        opacity: 0.65;
+        border-bottom: 1px solid var(--border-color);
       }
+      /* Ocultar rodapé duplo na folha porque a barra inferior nativa já exibe página e progresso */
       .running-footer {
-        margin-top: 10px;
-        padding-top: 8px;
-        font-size: 11px;
-        gap: 6px;
+        display: none !important;
+      }
+      /* Desativar hifenização agressiva no celular (evita palavras cortadas com hífen a cada linha) */
+      .reader-flow {
+        hyphens: manual !important;
+        -webkit-hyphens: manual !important;
       }
       #sheetFooterInfo {
         text-align: center;
@@ -2801,15 +2812,19 @@
 
       /* Popovers e Menus suspensos ajustados à largura da tela do celular */
       .popover,
-      .tools-dropdown {
+      .tools-dropdown,
+      .user-dropdown {
         position: fixed;
-        top: 50px;
+        top: 48px;
         left: 8px !important;
         right: 8px !important;
         width: auto !important;
         max-width: calc(100vw - 16px);
-        max-height: calc(100dvh - 90px);
+        max-height: calc(100dvh - 78px);
         overflow-y: auto;
+        border-radius: 8px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+        z-index: 150;
       }
 
       /* Barra de Seleção de Texto fixada na parte inferior no celular (não conflita com menu nativo Copiar/Colar do Android/iOS) */
@@ -2995,12 +3010,23 @@
         padding-top: 6px;
       }
       .statusbar {
-        height: 22px;
-        font-size: 10.5px;
+        height: 28px;
+        font-size: 11px;
         padding: 0 10px;
+        gap: 6px;
       }
-      #statusRight {
-        display: none;
+      #statusRight,
+      #statusChapterName {
+        display: none !important;
+      }
+      .status-left {
+        gap: 6px;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .status-bar-container {
+        width: 50px !important;
       }
       .empty-state {
         inset: 40px 0 22px 0;
@@ -3282,8 +3308,9 @@
       .bookshelf-grid.density-large { grid-template-columns: 1fr; }
     }
 
+    /* As opções de livro e site agora são organizadas por abas intuitivas */
     body.is-shelf-home .book-only-pref {
-      display: none !important;
+      display: block;
     }
     .popover-section-title {
       font-size: 10.5px;

@@ -674,13 +674,66 @@
       });
     });
 
+    // Controles de Abas e Fechamento de Menus e Popovers
+    const btnCloseTypoEl = document.getElementById('btnCloseTypoPopover');
+    if (btnCloseTypoEl) {
+      btnCloseTypoEl.addEventListener('click', () => {
+        if (dom.typoPopover) dom.typoPopover.classList.remove('open');
+      });
+    }
+
+    const btnCloseToolsEl = document.getElementById('btnCloseToolsDropdown');
+    if (btnCloseToolsEl) {
+      btnCloseToolsEl.addEventListener('click', () => {
+        const td = document.getElementById('toolsDropdown');
+        if (td) td.classList.remove('open');
+      });
+    }
+
+    const btnCloseUserEl = document.getElementById('btnCloseUserDropdown');
+    if (btnCloseUserEl) {
+      btnCloseUserEl.addEventListener('click', () => {
+        const ud = document.getElementById('userProfileDropdown');
+        if (ud) ud.classList.remove('open');
+      });
+    }
+
+    const tabBtnBookEl = document.getElementById('tabBtnTypoBook');
+    const tabBtnSiteEl = document.getElementById('tabBtnTypoSite');
+    const tabContentBookEl = document.getElementById('tabContentTypoBook');
+    const tabContentSiteEl = document.getElementById('tabContentTypoSite');
+
+    function switchTypoTab(tab) {
+      if (tab === 'site') {
+        if (tabBtnSiteEl) tabBtnSiteEl.classList.add('active');
+        if (tabBtnBookEl) tabBtnBookEl.classList.remove('active');
+        if (tabContentSiteEl) tabContentSiteEl.classList.remove('hidden');
+        if (tabContentBookEl) tabContentBookEl.classList.add('hidden');
+      } else {
+        if (tabBtnBookEl) tabBtnBookEl.classList.add('active');
+        if (tabBtnSiteEl) tabBtnSiteEl.classList.remove('active');
+        if (tabContentBookEl) tabContentBookEl.classList.remove('hidden');
+        if (tabContentSiteEl) tabContentSiteEl.classList.add('hidden');
+      }
+    }
+
+    if (tabBtnBookEl) tabBtnBookEl.addEventListener('click', () => switchTypoTab('book'));
+    if (tabBtnSiteEl) tabBtnSiteEl.addEventListener('click', () => switchTypoTab('site'));
+
     document.getElementById('btnTypography').addEventListener('click', (e) => {
       e.stopPropagation();
       const userDd = document.getElementById('userProfileDropdown');
       if (userDd) userDd.classList.remove('open');
       const toolsDd = document.getElementById('toolsDropdown');
       if (toolsDd) toolsDd.classList.remove('open');
-      dom.typoPopover.classList.toggle('open');
+      const isOpen = dom.typoPopover.classList.toggle('open');
+      if (isOpen) {
+        if (document.body.classList.contains('is-shelf-home')) {
+          switchTypoTab('site');
+        } else {
+          switchTypoTab('book');
+        }
+      }
     });
     document.addEventListener('click', (e) => {
       if (!dom.typoPopover.contains(e.target) && !e.target.closest('#btnTypography')) {

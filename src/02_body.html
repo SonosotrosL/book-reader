@@ -152,9 +152,12 @@
 
   <!-- Menu Dropdown do Perfil & Nuvem (Estilo Skoob no tema do site) -->
   <div class="user-dropdown" id="userProfileDropdown">
-    <div class="user-dropdown-head">
-      <strong id="dropdownUserTitle">Leitor</strong>
-      <span id="dropdownAccountMeta">Nuvem pronta para conectar</span>
+    <div class="user-dropdown-head" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+      <div>
+        <strong id="dropdownUserTitle">Leitor</strong>
+        <span id="dropdownAccountMeta">Nuvem pronta para conectar</span>
+      </div>
+      <button type="button" class="tb-btn tb-btn-icon" id="btnCloseUserDropdown" title="Fechar (Esc)" style="width:24px; height:24px; font-size:12px; cursor:pointer; flex-shrink:0;">✕</button>
     </div>
     <button class="menu-item-btn" id="btnMenuOpenProfile">
       <span>Meu perfil</span>
@@ -177,6 +180,10 @@
 
   <!-- Menu Dropdown de Recursos -->
   <div class="tools-dropdown" id="toolsDropdown">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px 6px; border-bottom:1px solid var(--border-color); margin-bottom:4px;">
+      <span style="font-weight:700; font-size:11.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">⚡ Recursos &amp; Ferramentas</span>
+      <button type="button" class="tb-btn tb-btn-icon" id="btnCloseToolsDropdown" title="Fechar (Esc)" style="width:26px; height:26px; font-size:13px; cursor:pointer;">✕</button>
+    </div>
     <div class="reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Leitura &amp; Recursos do Livro</div>
     <button class="menu-item-btn reader-only-ctrl" id="btnWordWiseToggle">
       <span>Word Wise (Dicas Acima de Palavras)</span>
@@ -232,86 +239,18 @@
 
   <!-- Popover de Aparência do Site/App e Preferências do Livro -->
   <div class="popover" id="typoPopover">
-    <div class="popover-section-title">Aparência do Site &amp; Estante</div>
-    <div class="prop-row">
-      <div class="prop-label"><span>Tema do Site / App</span></div>
-      <div class="prop-controls">
-        <button data-theme-val="light">Claro</button>
-        <button class="active" data-theme-val="sepia">Sépia</button>
-        <button data-theme-val="dark">Escuro</button>
-        <button data-theme-val="oled">OLED</button>
-      </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border-color); margin-bottom:10px;">
+      <span style="font-weight:700; font-size:13px; color:var(--text-primary);">Aparência &amp; Leitura</span>
+      <button type="button" class="tb-btn tb-btn-icon" id="btnCloseTypoPopover" title="Fechar (Esc)" style="width:28px; height:28px; font-size:14px; cursor:pointer;">✕</button>
     </div>
 
-    <div class="prop-row">
-      <div class="prop-label"><span>Cor de Destaque</span></div>
-      <div class="accent-swatch-row" id="accentSwatchRow">
-        <button type="button" class="accent-swatch-btn active" data-accent-val="default" style="background:#7c3f1c;" title="Marrom Editorial (Padrão)"></button>
-        <button type="button" class="accent-swatch-btn" data-accent-val="blue" style="background:#2563eb;" title="Azul"></button>
-        <button type="button" class="accent-swatch-btn" data-accent-val="green" style="background:#16a34a;" title="Verde"></button>
-        <button type="button" class="accent-swatch-btn" data-accent-val="purple" style="background:#7c3aed;" title="Roxo"></button>
-        <button type="button" class="accent-swatch-btn" data-accent-val="amber" style="background:#d97706;" title="Âmbar"></button>
-        <button type="button" class="accent-swatch-btn" data-accent-val="rose" style="background:#db2777;" title="Rosa"></button>
-      </div>
+    <div class="segmented" style="width:100%; margin-bottom:12px;" id="typoPopoverTabs">
+      <button type="button" class="active" id="tabBtnTypoBook" style="flex:1;">📖 Livro &amp; Leitura</button>
+      <button type="button" id="tabBtnTypoSite" style="flex:1;">🎨 Site &amp; Estante</button>
     </div>
 
-    <div class="prop-row">
-      <div class="prop-label"><span>Tamanho da Grade da Estante</span></div>
-      <div class="prop-controls">
-        <button class="density-opt" data-density="compact">Compacta</button>
-        <button class="density-opt active" data-density="normal">Padrão</button>
-        <button class="density-opt" data-density="large">Grande</button>
-      </div>
-    </div>
-
-    <div class="prop-row">
-      <div class="prop-label">
-        <span>Luz Âmbar (Tela Inteira)</span>
-        <span id="lblWarmthVal">0%</span>
-      </div>
-      <div class="prop-controls" style="align-items:center; gap:8px;">
-        <input type="range" id="inputWarmthLevel" min="0" max="100" value="0" style="flex:1; accent-color:var(--accent); cursor:pointer;" />
-      </div>
-    </div>
-
-    <div class="prop-row">
-      <div class="prop-label"><span>Pacotes de Ferramentas (Interface Limpa)</span></div>
-      <div class="prop-controls" style="flex-direction:column; align-items:flex-start; gap:6px;">
-        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-          <input type="checkbox" id="chkEnableStudyTools" /> Habilitar Ferramentas de Estudo (Cornell, Quiz, Dossiê, Citações)
-        </label>
-        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-          <input type="checkbox" id="chkEnableLangTools" /> Habilitar Ferramentas de Idiomas (Tradução rápida, SRS, Frequência, Shadowing)
-        </label>
-        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-          <input type="checkbox" id="chkEnableAmbientAudio" /> Exibir Sons Ambiente na Barra
-        </label>
-        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-          <input type="checkbox" id="chkEnableBionic" /> Habilitar Leitura Biônica (Destaque guiado nas primeiras letras)
-        </label>
-        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;" title="Quando desativado (padrão), o app NÃO baixa nenhum capítulo sozinho; só baixa quando você clica em Próximo Capítulo">
-          <input type="checkbox" id="chkAutoPrefetchChapter" /> Pré-carregar próximo capítulo online automaticamente
-        </label>
-      </div>
-    </div>
-
-    <div class="prop-row">
-      <div class="prop-label"><span>Timer Pomodoro na Barra</span></div>
-      <div class="prop-controls" style="align-items:center; justify-content:space-between; gap:8px;">
-        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-          <input type="checkbox" id="chkEnablePomodoro" /> Exibir Pomodoro
-        </label>
-        <select id="selectPomodoroMinutes" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px; padding:0 6px;">
-          <option value="15">15 min</option>
-          <option value="25" selected>25 min</option>
-          <option value="45">45 min</option>
-          <option value="60">60 min</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="book-only-pref">
-      <div class="popover-section-title" style="margin-top:10px;">Aparência &amp; Tipografia do Livro</div>
+    <!-- Aba 1: Livro & Leitura -->
+    <div id="tabContentTypoBook">
       <div class="prop-row">
         <div class="prop-label"><span>Papel da Folha do Livro</span></div>
         <div class="prop-controls">
@@ -343,12 +282,9 @@
             <option value="'Caecilia', 'PMN Caecilia', Rockwell, Georgia, serif">Caecilia (Kindle Slab)</option>
             <option value="Georgia, 'Times New Roman', serif">Geórgia (Serifada)</option>
             <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino (Editorial)</option>
-            <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif">Segoe UI / Inter (Sem Serifa)</option>
-            <option value="Verdana, Geneva, sans-serif">Verdana (Alta Legibilidade)</option>
-            <option value="'OpenDyslexic', 'Comic Sans MS', Verdana, sans-serif">OpenDyslexic (Acessível)</option>
-            <option value="Consolas, 'Courier New', monospace">Consolas (Monoespaçada)</option>
-            <option value="'Noto Serif CJK JP', 'Yu Mincho', 'Source Han Serif SC', 'Hiragino Mincho ProN', serif">Mincho / CJK Serif (Japonês/Chinês)</option>
-            <option value="'Noto Sans CJK JP', 'Meiryo', 'Hiragino Sans', 'Source Han Sans SC', sans-serif">Gothic / CJK Sans (Japonês/Chinês/Coreano)</option>
+            <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Sem Serifa (Moderna / Sans)</option>
+            <option value="'OpenDyslexic', sans-serif">OpenDyslexic (Acessibilidade)</option>
+            <option value="Consolas, 'Courier New', monospace">Monoespaçada (Código/Técnico)</option>
           </select>
         </div>
       </div>
@@ -365,9 +301,9 @@
       <div class="prop-row">
         <div class="prop-label"><span>Largura da Coluna (Rolagem)</span></div>
         <div class="prop-controls">
-          <button class="width-opt" data-mw="580px">Estreita</button>
+          <button class="width-opt" data-mw="600px">Estreita</button>
           <button class="width-opt active" data-mw="720px">Média</button>
-          <button class="width-opt" data-mw="920px">Larga</button>
+          <button class="width-opt" data-mw="880px">Larga</button>
         </div>
       </div>
 
@@ -376,44 +312,131 @@
         <div class="prop-controls">
           <button class="align-opt active" data-align="justify">Justificado</button>
           <button class="align-opt" data-align="left">À Esquerda</button>
-          <button id="btnPdfTint" title="Inverter fundo branco de PDFs de texto no modo Escuro/Sépia">Inverter PDF</button>
+          <button id="btnPdfTint" title="Inverter cores do PDF (fundo escuro para leitura confortável)">Inverter PDF</button>
         </div>
       </div>
 
       <div class="prop-row">
         <div class="prop-label"><span>Orientação de Leitura</span></div>
         <div class="prop-controls">
-          <button id="btnTextOrientHorizontal" class="active" title="Texto horizontal padrão ocidental">Horizontal</button>
-          <button id="btnTextOrientVertical" title="Texto vertical japonês/chinês da direita p/ esquerda (縦書き)">Vertical (縦書き)</button>
+          <button id="btnTextOrientHorizontal" class="active" title="Leitura padrão ocidental (linhas horizontais)">Horizontal</button>
+          <button id="btnTextOrientVertical" title="Leitura vertical tradicional (Tate-gaki CJK)">Vertical (縦書き)</button>
         </div>
       </div>
 
       <div class="prop-row">
         <div class="prop-label"><span>Formatação do Livro</span></div>
         <div class="prop-controls">
-          <button id="btnStyleAdapted" class="active" title="Padroniza fonte, espaçamento e margens no estilo editorial do leitor">Adaptado</button>
-          <button id="btnStyleOriginal" title="Preserva ao máximo a diagramação, CSS e estilos originais de fábrica do livro">Original do Livro</button>
+          <button id="btnStyleAdapted" class="active" title="Modo adaptado: aplica sua fonte, tamanho, espaçamento e cores escolhidos acima">Adaptado</button>
+          <button id="btnStyleOriginal" title="Formatação original: respeita os recuos, fontes e estilos próprios definidos pelo editor do livro">Original do Livro</button>
         </div>
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Largura Webtoon / Long Strip</span><span id="lblWebtoonWidth">100%</span></div>
-        <input type="range" id="inputWebtoonWidth" min="55" max="100" step="5" value="100" style="width:100%; accent-color:var(--accent);" />
-      </div>
-
-      <div class="prop-row">
-        <div class="prop-label"><span>PDF Escaneado: Contraste / Brilho</span><span id="lblPdfAdjust">100% / 100%</span></div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <input type="range" id="inputPdfContrast" min="85" max="160" step="5" value="100" title="Contraste do PDF" style="flex:1; accent-color:var(--accent);" />
-          <input type="range" id="inputPdfBrightness" min="75" max="130" step="5" value="100" title="Brilho do PDF" style="flex:1; accent-color:var(--accent);" />
+        <div class="prop-label">
+          <span>Largura Webtoon / Long Strip</span>
+          <span id="lblWebtoonWidth">100%</span>
+        </div>
+        <div class="prop-controls" style="align-items:center; gap:8px;">
+          <input type="range" id="inputWebtoonWidth" min="55" max="100" value="100" style="flex:1; accent-color:var(--accent); cursor:pointer;" />
         </div>
       </div>
 
       <div class="prop-row">
-        <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;">
-          <input type="checkbox" id="chkTapZones" />
-          <span><strong>Toque nas bordas &amp; Deslizar</strong> (tocar ou arrastar o dedo vira página)</span>
+        <div class="prop-label">
+          <span>PDF Escaneado: Contraste / Brilho</span>
+          <span id="lblPdfAdjust">100% / 100%</span>
+        </div>
+        <div class="prop-controls" style="flex-direction:column; gap:4px;">
+          <input type="range" id="inputPdfContrast" min="85" max="160" value="100" style="width:100%; accent-color:var(--accent); cursor:pointer;" title="Contraste" />
+          <input type="range" id="inputPdfBrightness" min="75" max="130" value="100" style="width:100%; accent-color:var(--accent); cursor:pointer;" title="Brilho" />
+        </div>
+      </div>
+
+      <div class="prop-row" style="margin-top:6px;">
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;" title="Ao tocar nas laterais da tela ou arrastar o dedo horizontalmente, vira para a página anterior ou próxima">
+          <input type="checkbox" id="chkTapZones" checked /> <strong>Toque nas bordas &amp; Deslizar</strong> (tocar ou arrastar o dedo vira página)
         </label>
+      </div>
+    </div>
+
+    <!-- Aba 2: Site & Estante -->
+    <div id="tabContentTypoSite" class="hidden">
+      <div class="prop-row">
+        <div class="prop-label"><span>Tema do Site / App</span></div>
+        <div class="prop-controls">
+          <button data-theme-val="light">Claro</button>
+          <button class="active" data-theme-val="sepia">Sépia</button>
+          <button data-theme-val="dark">Escuro</button>
+          <button data-theme-val="oled">OLED</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Cor de Destaque</span></div>
+        <div class="accent-swatch-row" id="accentSwatchRow">
+          <button type="button" class="accent-swatch-btn active" data-accent-val="default" style="background:#7c3f1c;" title="Marrom Editorial (Padrão)"></button>
+          <button type="button" class="accent-swatch-btn" data-accent-val="blue" style="background:#2563eb;" title="Azul"></button>
+          <button type="button" class="accent-swatch-btn" data-accent-val="green" style="background:#16a34a;" title="Verde"></button>
+          <button type="button" class="accent-swatch-btn" data-accent-val="purple" style="background:#7c3aed;" title="Roxo"></button>
+          <button type="button" class="accent-swatch-btn" data-accent-val="amber" style="background:#d97706;" title="Âmbar"></button>
+          <button type="button" class="accent-swatch-btn" data-accent-val="rose" style="background:#db2777;" title="Rosa"></button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Tamanho da Grade da Estante</span></div>
+        <div class="prop-controls">
+          <button class="density-opt" data-density="compact">Compacta</button>
+          <button class="density-opt active" data-density="normal">Padrão</button>
+          <button class="density-opt" data-density="large">Grande</button>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label">
+          <span>Luz Âmbar (Tela Inteira)</span>
+          <span id="lblWarmthVal">0%</span>
+        </div>
+        <div class="prop-controls" style="align-items:center; gap:8px;">
+          <input type="range" id="inputWarmthLevel" min="0" max="100" value="0" style="flex:1; accent-color:var(--accent); cursor:pointer;" />
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Pacotes de Ferramentas (Interface Limpa)</span></div>
+        <div class="prop-controls" style="flex-direction:column; align-items:flex-start; gap:6px;">
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+            <input type="checkbox" id="chkEnableStudyTools" /> Habilitar Ferramentas de Estudo (Cornell, Quiz, Dossiê, Citações)
+          </label>
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+            <input type="checkbox" id="chkEnableLangTools" /> Habilitar Ferramentas de Idiomas (Tradução rápida, SRS, Frequência, Shadowing)
+          </label>
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+            <input type="checkbox" id="chkEnableAmbientAudio" /> Exibir Sons Ambiente na Barra
+          </label>
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+            <input type="checkbox" id="chkEnableBionic" /> Habilitar Leitura Biônica (Destaque guiado nas primeiras letras)
+          </label>
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;" title="Quando desativado (padrão), o app NÃO baixa nenhum capítulo sozinho; só baixa quando você clica em Próximo Capítulo">
+            <input type="checkbox" id="chkAutoPrefetchChapter" /> Pré-carregar próximo capítulo online automaticamente
+          </label>
+        </div>
+      </div>
+
+      <div class="prop-row">
+        <div class="prop-label"><span>Timer Pomodoro na Barra</span></div>
+        <div class="prop-controls" style="align-items:center; justify-content:space-between; gap:8px;">
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+            <input type="checkbox" id="chkEnablePomodoro" /> Exibir Pomodoro
+          </label>
+          <select id="selectPomodoroMinutes" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px; padding:0 6px;">
+            <option value="15">15 min</option>
+            <option value="25" selected>25 min</option>
+            <option value="45">45 min</option>
+            <option value="60">60 min</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>

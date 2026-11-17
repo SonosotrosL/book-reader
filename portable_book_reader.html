@@ -69,6 +69,22 @@
       --page-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
+    [data-theme="oled"] {
+      --bg-workspace: #000000;
+      --bg-toolbar: #000000;
+      --bg-sidebar: #050505;
+      --bg-page: #000000;
+      --bg-control: #121212;
+      --bg-control-hover: #1e1e1e;
+      --text-primary: #ededed;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-color: #27272a;
+      --accent: #38bdf8;
+      --accent-subtle: rgba(56, 189, 248, 0.15);
+      --page-shadow: none;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -117,7 +133,7 @@
       user-select: none;
       z-index: 40;
       flex-shrink: 0;
-      overflow-x: auto;
+      overflow-x: hidden;
       overflow-y: hidden;
       scrollbar-width: none;
     }
@@ -594,7 +610,8 @@
       font-style: initial;
       margin: initial;
     }
-    [data-theme="dark"] .reader-flow.original-format {
+    [data-theme="dark"] .reader-flow.original-format,
+    [data-theme="oled"] .reader-flow.original-format {
       color: var(--text-primary);
     }
 
@@ -602,23 +619,40 @@
     .reader-flow.vertical-cjk {
       writing-mode: vertical-rl !important;
       -webkit-writing-mode: vertical-rl !important;
-      text-orientation: upright !important;
+      text-orientation: mixed !important;
       letter-spacing: 0.05em;
       line-height: 1.85 !important;
       max-width: none !important;
-      width: auto !important;
-      height: calc(100vh - 120px) !important;
+      width: 100% !important;
+      height: 100% !important;
+      min-height: calc(100vh - 150px) !important;
+      max-height: calc(100vh - 120px) !important;
       overflow-x: auto !important;
       overflow-y: hidden !important;
-      padding: 20px 30px !important;
-      margin: 0 auto !important;
+      padding: 16px 24px !important;
+      direction: rtl;
+    }
+    .viewport.paginated-mode .reader-flow.vertical-cjk {
+      column-width: auto !important;
+      columns: auto !important;
+      column-gap: 0 !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .viewport.paginated-mode .page-sheet:has(.vertical-cjk),
+    .page-sheet.vertical-active {
+      max-width: 100% !important;
+      overflow-x: auto !important;
     }
     .reader-flow.vertical-cjk p {
       text-indent: 1em !important;
       margin-block-start: 0 !important;
       margin-block-end: 0 !important;
-      margin-inline-start: 0.5em !important;
-      margin-inline-end: 0.5em !important;
+      margin-inline-start: 0.6em !important;
+      margin-inline-end: 0.6em !important;
+      text-align: initial !important;
     }
 
     /* Modo Rolagem Contínua (Livro Inteiro do começo ao fim sem divisões separadas) */
@@ -837,6 +871,17 @@
       text-indent: 1.2em;
     }
 
+    /* Garantir que preferências do usuário vençam qualquer CSS do livro no Modo Adaptado */
+    .reader-flow:not(.original-format) p,
+    .reader-flow:not(.original-format) div:not(.book-center):not(.book-right):not(.manga-page-wrap):not(.continuous-placeholder),
+    .reader-flow:not(.original-format) blockquote,
+    .reader-flow:not(.original-format) section {
+      text-align: var(--book-align) !important;
+      line-height: var(--book-line-height) !important;
+      font-family: var(--book-font) !important;
+    }
+
+
     .reader-flow h1 + p,
     .reader-flow h2 + p,
     .reader-flow h3 + p,
@@ -993,13 +1038,24 @@
       filter: contrast(var(--pdf-contrast, 100%)) brightness(var(--pdf-brightness, 100%));
     }
 
-    [data-theme="sepia"] .pdf-page-container.tint-pdf canvas {
-      filter: sepia(0.32) contrast(calc(0.96 * var(--pdf-contrast-num, 1))) brightness(calc(0.97 * var(--pdf-brightness-num, 1)));
+    .pdf-page-container.tint-pdf[data-book-theme="sepia"] canvas,
+    [data-theme="sepia"] .pdf-page-container.tint-pdf:not([data-book-theme]) canvas,
+    [data-theme="sepia"] .pdf-page-container.tint-pdf[data-book-theme="same"] canvas {
+      filter: sepia(0.35) contrast(calc(0.96 * var(--pdf-contrast-num, 1))) brightness(calc(0.95 * var(--pdf-brightness-num, 1))) !important;
     }
 
-    [data-theme="dark"] .pdf-page-container.tint-pdf canvas {
-      filter: invert(1) hue-rotate(180deg) contrast(calc(1.1 * var(--pdf-contrast-num, 1))) brightness(calc(0.95 * var(--pdf-brightness-num, 1)));
-      background: #111;
+    .pdf-page-container.tint-pdf[data-book-theme="dark"] canvas,
+    [data-theme="dark"] .pdf-page-container.tint-pdf:not([data-book-theme]) canvas,
+    [data-theme="dark"] .pdf-page-container.tint-pdf[data-book-theme="same"] canvas {
+      filter: invert(1) hue-rotate(180deg) contrast(calc(1.1 * var(--pdf-contrast-num, 1))) brightness(calc(0.95 * var(--pdf-brightness-num, 1))) !important;
+      background: #111 !important;
+    }
+
+    .pdf-page-container.tint-pdf[data-book-theme="oled"] canvas,
+    [data-theme="oled"] .pdf-page-container.tint-pdf:not([data-book-theme]) canvas,
+    [data-theme="oled"] .pdf-page-container.tint-pdf[data-book-theme="same"] canvas {
+      filter: invert(1) contrast(calc(1.15 * var(--pdf-contrast-num, 1))) brightness(calc(0.9 * var(--pdf-brightness-num, 1))) !important;
+      background: #000 !important;
     }
 
     /* Barra de Status Inferior */
@@ -1021,7 +1077,22 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      width: 260px;
+      width: 240px;
+      flex-shrink: 0;
+    }
+
+    #statusPercent {
+      font-variant-numeric: tabular-nums;
+      min-width: 34px;
+      text-align: right;
+      display: inline-block;
+      margin-right: 12px;
+    }
+
+    #statusRight {
+      margin-left: 14px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .status-bar-track {
@@ -2208,7 +2279,7 @@
       flex-shrink: 0;
     }
     #toolbarUserGreeting {
-      max-width: 110px;
+      max-width: 130px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -2517,6 +2588,15 @@
       }
     }
 
+    @media (max-width: 1550px) {
+      #btnPdfRenderMode,
+      #btnPdfTint,
+      #btnSetPageAsCover,
+      #ambientAudioWidget {
+        display: none !important;
+      }
+    }
+
     @media (max-width: 1400px) {
       .toolbar {
         padding: 0 8px;
@@ -2529,25 +2609,31 @@
         padding: 0 7px;
         font-size: 11.5px;
       }
-      #ambientAudioWidget input[type="range"] {
-        display: none;
-      }
-      #ambientAudioWidget {
-        padding: 0 4px;
-      }
       #lblTypographyBtn {
         font-size: 11px;
       }
       #toolbarUserGreeting {
-        max-width: 80px;
+        max-width: 105px;
       }
     }
 
-    @media (max-width: 1180px) {
-      #btnPdfRenderMode,
-      #btnPdfTint,
-      #btnSetPageAsCover {
+    @media (max-width: 1300px) {
+      #btnCornellToggle {
         display: none !important;
+      }
+      .toolbar {
+        padding: 0 6px;
+        gap: 3px;
+      }
+      .toolbar-group {
+        gap: 2px;
+      }
+      .tb-btn {
+        padding: 0 6px;
+        font-size: 11px;
+      }
+      #toolbarUserGreeting {
+        max-width: 85px;
       }
     }
 
@@ -2555,26 +2641,80 @@
      * ADAPTAÇÃO COMPLETA PARA CELULAR E TELAS TOUCH (ANDROID / iOS)
      * ===================================================================== */
     @media (max-width: 768px) {
-      /* Barra superior rolável horizontalmente com toque suave */
+      /* Barra superior estilo Aplicativo Nativo (sem rolagem, limpa e espaçosa) */
       .toolbar {
-        height: 46px;
-        padding: 0 8px;
-        gap: 6px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        height: calc(44px + env(safe-area-inset-top, 0px));
+        padding: env(safe-area-inset-top, 0px) 8px 0;
+        gap: 4px;
+        overflow-x: hidden;
+        justify-content: space-between;
       }
       .toolbar::-webkit-scrollbar {
         display: none;
       }
       .toolbar-group {
         flex-shrink: 0;
-        gap: 4px;
+        gap: 3px;
       }
-      /* O título já aparece no cabeçalho da página; ocultar no meio da barra para ganhar espaço no celular */
+
+      /* No celular, ocultar controles secundários para manter a barra limpa como um app */
+      body:not(.is-shelf-home) #btnShowShelf,
+      body:not(.is-shelf-home) label[for="fileInput"],
+      body:not(.is-shelf-home) .page-stepper,
+      body:not(.is-shelf-home) .toolbar-divider,
+      #readingModeSwitch,
+      #pdfControls,
+      #flowModeGroup,
+      #btnBookmark,
+      #btnSetPageAsCover,
+      #ambientAudioWidget,
+      #btnCornellToggle,
+      #pomodoroWidget,
+      #btnFullscreen,
+      #toolbarUserGreeting,
+      .user-menu-btn span:last-child {
+        display: none !important;
+      }
+
+      /* Título do livro elegante e centralizado no topo */
       .doc-header {
+        display: flex !important;
+        flex: 1;
+        min-width: 0;
+        max-width: 155px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 0 4px;
+        pointer-events: none;
+      }
+      .doc-title {
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        text-align: center;
+      }
+      .doc-meta {
+        display: none !important;
+      }
+
+      /* Botões limpos e fáceis de tocar */
+      #btnCloseBook span {
         display: none;
+      }
+      #btnCloseBook::after {
+        content: 'Estante';
+        font-size: 11px;
+        font-weight: 500;
+      }
+      #btnSidebar span {
+        display: none;
+      }
+      body.immersive-mode .exit-immersive-pill {
+        display: none !important;
       }
       .tb-btn {
         height: 32px;
@@ -2887,10 +3027,19 @@
       }
     }
 
-    /* Modo Leitura Imersivo (Oculta barras superior e inferior no celular/paisagem/PC) */
-    body.immersive-mode .toolbar,
+    /* Modo Leitura Imersivo Suave (Estilo App Kindle / Apple Books) */
+    .toolbar, .statusbar {
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    }
+    body.immersive-mode .toolbar {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
     body.immersive-mode .statusbar {
-      display: none !important;
+      transform: translateY(100%);
+      opacity: 0;
+      pointer-events: none;
     }
     body.immersive-mode .main-layout {
       height: 100dvh !important;
@@ -2988,31 +3137,100 @@
     [data-theme="dark"][data-accent="purple"] { --accent: #a78bfa; --accent-subtle: rgba(167, 139, 250, 0.16); }
     [data-theme="dark"][data-accent="amber"] { --accent: #fbbf24; --accent-subtle: rgba(251, 191, 36, 0.16); }
     [data-theme="dark"][data-accent="rose"] { --accent: #f472b6; --accent-subtle: rgba(244, 114, 182, 0.16); }
+    [data-theme="oled"][data-accent="default"] { --accent: #38bdf8; --accent-subtle: rgba(56, 189, 248, 0.16); }
+    [data-theme="oled"][data-accent="blue"] { --accent: #60a5fa; --accent-subtle: rgba(96, 165, 250, 0.16); }
+    [data-theme="oled"][data-accent="green"] { --accent: #4ade80; --accent-subtle: rgba(74, 222, 128, 0.16); }
+    [data-theme="oled"][data-accent="purple"] { --accent: #a78bfa; --accent-subtle: rgba(167, 139, 250, 0.16); }
+    [data-theme="oled"][data-accent="amber"] { --accent: #fbbf24; --accent-subtle: rgba(251, 191, 36, 0.16); }
+    [data-theme="oled"][data-accent="rose"] { --accent: #f472b6; --accent-subtle: rgba(244, 114, 182, 0.16); }
 
     /* Tema da Folha do Livro Separado do Tema do Site/App */
-    #pageSheet[data-book-theme="light"] {
+    #pageSheet[data-book-theme="light"],
+    .page-sheet[data-book-theme="light"] {
       --bg-page: #ffffff;
       --text-primary: #1a1d20;
       --text-secondary: #495057;
       --text-muted: #868e96;
       --border-color: #d0d7de;
       --page-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.16);
+      background-color: #ffffff !important;
+      color: #1a1d20 !important;
+      border-color: #d0d7de !important;
     }
-    #pageSheet[data-book-theme="sepia"] {
+    #pageSheet[data-book-theme="light"] .reader-flow,
+    #pageSheet[data-book-theme="light"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #1a1d20 !important;
+    }
+    #pageSheet[data-book-theme="light"] .running-header,
+    #pageSheet[data-book-theme="light"] .running-footer {
+      color: #868e96 !important;
+      border-color: #d0d7de !important;
+    }
+
+    #pageSheet[data-book-theme="sepia"],
+    .page-sheet[data-book-theme="sepia"] {
       --bg-page: #f6efe0;
       --text-primary: #2c241d;
       --text-secondary: #6e6053;
       --text-muted: #8c7d6e;
       --border-color: #cfc2a9;
       --page-shadow: 0 2px 12px rgba(44, 36, 29, 0.12), 0 0 1px rgba(44, 36, 29, 0.2);
+      background-color: #f6efe0 !important;
+      color: #2c241d !important;
+      border-color: #cfc2a9 !important;
     }
-    #pageSheet[data-book-theme="dark"] {
+    #pageSheet[data-book-theme="sepia"] .reader-flow,
+    #pageSheet[data-book-theme="sepia"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #2c241d !important;
+    }
+    #pageSheet[data-book-theme="sepia"] .running-header,
+    #pageSheet[data-book-theme="sepia"] .running-footer {
+      color: #6e6053 !important;
+      border-color: #cfc2a9 !important;
+    }
+
+    #pageSheet[data-book-theme="dark"],
+    .page-sheet[data-book-theme="dark"] {
       --bg-page: #1c1f24;
       --text-primary: #d4d8de;
       --text-secondary: #9aa2ce;
       --text-muted: #6e7681;
       --border-color: #2b3038;
       --page-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.06);
+      background-color: #1c1f24 !important;
+      color: #d4d8de !important;
+      border-color: #2b3038 !important;
+    }
+    #pageSheet[data-book-theme="dark"] .reader-flow,
+    #pageSheet[data-book-theme="dark"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #d4d8de !important;
+    }
+    #pageSheet[data-book-theme="dark"] .running-header,
+    #pageSheet[data-book-theme="dark"] .running-footer {
+      color: #6e7681 !important;
+      border-color: #2b3038 !important;
+    }
+
+    #pageSheet[data-book-theme="oled"],
+    .page-sheet[data-book-theme="oled"] {
+      --bg-page: #000000;
+      --text-primary: #ededed;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-color: #222222;
+      --page-shadow: none;
+      background-color: #000000 !important;
+      color: #ededed !important;
+      border-color: #222222 !important;
+    }
+    #pageSheet[data-book-theme="oled"] .reader-flow,
+    #pageSheet[data-book-theme="oled"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #ededed !important;
+    }
+    #pageSheet[data-book-theme="oled"] .running-header,
+    #pageSheet[data-book-theme="oled"] .running-footer {
+      color: #71717a !important;
+      border-color: #222222 !important;
     }
 
     /* Modo Tira Vertical Contínua (Webtoon / Tapas Long Strip sem espaços) */
@@ -3350,6 +3568,50 @@
       background: var(--accent-subtle);
       color: var(--accent);
       border: 1px solid var(--accent);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.15s ease, background 0.15s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cefr-badge:hover {
+      transform: scale(1.05);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Quote Card Generator & RSVP Spritz Styles */
+    .quote-card-theme-btn {
+      font-size: 11.5px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--bg-control);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .quote-card-theme-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .rsvp-wpm-btn {
+      font-size: 11.5px;
+      padding: 3px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--bg-control);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .rsvp-wpm-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
     }
 </style>
 </head>
@@ -3559,6 +3821,10 @@
       <span>Régua de Foco Visual</span>
       <span class="menu-item-sub">Guia</span>
     </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnRsvpReading">
+      <span>Leitura Rápida RSVP (Spritz)</span>
+      <span class="menu-item-sub">Velocidade</span>
+    </button>
     <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
     <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Ferramentas &amp; Utilidades</div>
     <button class="menu-item-btn" id="btnToolsStudio" data-open-studio-tab="paneStudioConvert">
@@ -3588,6 +3854,7 @@
         <button data-theme-val="light">Claro</button>
         <button class="active" data-theme-val="sepia">Sépia</button>
         <button data-theme-val="dark">Escuro</button>
+        <button data-theme-val="oled">OLED</button>
       </div>
     </div>
 
@@ -3667,6 +3934,7 @@
           <button class="book-theme-opt" data-book-theme="light">Claro</button>
           <button class="book-theme-opt" data-book-theme="sepia">Sépia</button>
           <button class="book-theme-opt" data-book-theme="dark">Escuro</button>
+          <button class="book-theme-opt" data-book-theme="oled">OLED</button>
         </div>
       </div>
 
@@ -3778,6 +4046,8 @@
     <button class="tb-btn" id="btnSelSpeak" title="Ouvir pronúncia/leitura deste trecho">Ouvir</button>
     <span id="selectionQuickTransBadge" class="quick-trans-pill hidden" title="Tradução instantânea"></span>
     <button class="tb-btn tb-btn-solid" id="btnSelAnki" title="Salvar palavra ou frase para o Anki">+ Anki</button>
+    <button class="tb-btn" id="btnSelQuoteCard" title="Criar Card Visual para Instagram / Redes Sociais">📷 Card</button>
+    <button class="tb-btn" id="btnSelRsvp" title="Ler este trecho em Leitura Rápida RSVP (Spritz)">⚡ RSVP</button>
   </div>
 
   <!-- Card Flutuante (X-Ray Popover) que abre ao clicar no nome de um Personagem / Nota no livro -->
@@ -4456,6 +4726,7 @@
                 <button class="tb-btn tb-btn-solid" id="btnExportQuotesMd" style="height:28px;">Exportar .MD</button>
                 <button class="tb-btn tb-btn-solid" id="btnExportQuotesDoc" style="height:28px;">Exportar .DOC</button>
                 <button class="studio-btn-primary" id="btnExportQuotesPdf" style="height:28px;">Exportar .PDF</button>
+                <button class="tb-btn tb-btn-solid" id="btnExportQuotesObsidian" style="height:28px;" title="Exportar citações com YAML e Callouts para Obsidian & Notion">Obsidian (.md)</button>
               </div>
             </div>
 
@@ -5064,6 +5335,7 @@
               </select>
               <button class="btn" id="btnCopyBookCitation" title="Copiar citação bibliográfica formatada">Copiar Citação</button>
               <button class="btn" id="btnExportBookStudyDossier" title="Baixar resumo em .md com seus destaques, notas do Raio-X e resenha deste livro">Exportar Dossiê (.md)</button>
+              <button class="btn" id="btnExportBookObsidian" title="Exportar com YAML Frontmatter e Callouts para Obsidian & Notion">Obsidian (.md)</button>
               <button class="btn primary" id="btnSaveInfoBookReview">Salvar Resenha</button>
             </div>
           </div>
@@ -5341,6 +5613,15 @@
       </div>
 
       <div class="sidebar-pane" id="paneVocab">
+        <!-- Card de Nível do Livro (CEFR) -->
+        <div id="sidebarCefrCard" style="margin:4px 4px 8px; padding:8px 10px; border-radius:6px; background:var(--bg-elevated); border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Nível do Livro</div>
+            <div id="lblSidebarCefrLevel" style="font-size:12.5px; font-weight:700; color:var(--accent);">Calculando CEFR...</div>
+          </div>
+          <span id="lblSidebarCefrBadge" class="cefr-badge" style="cursor:pointer;" title="Clique para detalhes do nível CEFR">CEFR</span>
+        </div>
+
         <div style="display:flex; flex-direction:column; gap:5px; padding:4px 4px 8px; border-bottom:1px solid var(--border-color);">
           <button class="tb-btn tb-btn-solid" id="btnOpenAnkiAccountPane" style="width:100%; justify-content:center; border-color:var(--accent); color:var(--accent); font-weight:600;">Conectar Anki / Enviar Direto</button>
           <div style="display:flex; gap:4px;">
@@ -5623,8 +5904,10 @@
 
   <!-- Barra de Status Inferior -->
   <footer class="statusbar">
-    <div id="statusLeft" style="display:flex; align-items:center; gap:8px;">
+    <div id="statusLeft" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer;" title="Clique para alternar entre: Completo, Nível CEFR, Tempo no Capítulo, Tempo no Livro e Posição">
       <span id="statusLeftText">Pronto</span>
+    </div>
+    <div id="statusCefrWrap" style="display:flex; align-items:center; margin:0 8px; flex-shrink:0;">
       <span id="lblCefrBadge" class="cefr-badge hidden" title="Nível estimado de vocabulário do livro">CEFR: B1</span>
     </div>
     <div class="status-progress">
@@ -5635,6 +5918,88 @@
     </div>
     <div id="statusRight">Atalhos: ← / → Virar Página · Ctrl+F Buscar · Ctrl+D Marcar · Clique em imagens p/ Ampliar</div>
   </footer>
+
+  <!-- Modal Gerador de Cards Visuais de Citação (Instagram / Redes) -->
+  <div class="modal-backdrop" id="quoteCardModal">
+    <div class="modal-card" style="max-width:540px; width:94vw;">
+      <div class="modal-header">
+        <span>📷 Criar Card Visual de Citação</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseQuoteCardModal" title="Fechar (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="gap:12px;">
+        <div style="display:flex; justify-content:center; align-items:center; background:var(--bg-toolbar); padding:10px; border-radius:8px; border:1px solid var(--border-color); overflow:hidden;">
+          <canvas id="quoteCardCanvas" width="1080" height="1080" style="max-width:100%; max-height:360px; aspect-ratio:1/1; border-radius:6px; box-shadow:0 4px 18px rgba(0,0,0,0.35); display:block;"></canvas>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="font-size:11px; font-weight:600; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Tema Visual do Card</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="quote-card-theme-btn active" data-card-theme="editorial">Editorial Sério</button>
+            <button type="button" class="quote-card-theme-btn" data-card-theme="midnight">Midnight OLED</button>
+            <button type="button" class="quote-card-theme-btn" data-card-theme="sunset">Warm Sunset</button>
+            <button type="button" class="quote-card-theme-btn" data-card-theme="aurora">Aurora Gradient</button>
+            <button type="button" class="quote-card-theme-btn" data-card-theme="paper">Papel Envelhecido</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px;">
+          <button type="button" class="btn" id="btnEditQuoteCardText">✏️ Editar Texto</button>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn" id="btnCopyQuoteCardImg">📋 Copiar Imagem</button>
+            <button type="button" class="btn primary" id="btnDownloadQuoteCardImg">⬇ Baixar PNG (1080x1080)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Leitura Rápida RSVP (Spritz / Rapid Serial Visual Presentation) -->
+  <div class="modal-backdrop" id="rsvpModal">
+    <div class="modal-card" style="max-width:580px; width:94vw;">
+      <div class="modal-header">
+        <span>⚡ Leitura Rápida RSVP (Spritz)</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseRsvpModal" title="Fechar (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="gap:14px;">
+        <div id="rsvpBox" style="position:relative; height:130px; display:flex; align-items:center; justify-content:center; background:var(--bg-toolbar); border-radius:8px; border:2px solid var(--border-color); overflow:hidden; user-select:none;">
+          <div style="position:absolute; top:8px; left:42%; width:2px; height:14px; background:var(--accent); opacity:0.8;"></div>
+          <div style="position:absolute; bottom:8px; left:42%; width:2px; height:14px; background:var(--accent); opacity:0.8;"></div>
+          
+          <div style="font-family:'Courier New', monospace; font-size:36px; font-weight:700; display:flex; align-items:center; width:100%; padding-left:42%;">
+            <span id="rsvpPartLeft" style="color:var(--text-primary); text-align:right; transform:translateX(-100%); white-space:nowrap;"></span>
+            <span id="rsvpPartOrp" style="color:#ef4444; font-weight:900;"></span>
+            <span id="rsvpPartRight" style="color:var(--text-primary); white-space:nowrap;"></span>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-secondary);">
+            <span id="rsvpProgressLabel">Palavra 0 de 0 (0%)</span>
+            <span id="rsvpTimeLabel">Tempo restante: ~0 min</span>
+          </div>
+          <input type="range" id="rsvpProgressBar" min="0" max="100" value="0" style="width:100%; accent-color:var(--accent); cursor:pointer;" />
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" class="btn" id="btnRsvpStepBack" title="Voltar 10 palavras">⏮ -10</button>
+            <button type="button" class="btn primary" id="btnRsvpTogglePlay" style="min-width:92px;">▶ Iniciar</button>
+            <button type="button" class="btn" id="btnRsvpStepForward" title="Avançar 10 palavras">+10 ⏭</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:var(--text-muted);">WPM:</span>
+            <button type="button" class="rsvp-wpm-btn" data-wpm="250">250</button>
+            <button type="button" class="rsvp-wpm-btn active" data-wpm="350">350</button>
+            <button type="button" class="rsvp-wpm-btn" data-wpm="450">450</button>
+            <button type="button" class="rsvp-wpm-btn" data-wpm="600">600</button>
+          </div>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); text-align:center;">
+          Atalhos: <kbd style="background:var(--bg-page); padding:1px 5px; border-radius:3px; border:1px solid var(--border-color);">Espaço</kbd> pausa/retoma · <kbd>←</kbd> <kbd>→</kbd> navega 10 palavras · <kbd>Esc</kbd> sai.
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal de Continuação no Celular / QR Code -->
   <div class="modal-backdrop" id="qrCodeModal">
@@ -5761,6 +6126,8 @@
       vocabContainer: document.getElementById('vocabContainer'),
       inputSearch: document.getElementById('inputSearch'),
       statusLeft: document.getElementById('statusLeft'),
+      statusLeftText: document.getElementById('statusLeftText'),
+      lblCefrBadge: document.getElementById('lblCefrBadge'),
       statusPercent: document.getElementById('statusPercent'),
       progressFill: document.getElementById('progressFill'),
       progressTrack: document.getElementById('progressTrack'),
@@ -5801,6 +6168,14 @@
           dom.pageSheet.setAttribute('data-book-theme', state.bookTheme);
         } else {
           dom.pageSheet.removeAttribute('data-book-theme');
+        }
+        dom.pageSheet.classList.toggle('vertical-active', state.textOrientation === 'vertical');
+      }
+      if (dom.pdfContainer) {
+        if (state.bookTheme && state.bookTheme !== 'same') {
+          dom.pdfContainer.setAttribute('data-book-theme', state.bookTheme);
+        } else {
+          dom.pdfContainer.removeAttribute('data-book-theme');
         }
       }
       const shelfGridEl = document.getElementById('bookshelfGrid');
@@ -5901,6 +6276,11 @@
       }
       if (dom.readerFlow) {
         dom.readerFlow.classList.toggle('webtoon-strip', Boolean(isMangaMode && state.webtoonStrip));
+      }
+      if (dom.viewport && dom.viewport.classList.contains('paginated-mode') && state.textOrientation !== 'vertical') {
+        if (typeof updatePaginatedMetrics === 'function') {
+          updatePaginatedMetrics();
+        }
       }
       const chkTapEl = document.getElementById('chkTapZones');
       if (chkTapEl) chkTapEl.checked = state.tapZones !== false;
@@ -8093,26 +8473,120 @@
       });
     }
 
-    function analyzeBookCefr(sections) {
-      if (!sections || !sections.length) return null;
-      const sampleText = sections.slice(0, 15).map(s => s.text || '').join(' ').toLowerCase();
-      const words = sampleText.match(/[a-zà-ÿ]{2,}/gi) || [];
-      if (words.length < 50) return null;
+    function getSectionRawText(sec) {
+      if (!sec) return '';
+      if (sec.text && typeof sec.text === 'string' && sec.text.trim()) return sec.text;
+      if (sec.rawSlice && typeof sec.rawSlice === 'string') {
+        return sec.rawSlice.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/gi, ' ').replace(/\s+/g, ' ');
+      }
+      if (sec.html && typeof sec.html === 'string') {
+        return sec.html.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/gi, ' ').replace(/\s+/g, ' ');
+      }
+      return '';
+    }
+
+    function analyzeBookCefr(sections, extraSampleText = '') {
+      let sampleText = (extraSampleText || '').trim();
+      if (!sampleText && sections && sections.length) {
+        let collected = '';
+        const totalSecs = sections.length;
+        // Amostrar capítulos narrativos reais distribuídos ao longo do livro, evitando sumário/capa (primeiras seções)
+        const indicesToSample = [];
+        if (totalSecs <= 4) {
+          for (let i = 0; i < totalSecs; i++) indicesToSample.push(i);
+        } else {
+          // Amostra distribuída em 15%, 35%, 55% e 75% da obra
+          const p1 = Math.min(totalSecs - 1, Math.max(1, Math.floor(totalSecs * 0.15)));
+          const p2 = Math.min(totalSecs - 1, Math.max(p1 + 1, Math.floor(totalSecs * 0.35)));
+          const p3 = Math.min(totalSecs - 1, Math.max(p2 + 1, Math.floor(totalSecs * 0.55)));
+          const p4 = Math.min(totalSecs - 1, Math.max(p3 + 1, Math.floor(totalSecs * 0.75)));
+          const uniq = Array.from(new Set([p1, p2, p3, p4]));
+          indicesToSample.push(...uniq);
+        }
+
+        for (const idx of indicesToSample) {
+          const s = sections[idx];
+          const txt = getSectionRawText(s);
+          if (txt && txt.length > 200) {
+            collected += ' ' + txt;
+            if (collected.length > 35000) break;
+          }
+        }
+        sampleText = collected || sections.map(s => getSectionRawText(s)).join(' ');
+      }
+      if (!sampleText || sampleText.length < 50) return null;
+
+      // 1. Sentenças e Palavras
+      const cleanText = sampleText.replace(/\s+/g, ' ');
+      // Separar frases por pontuação terminal (. ! ?) respeitando abreviações e aspas
+      const rawSentences = cleanText.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÿ"“'‘])/).map(s => s.trim()).filter(s => s.length > 5);
+      const sentencesCount = Math.max(1, rawSentences.length);
+      const words = cleanText.toLowerCase().match(/[a-zà-ÿ]{2,}/gi) || [];
+      if (words.length < 30) return null;
+
       const wordCount = words.length;
-      const totalLen = words.reduce((acc, w) => acc + w.length, 0);
-      const avgLen = totalLen / wordCount;
+      const totalChars = words.reduce((acc, w) => acc + w.length, 0);
+      const avgWordLen = totalChars / wordCount;
+      const wordsPerSentence = wordCount / sentencesCount;
+
+      // 2. Análise Lexical Avançada (Vocabulário CEFR)
+      const w6 = words.filter(w => w.length >= 6).length;
+      const w7 = words.filter(w => w.length >= 7).length;
+      const pct6 = (w6 / wordCount) * 100;
+      const pct7 = (w7 / wordCount) * 100;
+
+      // 3. Sintaxe Narrativa: calcular média de palavras por frase ignorando réplicas curtas de diálogo
+      const narrativeSentences = rawSentences.filter(s => {
+        const sw = s.match(/[a-zà-ÿ]{2,}/gi);
+        return sw && sw.length >= 4;
+      });
+      const narrativeWps = narrativeSentences.length
+        ? (narrativeSentences.reduce((acc, s) => acc + (s.match(/[a-zà-ÿ]{2,}/gi) || []).length, 0) / narrativeSentences.length)
+        : Math.max(11, wordsPerSentence);
+
+      // Automated Readability Index (ARI) calibrado para literatura / ficção com diálogos
+      const effectiveWps = Math.min(35, Math.max(11, narrativeWps));
+      const rawAri = (4.71 * avgWordLen) + (0.5 * effectiveWps) - 21.43;
+      const ari = Math.max(1, Math.min(20, rawAri));
+
+      // 4. Mapeamento Calibrado CEFR (Vocabulário + Complexidade Sintática)
+      // Obras de ficção moderna (thrillers, romances, terror) possuem muitos diálogos diretos;
+      // o nível CEFR é determinado primariamente pela sofisticação do vocabulário (pct6, pct7, avgWordLen).
+      let level = 'B2 (Independente / Fluente)';
+      let code = 'B2';
+
+      if (pct6 < 6.0 && pct7 < 3.5 && avgWordLen < 3.95) {
+        level = 'A1 (Iniciante / Básico)';
+        code = 'A1';
+      } else if ((pct6 < 8.5 && pct7 < 5.0) && (avgWordLen < 4.12 || ari < 4.0)) {
+        level = 'A2 (Elementar)';
+        code = 'A2';
+      } else if ((pct6 < 16.5 && pct7 < 11.5) || (avgWordLen < 4.55 && ari < 7.0)) {
+        level = 'B1 (Intermediário)';
+        code = 'B1';
+      } else if (pct6 >= 27.0 && pct7 >= 22.0 && avgWordLen >= 5.25 && ari >= 13.0) {
+        level = 'C2 (Domínio Pleno / Literário)';
+        code = 'C2';
+      } else if (pct6 >= 22.5 && pct7 >= 17.5 && avgWordLen >= 4.90 && ari >= 10.2) {
+        level = 'C1 (Avançado / Acadêmico)';
+        code = 'C1';
+      } else {
+        level = 'B2 (Independente / Fluente)';
+        code = 'B2';
+      }
+
       const uniqueWords = new Set(words);
-      const diversity = uniqueWords.size / wordCount;
-
-      let level = 'B1 (Intermediário)';
-      if (avgLen < 4.3 && diversity < 0.30) level = 'A1 (Básico)';
-      else if (avgLen < 4.7 && diversity < 0.38) level = 'A2 (Elementar)';
-      else if (avgLen < 5.1 && diversity < 0.46) level = 'B1 (Intermediário)';
-      else if (avgLen < 5.6 && diversity < 0.54) level = 'B2 (Independente)';
-      else if (avgLen < 6.1) level = 'C1 (Avançado / Acadêmico)';
-      else level = 'C2 (Domínio Pleno / Literário)';
-
-      return { level, avgWordLength: avgLen.toFixed(1), uniqueWordsCount: uniqueWords.size, totalSampleWords: wordCount };
+      return {
+        level,
+        code,
+        ari: ari.toFixed(1),
+        avgWordLength: avgWordLen.toFixed(1),
+        wordsPerSentence: Math.round(narrativeWps),
+        complexWordsPct: Math.round(pct7) + '%',
+        pct6Letters: Math.round(pct6) + '%',
+        uniqueWordsCount: uniqueWords.size,
+        totalSampleWords: wordCount
+      };
     }
 
     async function renderSection(options = {}) {
@@ -8317,11 +8791,17 @@
       const currentLoc = Math.max(1, Math.round(currentWordsRead / 22));
       const totalLoc = Math.max(currentLoc, Math.round(totalBookWords / 22));
 
+      // Página estimada padronizada de livro impresso (1 página física padrão ≈ 250 palavras)
+      const estCurrentPage = Math.max(1, Math.round(currentWordsRead / 250));
+      const estTotalPages = Math.max(estCurrentPage, Math.round(totalBookWords / 250));
+
       return {
         minLeftChapter,
         minLeftBook,
         currentLoc,
         totalLoc,
+        estCurrentPage,
+        estTotalPages,
         wpm
       };
     }
@@ -8334,6 +8814,11 @@
 
       dom.inputSectionNum.value = String(cur);
       dom.lblTotalSections.textContent = `/ ${total}`;
+      if (state.format === 'PDF') {
+        dom.inputSectionNum.title = `Página ${cur} de ${total} do PDF (digite o número e pressione Enter)`;
+      } else {
+        dom.inputSectionNum.title = `Capítulo/Seção ${cur} de ${total} (digite o número e pressione Enter)`;
+      }
       dom.statusPercent.textContent = `${pct}%`;
       dom.progressFill.style.width = `${pct}%`;
 
@@ -8349,15 +8834,77 @@
         dom.progressTrack.dataset.renderedBook = state.bookKey || '';
       }
 
+      function setStatusLeft(text, isClickable = false, title = '') {
+        const textSpan = document.getElementById('statusLeftText');
+        if (textSpan) {
+          textSpan.textContent = text;
+        } else if (dom.statusLeft) {
+          dom.statusLeft.textContent = text;
+        }
+        if (dom.statusLeft) {
+          dom.statusLeft.style.cursor = isClickable ? 'pointer' : 'default';
+          dom.statusLeft.title = title || '';
+        }
+      }
+
       const cefrBadgeEl = document.getElementById('lblCefrBadge');
       if (cefrBadgeEl && state.sections && state.sections.length && state.format !== 'CBZ') {
         if (!state._cachedCefr) {
           state._cachedCefr = analyzeBookCefr(state.sections);
+          // Se for PDF e páginas forem sob demanda (text = null), extrair amostra assíncrona das primeiras páginas
+          if (!state._cachedCefr && state.pdfDoc && !state._extractingPdfCefr) {
+            state._extractingPdfCefr = true;
+            (async () => {
+              try {
+                const totalPgs = state.pdfDoc.numPages || 1;
+                // Amostrar capítulos narrativos reais (evitando capa, copyright e sumário das páginas 1-8)
+                let startPg = 1;
+                if (state.currentIndex > 5) {
+                  startPg = Math.max(1, state.currentIndex - 1);
+                } else if (totalPgs > 25) {
+                  startPg = Math.min(Math.max(12, Math.floor(totalPgs * 0.08)), totalPgs - 10);
+                } else if (totalPgs > 8) {
+                  startPg = 5;
+                }
+                const endPg = Math.min(totalPgs, startPg + 12);
+                let pdfSample = '';
+                for (let p = startPg; p <= endPg; p++) {
+                  try {
+                    const pg = await state.pdfDoc.getPage(p);
+                    const tc = await pg.getTextContent();
+                    const str = tc.items.map(it => it.str || '').join(' ');
+                    if (state.sections[p - 1]) state.sections[p - 1].text = str;
+                    pdfSample += ' ' + str;
+                    if (pdfSample.length > 20000) break;
+                  } catch {}
+                }
+                if (pdfSample.trim().length > 100) {
+                  state._cachedCefr = analyzeBookCefr(null, pdfSample);
+                  updateFooterLabels();
+                }
+              } catch {}
+              state._extractingPdfCefr = false;
+            })();
+          }
         }
         if (state._cachedCefr) {
           cefrBadgeEl.classList.remove('hidden');
-          cefrBadgeEl.textContent = `CEFR: ${state._cachedCefr.level.split(' ')[0]}`;
-          cefrBadgeEl.title = `Nível de Vocabulário: ${state._cachedCefr.level} (Média: ${state._cachedCefr.avgWordLength} letras, ${state._cachedCefr.uniqueWordsCount} palavras únicas)`;
+          cefrBadgeEl.textContent = `CEFR: ${state._cachedCefr.code || state._cachedCefr.level.split(' ')[0]}`;
+          cefrBadgeEl.title = `Nível de Leitura / Vocabulário: ${state._cachedCefr.level}\nMédia de letras por palavra: ${state._cachedCefr.avgWordLength}\nPalavras únicas na amostra: ${state._cachedCefr.uniqueWordsCount}\n(Clique para ver a tabela de níveis)`;
+          cefrBadgeEl.onclick = (e) => {
+            e.stopPropagation();
+            alert(`Nível Estimado do Livro: ${state._cachedCefr.level}\n\n• Índice de Legibilidade (ARI): ${state._cachedCefr.ari || 'N/A'}\n• Palavras Complexas (7+ letras): ${state._cachedCefr.complexWordsPct || 'N/A'}\n• Média por frase: ~${state._cachedCefr.wordsPerSentence || 'N/A'} palavras\n• Comprimento médio das palavras: ${state._cachedCefr.avgWordLength} letras\n\nQuadro Comum Europeu de Referência (CEFR):\n• A1 / A2: Básico / Elementar (frases curtas, vocabulário cotidiano simples)\n• B1 / B2: Intermediário / Independente (ficção moderna, thrillers, diálogos naturais)\n• C1 / C2: Avançado / Domínio Pleno (literatura clássica, vocabulário culto/acadêmico)`);
+          };
+          if (dom.headerMeta && !dom.headerMeta.textContent.includes('CEFR')) {
+            dom.headerMeta.textContent = `${state.author || 'Autor'} · ${state.format} · CEFR: ${state._cachedCefr.code}`;
+          }
+          const sbCefrLvl = document.getElementById('lblSidebarCefrLevel');
+          const sbCefrBdg = document.getElementById('lblSidebarCefrBadge');
+          if (sbCefrLvl) sbCefrLvl.textContent = state._cachedCefr.level;
+          if (sbCefrBdg) {
+            sbCefrBdg.textContent = `CEFR: ${state._cachedCefr.code}`;
+            sbCefrBdg.onclick = cefrBadgeEl.onclick;
+          }
         } else {
           cefrBadgeEl.classList.add('hidden');
         }
@@ -8373,38 +8920,68 @@
       const metrics = computeKindleReadingMetrics();
 
       let kindleSummary = '';
+      const cefrShort = state._cachedCefr ? `Nível: CEFR ${state._cachedCefr.code} (${state._cachedCefr.level.split('(')[1] ? state._cachedCefr.level.split('(')[1].replace(')', '') : state._cachedCefr.level})` : 'Nível: Calculando CEFR...';
       if (metrics && state.format !== 'CBZ') {
+        const pageStr = state.format === 'PDF'
+          ? `Pág. ${cur} de ${total}`
+          : `Pág. ${metrics.estCurrentPage} de ${metrics.estTotalPages}`;
         const chStr = `Faltam ${formatMinutesHuman(metrics.minLeftChapter)} no cap.`;
         const bkStr = `${formatMinutesHuman(metrics.minLeftBook)} no livro`;
         const locStr = `Pos. ${metrics.currentLoc} de ${metrics.totalLoc}`;
-        if (state.footerMode === 'chapter') kindleSummary = chStr;
-        else if (state.footerMode === 'book') kindleSummary = `Faltam ${bkStr}`;
-        else if (state.footerMode === 'loc') kindleSummary = locStr;
-        else kindleSummary = `${chStr} · ${bkStr} · ${locStr}`;
 
-        dom.statusLeft.textContent = `${kindleSummary} (${pct}%)`;
-        dom.statusLeft.style.cursor = 'pointer';
-        dom.statusLeft.title = 'Clique para alternar entre: Completo, Tempo no Capítulo, Tempo no Livro e Posição Kindle';
-      } else {
-        dom.statusLeft.textContent = `${state.format} · Seção ${cur}/${total} (${pct}%)`;
-      }
+        // Detalhe temporal ou posicional sem duplicar a contagem de páginas
+        let timeOrDetail = `${chStr} · ${bkStr}`;
+        if (state.footerMode === 'page') timeOrDetail = '';
+        else if (state.footerMode === 'chapter') timeOrDetail = chStr;
+        else if (state.footerMode === 'book') timeOrDetail = `Faltam ${bkStr}`;
+        else if (state.footerMode === 'loc') timeOrDetail = locStr;
+        else if (state.footerMode === 'cefr') timeOrDetail = cefrShort;
 
-      if (dom.viewport.classList.contains('paginated-mode') && state.format !== 'CBZ') {
-        dom.sheetChapterTitle.textContent = `${state.subPageIndex + 1} / ${state.subPageCount}`;
-        dom.sheetFooterInfo.textContent = `${sec ? sec.title : ''} · Pág. ${state.subPageIndex + 1}/${state.subPageCount} · ${kindleSummary || (`Cap. ${cur}/${total}`)}`;
+        if (state.footerMode === 'page') {
+          kindleSummary = pageStr;
+        } else {
+          kindleSummary = timeOrDetail ? `${pageStr} · ${timeOrDetail}` : pageStr;
+        }
+
+        setStatusLeft(`${kindleSummary} (${pct}%)`, true, 'Clique para alternar entre: Completo (Página + Tempo), Apenas Página, Tempo no Capítulo, Tempo no Livro, Posição e Nível CEFR');
+
+        const secTitle = sec && sec.title ? `${sec.title} · ` : '';
+        if (dom.viewport.classList.contains('paginated-mode')) {
+          dom.sheetChapterTitle.textContent = `${state.subPageIndex + 1} / ${state.subPageCount}`;
+          const screenDetail = state.subPageCount > 1 ? ` (Tela ${state.subPageIndex + 1}/${state.subPageCount})` : '';
+          const sheetPagePart = `${pageStr}${screenDetail}`;
+          dom.sheetFooterInfo.textContent = `${secTitle}${sheetPagePart}${timeOrDetail ? ' · ' + timeOrDetail : ''}`;
+        } else {
+          dom.sheetFooterInfo.textContent = `${secTitle}${kindleSummary}`;
+        }
       } else {
-        dom.sheetFooterInfo.textContent = `${sec ? sec.title : ''} · ${kindleSummary || (`${cur} de ${total} (${pct}%)`)}`;
+        const cefrPart = state.footerMode === 'cefr' ? ` · ${cefrShort}` : (state._cachedCefr ? ` · CEFR: ${state._cachedCefr.code}` : '');
+        setStatusLeft(`${state.format} · Seção ${cur}/${total} (${pct}%)${cefrPart}`, true, 'Clique para alternar');
+        dom.sheetFooterInfo.textContent = `${sec && sec.title ? sec.title + ' · ' : ''}Seção ${cur}/${total} (${pct}%)`;
       }
       dom.sheetFooterInfo.style.cursor = 'pointer';
-      dom.sheetFooterInfo.title = 'Clique para alternar o indicador de tempo/posição estilo Kindle';
+      dom.sheetFooterInfo.title = 'Clique para alternar o indicador de página/tempo estilo Kindle';
     }
 
     function cycleKindleFooterMode() {
-      const modes = ['full', 'chapter', 'book', 'loc'];
+      const modes = ['full', 'page', 'chapter', 'book', 'loc', 'cefr'];
       const next = modes[(modes.indexOf(state.footerMode) + 1) % modes.length];
       state.footerMode = next;
       localStorage.setItem('reader_footerMode', next);
       updateFooterLabels();
+      if (next === 'page') {
+        showToast('Modo Rodapé: Apenas Número de Página (Pág. X de Y)');
+      } else if (next === 'full') {
+        showToast('Modo Rodapé: Completo (Página + Tempo Restante)');
+      } else if (next === 'chapter') {
+        showToast('Modo Rodapé: Tempo Restante no Capítulo');
+      } else if (next === 'book') {
+        showToast('Modo Rodapé: Tempo Restante no Livro');
+      } else if (next === 'loc') {
+        showToast('Modo Rodapé: Posição Kindle (Pos. X)');
+      } else if (next === 'cefr') {
+        showToast(state._cachedCefr ? `Modo Nível Ativado: ${state._cachedCefr.level}` : 'Calculando nível de vocabulário...');
+      }
     }
     dom.statusLeft.addEventListener('click', cycleKindleFooterMode);
     dom.sheetFooterInfo.addEventListener('click', cycleKindleFooterMode);
@@ -9963,6 +10540,8 @@
         state.format = parsed.format;
         state.sections = parsed.sections;
         state.toc = parsed.toc;
+        state._cachedCefr = null;
+        state._extractingPdfCefr = false;
 
         document.body.classList.remove('is-shelf-home');
         applySettings();
@@ -9989,7 +10568,9 @@
 
         dom.headerTitle.textContent = state.title;
         dom.headerMeta.textContent = `${state.author} · ${state.format}`;
-        dom.statusLeft.textContent = `${state.format} · ${state.sections.length} seções`;
+        const statusTextEl = document.getElementById('statusLeftText');
+        if (statusTextEl) statusTextEl.textContent = `${state.format} · ${state.sections.length} seções`;
+        else dom.statusLeft.textContent = `${state.format} · ${state.sections.length} seções`;
 
         dom.emptyState.classList.add('hidden');
         const subMediaBarEl = document.getElementById('subtitleMediaBar');
@@ -10255,6 +10836,25 @@
     document.getElementById('btnSelDict').addEventListener('click', () => openLookupModal('dict'));
     document.getElementById('btnSelTrans').addEventListener('click', () => openLookupModal('trans'));
     document.getElementById('btnSelAnki').addEventListener('click', () => openLookupModal('anki'));
+    const btnSelQuoteCardEl = document.getElementById('btnSelQuoteCard');
+    if (btnSelQuoteCardEl) {
+      btnSelQuoteCardEl.addEventListener('click', () => {
+        if (dom.selectionToolbar) dom.selectionToolbar.classList.remove('open');
+        openQuoteCardModal({
+          text: state.selectedText || '',
+          bookTitle: (state.metadata && state.metadata.title) || state.title || 'Livro',
+          author: (state.metadata && (state.metadata.creator || state.metadata.author)) || state.author || '',
+          chapter: (state.toc && state.toc[state.currentIndex] && state.toc[state.currentIndex].label) || ''
+        });
+      });
+    }
+    const btnSelRsvpEl = document.getElementById('btnSelRsvp');
+    if (btnSelRsvpEl) {
+      btnSelRsvpEl.addEventListener('click', () => {
+        if (dom.selectionToolbar) dom.selectionToolbar.classList.remove('open');
+        openRsvpModal(state.selectedText || '');
+      });
+    }
 
     // Eventos do Modal de Dicionário / Tradutor / Anki
     document.getElementById('btnCloseModal').addEventListener('click', () => dom.lookupModal.classList.remove('open'));
@@ -10334,6 +10934,9 @@
       btn.addEventListener('click', () => {
         state.bookTheme = btn.dataset.bookTheme;
         applySettings();
+        if (state.format === 'PDF' && typeof syncPdfTintUi === 'function') {
+          syncPdfTintUi();
+        }
       });
     });
     document.querySelectorAll('[data-accent-val]').forEach(btn => {
@@ -10406,6 +11009,9 @@
       btn.addEventListener('click', () => {
         state.textAlign = btn.dataset.align;
         applySettings();
+        if (dom.viewport && dom.viewport.classList.contains('paginated-mode')) {
+          if (typeof updatePaginatedMetrics === 'function') updatePaginatedMetrics();
+        }
       });
     });
 
@@ -10425,7 +11031,10 @@
       state.textOrientation = mode;
       localStorage.setItem('reader_textOrientation', mode);
       applySettings();
-      showToast(mode === 'vertical' ? 'Leitura Vertical (縦書き Tate-gaki CJK) ativada' : 'Leitura Horizontal padrão ativada');
+      if (state.sections && state.sections.length) {
+        renderSection({ restoreSubPage: 0, forceRebuildContinuous: true });
+      }
+      showToast(mode === 'vertical' ? 'Leitura Vertical ativada' : 'Leitura Horizontal padrão ativada');
     }
     const btnOrientH = document.getElementById('btnTextOrientHorizontal');
     const btnOrientV = document.getElementById('btnTextOrientVertical');
@@ -10934,6 +11543,19 @@
         lines.push('_Nenhum destaque, nota ou resenha registrada para este livro ainda._');
       }
       return lines.join('\n');
+    }
+
+    const btnExportBookObsidianEl = document.getElementById('btnExportBookObsidian');
+    if (btnExportBookObsidianEl) {
+      btnExportBookObsidianEl.addEventListener('click', () => {
+        if (!activeBookInfoTarget) return;
+        const bk = activeBookInfoTarget.bookKey;
+        const hlMap = getHighlightsMap();
+        const highlights = Array.isArray(hlMap[bk]) ? hlMap[bk] : [];
+        const notes = typeof getEntityNotesMap === 'function' ? Object.values(getEntityNotesMap(bk) || {}) : [];
+        const rev = (getBookReviewsMap()[bk] || {});
+        exportBookToObsidianMarkdown(activeBookInfoTarget, highlights, notes, rev);
+      });
     }
 
     const btnExportDossierEl = document.getElementById('btnExportBookStudyDossier');
@@ -11535,6 +12157,8 @@
       state.format = '';
       state.sections = [];
       state.toc = [];
+      state._cachedCefr = null;
+      state._extractingPdfCefr = false;
       state.pathToSection = new Map();
       state.idToSection = new Map();
       state.currentIndex = 0;
@@ -11553,7 +12177,11 @@
       if (dom.headerMeta) dom.headerMeta.textContent = 'EPUB · MOBI · AZW3 · PDF · FB2 · CBZ · MD';
       if (dom.inputSectionNum) dom.inputSectionNum.value = '0';
       if (dom.lblTotalSections) dom.lblTotalSections.textContent = '/ 0';
-      if (dom.statusLeft) dom.statusLeft.textContent = 'Pronto';
+      const statusTextEl = document.getElementById('statusLeftText');
+      if (statusTextEl) statusTextEl.textContent = 'Pronto';
+      else if (dom.statusLeft) dom.statusLeft.textContent = 'Pronto';
+      const cefrBadgeEl = document.getElementById('lblCefrBadge');
+      if (cefrBadgeEl) cefrBadgeEl.classList.add('hidden');
       if (dom.statusPercent) dom.statusPercent.textContent = '0%';
       if (dom.progressFill) dom.progressFill.style.width = '0%';
       document.body.classList.add('is-shelf-home');
@@ -14825,11 +15453,23 @@
             <mark class="user-hl user-hl-${item.color || 'yellow'}">"${escapeHtml(item.text)}"</mark>
           </div>
           <div style="display:flex; gap:6px; justify-content:flex-end; margin-top:6px;">
+            <button class="tb-btn tb-btn-solid btn-q-card" style="height:24px; font-size:11px;">📷 Card</button>
             <button class="tb-btn tb-btn-solid btn-q-copy" style="height:24px; font-size:11px;">Copiar Citação</button>
             <button class="tb-btn tb-btn-solid btn-q-anki" style="height:24px; font-size:11px;">Enviar p/ Anki</button>
             <button class="tb-btn tb-btn-solid btn-q-jump" style="height:24px; font-size:11px;">Ir p/ Página</button>
           </div>
         `;
+        const btnCardItem = card.querySelector('.btn-q-card');
+        if (btnCardItem) {
+          btnCardItem.addEventListener('click', () => {
+            openQuoteCardModal({
+              text: item.text,
+              bookTitle: item.bookTitle,
+              author: item.author || '',
+              chapter: item.chapterTitle || ''
+            });
+          });
+        }
         card.querySelector('.btn-q-copy').addEventListener('click', () => {
           navigator.clipboard.writeText(`"${item.text}" — ${item.bookTitle} (${item.chapterTitle || ''})`);
           showToast('Citação copiada!');
@@ -14895,6 +15535,721 @@
     document.getElementById('btnExportQuotesMd').addEventListener('click', () => exportAllQuotes('md'));
     document.getElementById('btnExportQuotesDoc').addEventListener('click', () => exportAllQuotes('doc'));
     document.getElementById('btnExportQuotesPdf').addEventListener('click', () => exportAllQuotes('pdf'));
+
+    const btnExportQuotesObsidianEl = document.getElementById('btnExportQuotesObsidian');
+    if (btnExportQuotesObsidianEl) {
+      btnExportQuotesObsidianEl.addEventListener('click', () => exportQuotesToObsidianMarkdown());
+    }
+
+    const btnStudioQuoteCardEl = document.getElementById('btnStudioQuoteCard');
+    if (btnStudioQuoteCardEl) {
+      btnStudioQuoteCardEl.addEventListener('click', () => {
+        const { allQuotes } = collectAllQuotesData(document.getElementById('inputFilterQuotes').value || '');
+        if (!allQuotes.length) {
+          showToast('Nenhuma citação encontrada para gerar card.');
+          return;
+        }
+        const q = allQuotes[0];
+        openQuoteCardModal({
+          text: q.text,
+          bookTitle: q.bookTitle,
+          author: q.author || '',
+          chapter: q.chapterTitle || ''
+        });
+      });
+    }
+
+    // =========================================================
+    // 1. GERADOR VISUAL DE QUOTE CARDS (CANVAS 1080x1080)
+    // =========================================================
+    let activeQuoteCardData = {
+      text: '',
+      bookTitle: '',
+      author: '',
+      chapter: '',
+      theme: 'editorial',
+      coverImg: null
+    };
+
+    function openQuoteCardModal({ text, bookTitle, author, chapter }) {
+      activeQuoteCardData.text = (text || '').trim();
+      activeQuoteCardData.bookTitle = (bookTitle || state.title || 'Livro').trim();
+      activeQuoteCardData.author = (author || (state.metadata && (state.metadata.creator || state.metadata.author)) || state.author || '').trim();
+      activeQuoteCardData.chapter = (chapter || '').trim();
+      activeQuoteCardData.coverImg = null;
+
+      const coverUrl = (typeof getBookCoverDataUrl === 'function') ? getBookCoverDataUrl(state.bookKey, state.title) : '';
+      if (coverUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          activeQuoteCardData.coverImg = img;
+          renderQuoteCardCanvas();
+        };
+        img.src = coverUrl;
+      }
+
+      document.querySelectorAll('.quote-card-theme-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.cardTheme === activeQuoteCardData.theme);
+      });
+
+      renderQuoteCardCanvas();
+      const m = document.getElementById('quoteCardModal');
+      if (m) m.classList.add('open');
+    }
+
+    function renderQuoteCardCanvas() {
+      const canvas = document.getElementById('quoteCardCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = 1080;
+      const H = 1080;
+      canvas.width = W;
+      canvas.height = H;
+
+      const theme = activeQuoteCardData.theme || 'editorial';
+
+      let bgGradient = null;
+      let textColor = '#ffffff';
+      let accentColor = '#d4af37';
+      let mutedColor = 'rgba(255, 255, 255, 0.7)';
+      let borderColor = 'rgba(212, 175, 55, 0.28)';
+      let quoteMarkColor = 'rgba(212, 175, 55, 0.35)';
+      let fontFamily = 'Georgia, "Playfair Display", serif';
+
+      if (theme === 'editorial') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#1c1e24');
+        bgGradient.addColorStop(1, '#111216');
+        textColor = '#f5f5f7';
+        accentColor = '#d4af37';
+        mutedColor = '#a0a3bd';
+        borderColor = 'rgba(212, 175, 55, 0.3)';
+        quoteMarkColor = 'rgba(212, 175, 55, 0.35)';
+        fontFamily = 'Georgia, "Times New Roman", serif';
+      } else if (theme === 'midnight') {
+        ctx.fillStyle = '#000000';
+        textColor = '#ffffff';
+        accentColor = '#38bdf8';
+        mutedColor = '#94a3b8';
+        borderColor = '#27272a';
+        quoteMarkColor = 'rgba(56, 189, 248, 0.35)';
+        fontFamily = 'system-ui, -apple-system, sans-serif';
+      } else if (theme === 'sunset') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#2e1220');
+        bgGradient.addColorStop(1, '#140c1d');
+        textColor = '#fdf2f8';
+        accentColor = '#f472b6';
+        mutedColor = '#d8b4e2';
+        borderColor = 'rgba(244, 114, 182, 0.28)';
+        quoteMarkColor = 'rgba(244, 114, 182, 0.35)';
+        fontFamily = 'Georgia, serif';
+      } else if (theme === 'aurora') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#06282d');
+        bgGradient.addColorStop(1, '#051821');
+        textColor = '#f0fdf4';
+        accentColor = '#34d399';
+        mutedColor = '#a7f3d0';
+        borderColor = 'rgba(52, 211, 153, 0.28)';
+        quoteMarkColor = 'rgba(52, 211, 153, 0.35)';
+        fontFamily = 'system-ui, sans-serif';
+      } else if (theme === 'paper') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#f9f5eb');
+        bgGradient.addColorStop(1, '#ede4ce');
+        textColor = '#2b231c';
+        accentColor = '#854d0e';
+        mutedColor = '#6b5a4b';
+        borderColor = 'rgba(133, 77, 14, 0.28)';
+        quoteMarkColor = 'rgba(133, 77, 14, 0.25)';
+        fontFamily = 'Georgia, serif';
+      }
+
+      if (bgGradient) {
+        ctx.fillStyle = bgGradient;
+      } else {
+        ctx.fillStyle = '#000000';
+      }
+      ctx.fillRect(0, 0, W, H);
+
+      const pad = 64;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pad, pad, W - pad * 2, H - pad * 2);
+
+      ctx.font = `italic 110px ${fontFamily}`;
+      ctx.fillStyle = quoteMarkColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('“', pad + 36, pad + 24);
+
+      const rawText = activeQuoteCardData.text || '“A leitura engrandece a alma.”';
+      const textLen = rawText.length;
+      let fontSize = 42;
+      let lineHeight = 66;
+
+      if (textLen <= 90) {
+        fontSize = 50;
+        lineHeight = 76;
+      } else if (textLen <= 180) {
+        fontSize = 40;
+        lineHeight = 62;
+      } else if (textLen <= 320) {
+        fontSize = 32;
+        lineHeight = 50;
+      } else {
+        fontSize = 26;
+        lineHeight = 40;
+      }
+
+      ctx.font = `italic 500 ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      const maxTextWidth = W - pad * 2 - 80;
+      const words = rawText.split(' ');
+      const lines = [];
+      let currentLine = '';
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = currentLine + (currentLine ? ' ' : '') + words[n];
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxTextWidth && n > 0) {
+          lines.push(currentLine);
+          currentLine = words[n];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+
+      const maxLines = Math.floor((H - 380) / lineHeight);
+      const displayLines = lines.slice(0, maxLines);
+      if (lines.length > maxLines) {
+        displayLines[displayLines.length - 1] += '...';
+      }
+
+      const totalTextHeight = displayLines.length * lineHeight;
+      const textStartY = Math.max(pad + 140, (H - 240 - totalTextHeight) / 2 + 30);
+
+      displayLines.forEach((l, i) => {
+        ctx.fillText(l, pad + 40, textStartY + (i * lineHeight));
+      });
+
+      const footerY = H - pad - 120;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(pad + 40, footerY);
+      ctx.lineTo(W - pad - 40, footerY);
+      ctx.stroke();
+
+      let textLeft = pad + 40;
+      if (activeQuoteCardData.coverImg) {
+        const cvW = 68;
+        const cvH = 100;
+        const cvX = pad + 40;
+        const cvY = footerY + 12;
+        try {
+          ctx.save();
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(cvX, cvY, cvW, cvH, 6);
+          } else {
+            ctx.rect(cvX, cvY, cvW, cvH);
+          }
+          ctx.clip();
+          ctx.drawImage(activeQuoteCardData.coverImg, cvX, cvY, cvW, cvH);
+          ctx.restore();
+          ctx.strokeStyle = borderColor;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cvX, cvY, cvW, cvH);
+          textLeft += cvW + 18;
+        } catch {}
+      }
+
+      ctx.font = `bold 26px ${fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const displayTitle = (activeQuoteCardData.bookTitle || 'Leitor Portátil').slice(0, 48);
+      ctx.fillText(displayTitle, textLeft, footerY + 48);
+
+      let metaSubtitle = activeQuoteCardData.author || '';
+      if (activeQuoteCardData.chapter) {
+        metaSubtitle += (metaSubtitle ? ' • ' : '') + activeQuoteCardData.chapter.slice(0, 36);
+      }
+      if (!metaSubtitle) metaSubtitle = 'Destaque de Leitura';
+      ctx.font = `italic 20px ${fontFamily}`;
+      ctx.fillStyle = mutedColor;
+      ctx.fillText(metaSubtitle, textLeft, footerY + 82);
+
+      ctx.font = `600 18px system-ui, sans-serif`;
+      ctx.fillStyle = accentColor;
+      ctx.textAlign = 'right';
+      ctx.fillText('📖 Leitor Portátil', W - pad - 40, footerY + 54);
+      ctx.font = `14px system-ui, sans-serif`;
+      ctx.fillStyle = mutedColor;
+      ctx.fillText('leitor.app', W - pad - 40, footerY + 78);
+    }
+
+    // Eventos do Quote Card Modal
+    const btnCloseQuoteCardEl = document.getElementById('btnCloseQuoteCardModal');
+    if (btnCloseQuoteCardEl) {
+      btnCloseQuoteCardEl.addEventListener('click', () => {
+        const m = document.getElementById('quoteCardModal');
+        if (m) m.classList.remove('open');
+      });
+    }
+
+    document.querySelectorAll('.quote-card-theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeQuoteCardData.theme = btn.dataset.cardTheme;
+        document.querySelectorAll('.quote-card-theme-btn').forEach(b => b.classList.toggle('active', b === btn));
+        renderQuoteCardCanvas();
+      });
+    });
+
+    const btnEditQuoteTextEl = document.getElementById('btnEditQuoteCardText');
+    if (btnEditQuoteTextEl) {
+      btnEditQuoteTextEl.addEventListener('click', () => {
+        const val = prompt('Editar texto da citação:', activeQuoteCardData.text);
+        if (val != null) {
+          activeQuoteCardData.text = val.trim();
+          renderQuoteCardCanvas();
+        }
+      });
+    }
+
+    const btnCopyQuoteCardEl = document.getElementById('btnCopyQuoteCardImg');
+    if (btnCopyQuoteCardEl) {
+      btnCopyQuoteCardEl.addEventListener('click', () => {
+        const canvas = document.getElementById('quoteCardCanvas');
+        if (!canvas || !canvas.toBlob) return;
+        canvas.toBlob(async (blob) => {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            showToast('Card copiado como imagem para a Área de Transferência!');
+          } catch (e) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Quote_Card.png`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            showToast('Card baixado como PNG!');
+          }
+        });
+      });
+    }
+
+    const btnDownloadQuoteCardEl = document.getElementById('btnDownloadQuoteCardImg');
+    if (btnDownloadQuoteCardEl) {
+      btnDownloadQuoteCardEl.addEventListener('click', () => {
+        const canvas = document.getElementById('quoteCardCanvas');
+        if (!canvas) return;
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        const safe = (activeQuoteCardData.bookTitle || 'card').replace(/[^a-z0-9_-]/gi, '_').slice(0, 30);
+        a.download = `Card_${safe}.png`;
+        a.click();
+        showToast('Card visual baixado com sucesso!');
+      });
+    }
+
+    // =========================================================
+    // 2. MODO LEITURA RÁPIDA RSVP / SPRITZ
+    // =========================================================
+    let rsvpWords = [];
+    let rsvpIndex = 0;
+    let rsvpWpm = 350;
+    let rsvpTimer = null;
+    let rsvpIsPlaying = false;
+
+    function getOrpIndex(word) {
+      const clean = word.replace(/[^a-zA-Z0-9À-ž]/g, '');
+      const len = clean.length;
+      if (len <= 1) return 0;
+      if (len <= 5) return 1;
+      if (len <= 9) return 2;
+      if (len <= 13) return 3;
+      return 4;
+    }
+
+    function openRsvpModal(customText) {
+      let raw = (customText || '').trim();
+      if (!raw && dom.readerFlow) {
+        raw = (dom.readerFlow.innerText || '').trim();
+      }
+      if (!raw) {
+        showToast('Nenhum texto disponível para leitura rápida.');
+        return;
+      }
+
+      rsvpWords = raw.replace(/\s+/g, ' ').split(' ').filter(w => w.length > 0);
+      if (!rsvpWords.length) {
+        showToast('Nenhum texto detectado.');
+        return;
+      }
+
+      rsvpIndex = 0;
+      rsvpIsPlaying = false;
+      if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+
+      const bar = document.getElementById('rsvpProgressBar');
+      if (bar) {
+        bar.min = 0;
+        bar.max = rsvpWords.length - 1;
+        bar.value = 0;
+      }
+
+      const btnPlay = document.getElementById('btnRsvpTogglePlay');
+      if (btnPlay) btnPlay.textContent = '▶ Iniciar';
+
+      renderRsvpWord(0);
+      const m = document.getElementById('rsvpModal');
+      if (m) m.classList.add('open');
+    }
+
+    function renderRsvpWord(idx) {
+      if (idx < 0) idx = 0;
+      if (idx >= rsvpWords.length) {
+        rsvpIsPlaying = false;
+        if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+        const btnPlay = document.getElementById('btnRsvpTogglePlay');
+        if (btnPlay) btnPlay.textContent = '▶ Reiniciar';
+        const pLbl = document.getElementById('rsvpProgressLabel');
+        if (pLbl) pLbl.textContent = `Concluído! ${rsvpWords.length} palavras lidas.`;
+        return;
+      }
+      rsvpIndex = idx;
+      const word = rsvpWords[idx];
+      const orp = getOrpIndex(word);
+
+      const left = word.slice(0, orp);
+      const char = word.charAt(orp);
+      const right = word.slice(orp + 1);
+
+      const partLeft = document.getElementById('rsvpPartLeft');
+      const partOrp = document.getElementById('rsvpPartOrp');
+      const partRight = document.getElementById('rsvpPartRight');
+
+      if (partLeft) partLeft.textContent = left;
+      if (partOrp) partOrp.textContent = char;
+      if (partRight) partRight.textContent = right;
+
+      const bar = document.getElementById('rsvpProgressBar');
+      if (bar) bar.value = idx;
+
+      const pLbl = document.getElementById('rsvpProgressLabel');
+      if (pLbl) {
+        const pct = Math.round(((idx + 1) / rsvpWords.length) * 100);
+        pLbl.textContent = `Palavra ${idx + 1} de ${rsvpWords.length} (${pct}%)`;
+      }
+
+      const tLbl = document.getElementById('rsvpTimeLabel');
+      if (tLbl) {
+        const rem = rsvpWords.length - (idx + 1);
+        const mins = Math.ceil(rem / rsvpWpm);
+        tLbl.textContent = `Tempo restante: ~${mins} min`;
+      }
+    }
+
+    function scheduleNextRsvp() {
+      if (!rsvpIsPlaying || rsvpIndex >= rsvpWords.length - 1) return;
+      const word = rsvpWords[rsvpIndex] || '';
+      let delay = 60000 / rsvpWpm;
+
+      if (/[.!?]$/.test(word)) {
+        delay *= 2.2;
+      } else if (/[,;:\-—]$/.test(word)) {
+        delay *= 1.6;
+      } else if (word.length > 10) {
+        delay *= 1.25;
+      }
+
+      rsvpTimer = setTimeout(() => {
+        rsvpIndex++;
+        renderRsvpWord(rsvpIndex);
+        if (rsvpIndex < rsvpWords.length - 1) {
+          scheduleNextRsvp();
+        } else {
+          rsvpIsPlaying = false;
+          const btnPlay = document.getElementById('btnRsvpTogglePlay');
+          if (btnPlay) btnPlay.textContent = '▶ Reiniciar';
+        }
+      }, delay);
+    }
+
+    function toggleRsvpPlayback() {
+      if (rsvpIndex >= rsvpWords.length - 1) {
+        rsvpIndex = 0;
+      }
+      rsvpIsPlaying = !rsvpIsPlaying;
+      const btnPlay = document.getElementById('btnRsvpTogglePlay');
+      if (rsvpIsPlaying) {
+        if (btnPlay) btnPlay.textContent = '⏸ Pausar';
+        scheduleNextRsvp();
+      } else {
+        if (btnPlay) btnPlay.textContent = '▶ Retomar';
+        if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+      }
+    }
+
+    // Eventos RSVP
+    const btnCloseRsvpEl = document.getElementById('btnCloseRsvpModal');
+    if (btnCloseRsvpEl) {
+      btnCloseRsvpEl.addEventListener('click', () => {
+        rsvpIsPlaying = false;
+        if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+        const m = document.getElementById('rsvpModal');
+        if (m) m.classList.remove('open');
+      });
+    }
+
+    const btnRsvpPlayEl = document.getElementById('btnRsvpTogglePlay');
+    if (btnRsvpPlayEl) {
+      btnRsvpPlayEl.addEventListener('click', toggleRsvpPlayback);
+    }
+
+    const btnRsvpStepBackEl = document.getElementById('btnRsvpStepBack');
+    if (btnRsvpStepBackEl) {
+      btnRsvpStepBackEl.addEventListener('click', () => {
+        rsvpIndex = Math.max(0, rsvpIndex - 10);
+        renderRsvpWord(rsvpIndex);
+      });
+    }
+
+    const btnRsvpStepFwdEl = document.getElementById('btnRsvpStepForward');
+    if (btnRsvpStepFwdEl) {
+      btnRsvpStepFwdEl.addEventListener('click', () => {
+        rsvpIndex = Math.min(rsvpWords.length - 1, rsvpIndex + 10);
+        renderRsvpWord(rsvpIndex);
+      });
+    }
+
+    const rsvpBarEl = document.getElementById('rsvpProgressBar');
+    if (rsvpBarEl) {
+      rsvpBarEl.addEventListener('input', (e) => {
+        rsvpIndex = parseInt(e.target.value, 10);
+        renderRsvpWord(rsvpIndex);
+      });
+    }
+
+    document.querySelectorAll('.rsvp-wpm-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        rsvpWpm = parseInt(btn.dataset.wpm, 10) || 350;
+        document.querySelectorAll('.rsvp-wpm-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    const btnRsvpReadingEl = document.getElementById('btnRsvpReading');
+    if (btnRsvpReadingEl) {
+      btnRsvpReadingEl.addEventListener('click', () => {
+        const text = (dom.readerFlow ? dom.readerFlow.innerText : '') || '';
+        openRsvpModal(text);
+      });
+    }
+
+    // Atalhos de Teclado no RSVP (Espaço e Setas)
+    document.addEventListener('keydown', (e) => {
+      const rsvpM = document.getElementById('rsvpModal');
+      if (rsvpM && rsvpM.classList.contains('open')) {
+        if (e.key === ' ' || e.code === 'Space') {
+          e.preventDefault();
+          toggleRsvpPlayback();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          rsvpIndex = Math.max(0, rsvpIndex - 10);
+          renderRsvpWord(rsvpIndex);
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          rsvpIndex = Math.min(rsvpWords.length - 1, rsvpIndex + 10);
+          renderRsvpWord(rsvpIndex);
+        } else if (e.key === 'Escape') {
+          rsvpIsPlaying = false;
+          if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+          rsvpM.classList.remove('open');
+        }
+      }
+    });
+
+    // =========================================================
+    // 3. EXPORTAÇÃO OBSIDIAN / NOTION COM YAML FRONTMATTER
+    // =========================================================
+    function buildObsidianMarkdown({ title, author, format, cefr, progress, pagesRead, totalPages, highlights, notes, review }) {
+      const safeTitle = (title || 'Livro').replace(/"/g, '\\"');
+      const safeAuthor = (author || 'Desconhecido').replace(/"/g, '\\"');
+      const today = new Date().toISOString().split('T')[0];
+      const dateFormatted = new Date().toLocaleDateString('pt-BR');
+
+      const frontmatter = [
+        '---',
+        `title: "${safeTitle}"`,
+        `author: "${safeAuthor}"`,
+        `format: "${format || 'EPUB'}"`,
+        `cefr_level: "${cefr || 'N/A'}"`,
+        `progress: "${progress || '0%'}"`,
+        `pages_read: ${pagesRead || 0}`,
+        `total_pages: ${totalPages || 0}`,
+        `date_exported: "${today}"`,
+        'tags:',
+        '  - livro',
+        '  - leitura',
+        '  - obsidian',
+        '---',
+        ''
+      ].join('\n');
+
+      const lines = [
+        frontmatter,
+        `# ${title || 'Livro'}`,
+        '',
+        '> [!info] Ficha de Leitura',
+        `> - **Autor:** ${author || 'Desconhecido'}`,
+        `> - **Formato:** ${format || 'EPUB'}`,
+        `> - **Nível de Leitura (CEFR):** ${cefr || 'N/A'}`,
+        `> - **Progresso:** ${progress || '0%'} (${pagesRead || 0} de ${totalPages || 0} pág.)`,
+        `> - **Data de Exportação:** ${dateFormatted}`,
+        ''
+      ];
+
+      if (review && (review.rating || review.text)) {
+        lines.push('> [!note] Resenha & Avaliação');
+        if (review.rating) lines.push(`> **Nota:** ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)} (${review.rating}/5)`);
+        if (review.text) lines.push('>', `> ${review.text.trim().replace(/\n/g, '\n> ')}`);
+        lines.push('');
+      }
+
+      if (Array.isArray(highlights) && highlights.length) {
+        lines.push(`## 📌 Destaques & Citações (${highlights.length})`, '');
+        highlights.forEach((hl, i) => {
+          const q = (hl.text || hl.quote || '').trim();
+          const ch = hl.chapterTitle || `Trecho ${i + 1}`;
+          const dt = hl.date || '';
+          lines.push(`> [!quote] ${ch}${dt ? ` — ${dt}` : ''}`);
+          lines.push(`> "${q}"`);
+          if (hl.note) {
+            lines.push(`>\n> 💭 **Nota:** *${hl.note.trim()}*`);
+          }
+          lines.push('');
+        });
+      }
+
+      if (Array.isArray(notes) && notes.length) {
+        lines.push(`## 💡 Fichamento & Raio-X (${notes.length})`, '');
+        notes.forEach((n, i) => {
+          lines.push(`- **${n.name || n.title || `Nota ${i + 1}`}**: ${n.note || n.text || ''}`);
+        });
+        lines.push('');
+      }
+
+      try {
+        const cMap = JSON.parse(localStorage.getItem('reader_cornell_notes') || '{}');
+        const cn = (activeBookInfoTarget && activeBookInfoTarget.bookKey) ? cMap[activeBookInfoTarget.bookKey] : (cMap[state.bookKey] || null);
+        if (cn && (cn.cues || cn.notes || cn.summary)) {
+          lines.push('## 🧠 Anotações Cornell', '');
+          if (cn.cues) {
+            lines.push('> [!question] Palavras-chave / Perguntas');
+            lines.push(`> ${cn.cues.trim().replace(/\n/g, '\n> ')}`, '');
+          }
+          if (cn.notes) {
+            lines.push('> [!abstract] Notas Principais');
+            lines.push(`> ${cn.notes.trim().replace(/\n/g, '\n> ')}`, '');
+          }
+          if (cn.summary) {
+            lines.push('> [!tip] Resumo da Leitura');
+            lines.push(`> ${cn.summary.trim().replace(/\n/g, '\n> ')}`, '');
+          }
+        }
+      } catch {}
+
+      return lines.join('\n');
+    }
+
+    function exportBookToObsidianMarkdown(bookObj, highlights = [], notes = [], review = {}) {
+      const title = (bookObj && bookObj.title) || state.title || 'Livro';
+      const author = (bookObj && bookObj.author) || (state.metadata && (state.metadata.creator || state.metadata.author)) || state.author || '';
+      const format = (bookObj && bookObj.format) || state.format || 'EPUB';
+
+      let cefr = 'N/A';
+      try {
+        const cefrMap = JSON.parse(localStorage.getItem('reader_cefr_map') || '{}');
+        if (bookObj && bookObj.bookKey && cefrMap[bookObj.bookKey]) cefr = cefrMap[bookObj.bookKey].level;
+      } catch {}
+
+      const progPct = (bookObj && bookObj.progressPct != null) ? (bookObj.progressPct + '%') : (dom.statusPercent ? dom.statusPercent.textContent : '0%');
+      const pagesRead = (bookObj && bookObj.page) || state.subPageIndex + 1 || 1;
+      const totalPages = (bookObj && bookObj.totalPages) || (state.sections.length ? state.sections.length : 1);
+
+      const md = buildObsidianMarkdown({
+        title,
+        author,
+        format,
+        cefr,
+        progress: progPct,
+        pagesRead,
+        totalPages,
+        highlights,
+        notes,
+        review
+      });
+
+      const safeName = title.replace(/[^a-z0-9_-]/gi, '_').slice(0, 50);
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${safeName}_Obsidian.md`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      showToast('Exportado para Obsidian (.md)!');
+    }
+
+    function exportQuotesToObsidianMarkdown() {
+      const { allQuotes } = collectAllQuotesData(document.getElementById('inputFilterQuotes').value || '');
+      if (!allQuotes.length) {
+        showToast('Nenhuma citação encontrada para exportar.');
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const lines = [
+        '---',
+        'title: "Minhas Citações & Destaques"',
+        `total_quotes: ${allQuotes.length}`,
+        `date_exported: "${today}"`,
+        'tags:',
+        '  - citacoes',
+        '  - destaques',
+        '  - obsidian',
+        '---',
+        '',
+        '# 📖 Minhas Citações & Destaques de Leitura',
+        ''
+      ];
+
+      allQuotes.forEach((q, i) => {
+        lines.push(`> [!quote] ${q.bookTitle} — ${q.chapterTitle || 'Seção ' + (q.sectionIndex + 1)} (${q.date || ''})`);
+        lines.push(`> "${q.text}"`);
+        if (q.note) {
+          lines.push(`>\n> 💭 **Nota:** *${q.note}*`);
+        }
+        lines.push('');
+      });
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Citacoes_Obsidian.md`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      showToast('Citações exportadas para Obsidian (.md)!');
+    }
+
 
 
 
@@ -19492,14 +20847,18 @@ ${r.reviewText || '_Sem resenha escrita._'}
       }
 
       // 2. Toque rápido nas bordas laterais da folha no Modo Paginado (Estilo Kindle Touch)
-      if (dom.viewport.classList.contains('paginated-mode') && dt < 280 && Math.abs(dx) < 12 && Math.abs(dy) < 12) {
+      if (dt < 320 && Math.abs(dx) < 14 && Math.abs(dy) < 14) {
         const target = e.target;
-        if (target && target.closest('a, button, input, select, textarea, .entity-note-ref, mark.user-hl, img')) return;
+        if (target && target.closest('a, button, input, select, textarea, .entity-note-ref, mark.user-hl, img, .toolbar, .statusbar, .sidebar, .modal-backdrop, .modal-card, .selection-toolbar, .popover, .tools-dropdown')) return;
         const w = window.innerWidth;
-        if (touchStartX <= w * 0.18) {
+        if (touchStartX <= w * 0.22) {
           if (state.mangaRtl) stepForward(); else stepBackward();
-        } else if (touchStartX >= w * 0.82) {
+        } else if (touchStartX >= w * 0.78) {
           if (state.mangaRtl) stepBackward(); else stepForward();
+        } else {
+          if (typeof setImmersiveMode === 'function') {
+            setImmersiveMode(!document.body.classList.contains('immersive-mode'));
+          }
         }
       }
     }, { passive: true });

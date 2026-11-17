@@ -89,6 +89,8 @@
       vocabContainer: document.getElementById('vocabContainer'),
       inputSearch: document.getElementById('inputSearch'),
       statusLeft: document.getElementById('statusLeft'),
+      statusLeftText: document.getElementById('statusLeftText'),
+      lblCefrBadge: document.getElementById('lblCefrBadge'),
       statusPercent: document.getElementById('statusPercent'),
       progressFill: document.getElementById('progressFill'),
       progressTrack: document.getElementById('progressTrack'),
@@ -129,6 +131,14 @@
           dom.pageSheet.setAttribute('data-book-theme', state.bookTheme);
         } else {
           dom.pageSheet.removeAttribute('data-book-theme');
+        }
+        dom.pageSheet.classList.toggle('vertical-active', state.textOrientation === 'vertical');
+      }
+      if (dom.pdfContainer) {
+        if (state.bookTheme && state.bookTheme !== 'same') {
+          dom.pdfContainer.setAttribute('data-book-theme', state.bookTheme);
+        } else {
+          dom.pdfContainer.removeAttribute('data-book-theme');
         }
       }
       const shelfGridEl = document.getElementById('bookshelfGrid');
@@ -229,6 +239,11 @@
       }
       if (dom.readerFlow) {
         dom.readerFlow.classList.toggle('webtoon-strip', Boolean(isMangaMode && state.webtoonStrip));
+      }
+      if (dom.viewport && dom.viewport.classList.contains('paginated-mode') && state.textOrientation !== 'vertical') {
+        if (typeof updatePaginatedMetrics === 'function') {
+          updatePaginatedMetrics();
+        }
       }
       const chkTapEl = document.getElementById('chkTapZones');
       if (chkTapEl) chkTapEl.checked = state.tapZones !== false;
@@ -2421,26 +2436,120 @@
       });
     }
 
-    function analyzeBookCefr(sections) {
-      if (!sections || !sections.length) return null;
-      const sampleText = sections.slice(0, 15).map(s => s.text || '').join(' ').toLowerCase();
-      const words = sampleText.match(/[a-zà-ÿ]{2,}/gi) || [];
-      if (words.length < 50) return null;
+    function getSectionRawText(sec) {
+      if (!sec) return '';
+      if (sec.text && typeof sec.text === 'string' && sec.text.trim()) return sec.text;
+      if (sec.rawSlice && typeof sec.rawSlice === 'string') {
+        return sec.rawSlice.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/gi, ' ').replace(/\s+/g, ' ');
+      }
+      if (sec.html && typeof sec.html === 'string') {
+        return sec.html.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/gi, ' ').replace(/\s+/g, ' ');
+      }
+      return '';
+    }
+
+    function analyzeBookCefr(sections, extraSampleText = '') {
+      let sampleText = (extraSampleText || '').trim();
+      if (!sampleText && sections && sections.length) {
+        let collected = '';
+        const totalSecs = sections.length;
+        // Amostrar capítulos narrativos reais distribuídos ao longo do livro, evitando sumário/capa (primeiras seções)
+        const indicesToSample = [];
+        if (totalSecs <= 4) {
+          for (let i = 0; i < totalSecs; i++) indicesToSample.push(i);
+        } else {
+          // Amostra distribuída em 15%, 35%, 55% e 75% da obra
+          const p1 = Math.min(totalSecs - 1, Math.max(1, Math.floor(totalSecs * 0.15)));
+          const p2 = Math.min(totalSecs - 1, Math.max(p1 + 1, Math.floor(totalSecs * 0.35)));
+          const p3 = Math.min(totalSecs - 1, Math.max(p2 + 1, Math.floor(totalSecs * 0.55)));
+          const p4 = Math.min(totalSecs - 1, Math.max(p3 + 1, Math.floor(totalSecs * 0.75)));
+          const uniq = Array.from(new Set([p1, p2, p3, p4]));
+          indicesToSample.push(...uniq);
+        }
+
+        for (const idx of indicesToSample) {
+          const s = sections[idx];
+          const txt = getSectionRawText(s);
+          if (txt && txt.length > 200) {
+            collected += ' ' + txt;
+            if (collected.length > 35000) break;
+          }
+        }
+        sampleText = collected || sections.map(s => getSectionRawText(s)).join(' ');
+      }
+      if (!sampleText || sampleText.length < 50) return null;
+
+      // 1. Sentenças e Palavras
+      const cleanText = sampleText.replace(/\s+/g, ' ');
+      // Separar frases por pontuação terminal (. ! ?) respeitando abreviações e aspas
+      const rawSentences = cleanText.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÿ"“'‘])/).map(s => s.trim()).filter(s => s.length > 5);
+      const sentencesCount = Math.max(1, rawSentences.length);
+      const words = cleanText.toLowerCase().match(/[a-zà-ÿ]{2,}/gi) || [];
+      if (words.length < 30) return null;
+
       const wordCount = words.length;
-      const totalLen = words.reduce((acc, w) => acc + w.length, 0);
-      const avgLen = totalLen / wordCount;
+      const totalChars = words.reduce((acc, w) => acc + w.length, 0);
+      const avgWordLen = totalChars / wordCount;
+      const wordsPerSentence = wordCount / sentencesCount;
+
+      // 2. Análise Lexical Avançada (Vocabulário CEFR)
+      const w6 = words.filter(w => w.length >= 6).length;
+      const w7 = words.filter(w => w.length >= 7).length;
+      const pct6 = (w6 / wordCount) * 100;
+      const pct7 = (w7 / wordCount) * 100;
+
+      // 3. Sintaxe Narrativa: calcular média de palavras por frase ignorando réplicas curtas de diálogo
+      const narrativeSentences = rawSentences.filter(s => {
+        const sw = s.match(/[a-zà-ÿ]{2,}/gi);
+        return sw && sw.length >= 4;
+      });
+      const narrativeWps = narrativeSentences.length
+        ? (narrativeSentences.reduce((acc, s) => acc + (s.match(/[a-zà-ÿ]{2,}/gi) || []).length, 0) / narrativeSentences.length)
+        : Math.max(11, wordsPerSentence);
+
+      // Automated Readability Index (ARI) calibrado para literatura / ficção com diálogos
+      const effectiveWps = Math.min(35, Math.max(11, narrativeWps));
+      const rawAri = (4.71 * avgWordLen) + (0.5 * effectiveWps) - 21.43;
+      const ari = Math.max(1, Math.min(20, rawAri));
+
+      // 4. Mapeamento Calibrado CEFR (Vocabulário + Complexidade Sintática)
+      // Obras de ficção moderna (thrillers, romances, terror) possuem muitos diálogos diretos;
+      // o nível CEFR é determinado primariamente pela sofisticação do vocabulário (pct6, pct7, avgWordLen).
+      let level = 'B2 (Independente / Fluente)';
+      let code = 'B2';
+
+      if (pct6 < 6.0 && pct7 < 3.5 && avgWordLen < 3.95) {
+        level = 'A1 (Iniciante / Básico)';
+        code = 'A1';
+      } else if ((pct6 < 8.5 && pct7 < 5.0) && (avgWordLen < 4.12 || ari < 4.0)) {
+        level = 'A2 (Elementar)';
+        code = 'A2';
+      } else if ((pct6 < 16.5 && pct7 < 11.5) || (avgWordLen < 4.55 && ari < 7.0)) {
+        level = 'B1 (Intermediário)';
+        code = 'B1';
+      } else if (pct6 >= 27.0 && pct7 >= 22.0 && avgWordLen >= 5.25 && ari >= 13.0) {
+        level = 'C2 (Domínio Pleno / Literário)';
+        code = 'C2';
+      } else if (pct6 >= 22.5 && pct7 >= 17.5 && avgWordLen >= 4.90 && ari >= 10.2) {
+        level = 'C1 (Avançado / Acadêmico)';
+        code = 'C1';
+      } else {
+        level = 'B2 (Independente / Fluente)';
+        code = 'B2';
+      }
+
       const uniqueWords = new Set(words);
-      const diversity = uniqueWords.size / wordCount;
-
-      let level = 'B1 (Intermediário)';
-      if (avgLen < 4.3 && diversity < 0.30) level = 'A1 (Básico)';
-      else if (avgLen < 4.7 && diversity < 0.38) level = 'A2 (Elementar)';
-      else if (avgLen < 5.1 && diversity < 0.46) level = 'B1 (Intermediário)';
-      else if (avgLen < 5.6 && diversity < 0.54) level = 'B2 (Independente)';
-      else if (avgLen < 6.1) level = 'C1 (Avançado / Acadêmico)';
-      else level = 'C2 (Domínio Pleno / Literário)';
-
-      return { level, avgWordLength: avgLen.toFixed(1), uniqueWordsCount: uniqueWords.size, totalSampleWords: wordCount };
+      return {
+        level,
+        code,
+        ari: ari.toFixed(1),
+        avgWordLength: avgWordLen.toFixed(1),
+        wordsPerSentence: Math.round(narrativeWps),
+        complexWordsPct: Math.round(pct7) + '%',
+        pct6Letters: Math.round(pct6) + '%',
+        uniqueWordsCount: uniqueWords.size,
+        totalSampleWords: wordCount
+      };
     }
 
     async function renderSection(options = {}) {
@@ -2645,11 +2754,17 @@
       const currentLoc = Math.max(1, Math.round(currentWordsRead / 22));
       const totalLoc = Math.max(currentLoc, Math.round(totalBookWords / 22));
 
+      // Página estimada padronizada de livro impresso (1 página física padrão ≈ 250 palavras)
+      const estCurrentPage = Math.max(1, Math.round(currentWordsRead / 250));
+      const estTotalPages = Math.max(estCurrentPage, Math.round(totalBookWords / 250));
+
       return {
         minLeftChapter,
         minLeftBook,
         currentLoc,
         totalLoc,
+        estCurrentPage,
+        estTotalPages,
         wpm
       };
     }
@@ -2662,6 +2777,11 @@
 
       dom.inputSectionNum.value = String(cur);
       dom.lblTotalSections.textContent = `/ ${total}`;
+      if (state.format === 'PDF') {
+        dom.inputSectionNum.title = `Página ${cur} de ${total} do PDF (digite o número e pressione Enter)`;
+      } else {
+        dom.inputSectionNum.title = `Capítulo/Seção ${cur} de ${total} (digite o número e pressione Enter)`;
+      }
       dom.statusPercent.textContent = `${pct}%`;
       dom.progressFill.style.width = `${pct}%`;
 
@@ -2677,15 +2797,77 @@
         dom.progressTrack.dataset.renderedBook = state.bookKey || '';
       }
 
+      function setStatusLeft(text, isClickable = false, title = '') {
+        const textSpan = document.getElementById('statusLeftText');
+        if (textSpan) {
+          textSpan.textContent = text;
+        } else if (dom.statusLeft) {
+          dom.statusLeft.textContent = text;
+        }
+        if (dom.statusLeft) {
+          dom.statusLeft.style.cursor = isClickable ? 'pointer' : 'default';
+          dom.statusLeft.title = title || '';
+        }
+      }
+
       const cefrBadgeEl = document.getElementById('lblCefrBadge');
       if (cefrBadgeEl && state.sections && state.sections.length && state.format !== 'CBZ') {
         if (!state._cachedCefr) {
           state._cachedCefr = analyzeBookCefr(state.sections);
+          // Se for PDF e páginas forem sob demanda (text = null), extrair amostra assíncrona das primeiras páginas
+          if (!state._cachedCefr && state.pdfDoc && !state._extractingPdfCefr) {
+            state._extractingPdfCefr = true;
+            (async () => {
+              try {
+                const totalPgs = state.pdfDoc.numPages || 1;
+                // Amostrar capítulos narrativos reais (evitando capa, copyright e sumário das páginas 1-8)
+                let startPg = 1;
+                if (state.currentIndex > 5) {
+                  startPg = Math.max(1, state.currentIndex - 1);
+                } else if (totalPgs > 25) {
+                  startPg = Math.min(Math.max(12, Math.floor(totalPgs * 0.08)), totalPgs - 10);
+                } else if (totalPgs > 8) {
+                  startPg = 5;
+                }
+                const endPg = Math.min(totalPgs, startPg + 12);
+                let pdfSample = '';
+                for (let p = startPg; p <= endPg; p++) {
+                  try {
+                    const pg = await state.pdfDoc.getPage(p);
+                    const tc = await pg.getTextContent();
+                    const str = tc.items.map(it => it.str || '').join(' ');
+                    if (state.sections[p - 1]) state.sections[p - 1].text = str;
+                    pdfSample += ' ' + str;
+                    if (pdfSample.length > 20000) break;
+                  } catch {}
+                }
+                if (pdfSample.trim().length > 100) {
+                  state._cachedCefr = analyzeBookCefr(null, pdfSample);
+                  updateFooterLabels();
+                }
+              } catch {}
+              state._extractingPdfCefr = false;
+            })();
+          }
         }
         if (state._cachedCefr) {
           cefrBadgeEl.classList.remove('hidden');
-          cefrBadgeEl.textContent = `CEFR: ${state._cachedCefr.level.split(' ')[0]}`;
-          cefrBadgeEl.title = `Nível de Vocabulário: ${state._cachedCefr.level} (Média: ${state._cachedCefr.avgWordLength} letras, ${state._cachedCefr.uniqueWordsCount} palavras únicas)`;
+          cefrBadgeEl.textContent = `CEFR: ${state._cachedCefr.code || state._cachedCefr.level.split(' ')[0]}`;
+          cefrBadgeEl.title = `Nível de Leitura / Vocabulário: ${state._cachedCefr.level}\nMédia de letras por palavra: ${state._cachedCefr.avgWordLength}\nPalavras únicas na amostra: ${state._cachedCefr.uniqueWordsCount}\n(Clique para ver a tabela de níveis)`;
+          cefrBadgeEl.onclick = (e) => {
+            e.stopPropagation();
+            alert(`Nível Estimado do Livro: ${state._cachedCefr.level}\n\n• Índice de Legibilidade (ARI): ${state._cachedCefr.ari || 'N/A'}\n• Palavras Complexas (7+ letras): ${state._cachedCefr.complexWordsPct || 'N/A'}\n• Média por frase: ~${state._cachedCefr.wordsPerSentence || 'N/A'} palavras\n• Comprimento médio das palavras: ${state._cachedCefr.avgWordLength} letras\n\nQuadro Comum Europeu de Referência (CEFR):\n• A1 / A2: Básico / Elementar (frases curtas, vocabulário cotidiano simples)\n• B1 / B2: Intermediário / Independente (ficção moderna, thrillers, diálogos naturais)\n• C1 / C2: Avançado / Domínio Pleno (literatura clássica, vocabulário culto/acadêmico)`);
+          };
+          if (dom.headerMeta && !dom.headerMeta.textContent.includes('CEFR')) {
+            dom.headerMeta.textContent = `${state.author || 'Autor'} · ${state.format} · CEFR: ${state._cachedCefr.code}`;
+          }
+          const sbCefrLvl = document.getElementById('lblSidebarCefrLevel');
+          const sbCefrBdg = document.getElementById('lblSidebarCefrBadge');
+          if (sbCefrLvl) sbCefrLvl.textContent = state._cachedCefr.level;
+          if (sbCefrBdg) {
+            sbCefrBdg.textContent = `CEFR: ${state._cachedCefr.code}`;
+            sbCefrBdg.onclick = cefrBadgeEl.onclick;
+          }
         } else {
           cefrBadgeEl.classList.add('hidden');
         }
@@ -2701,38 +2883,68 @@
       const metrics = computeKindleReadingMetrics();
 
       let kindleSummary = '';
+      const cefrShort = state._cachedCefr ? `Nível: CEFR ${state._cachedCefr.code} (${state._cachedCefr.level.split('(')[1] ? state._cachedCefr.level.split('(')[1].replace(')', '') : state._cachedCefr.level})` : 'Nível: Calculando CEFR...';
       if (metrics && state.format !== 'CBZ') {
+        const pageStr = state.format === 'PDF'
+          ? `Pág. ${cur} de ${total}`
+          : `Pág. ${metrics.estCurrentPage} de ${metrics.estTotalPages}`;
         const chStr = `Faltam ${formatMinutesHuman(metrics.minLeftChapter)} no cap.`;
         const bkStr = `${formatMinutesHuman(metrics.minLeftBook)} no livro`;
         const locStr = `Pos. ${metrics.currentLoc} de ${metrics.totalLoc}`;
-        if (state.footerMode === 'chapter') kindleSummary = chStr;
-        else if (state.footerMode === 'book') kindleSummary = `Faltam ${bkStr}`;
-        else if (state.footerMode === 'loc') kindleSummary = locStr;
-        else kindleSummary = `${chStr} · ${bkStr} · ${locStr}`;
 
-        dom.statusLeft.textContent = `${kindleSummary} (${pct}%)`;
-        dom.statusLeft.style.cursor = 'pointer';
-        dom.statusLeft.title = 'Clique para alternar entre: Completo, Tempo no Capítulo, Tempo no Livro e Posição Kindle';
-      } else {
-        dom.statusLeft.textContent = `${state.format} · Seção ${cur}/${total} (${pct}%)`;
-      }
+        // Detalhe temporal ou posicional sem duplicar a contagem de páginas
+        let timeOrDetail = `${chStr} · ${bkStr}`;
+        if (state.footerMode === 'page') timeOrDetail = '';
+        else if (state.footerMode === 'chapter') timeOrDetail = chStr;
+        else if (state.footerMode === 'book') timeOrDetail = `Faltam ${bkStr}`;
+        else if (state.footerMode === 'loc') timeOrDetail = locStr;
+        else if (state.footerMode === 'cefr') timeOrDetail = cefrShort;
 
-      if (dom.viewport.classList.contains('paginated-mode') && state.format !== 'CBZ') {
-        dom.sheetChapterTitle.textContent = `${state.subPageIndex + 1} / ${state.subPageCount}`;
-        dom.sheetFooterInfo.textContent = `${sec ? sec.title : ''} · Pág. ${state.subPageIndex + 1}/${state.subPageCount} · ${kindleSummary || (`Cap. ${cur}/${total}`)}`;
+        if (state.footerMode === 'page') {
+          kindleSummary = pageStr;
+        } else {
+          kindleSummary = timeOrDetail ? `${pageStr} · ${timeOrDetail}` : pageStr;
+        }
+
+        setStatusLeft(`${kindleSummary} (${pct}%)`, true, 'Clique para alternar entre: Completo (Página + Tempo), Apenas Página, Tempo no Capítulo, Tempo no Livro, Posição e Nível CEFR');
+
+        const secTitle = sec && sec.title ? `${sec.title} · ` : '';
+        if (dom.viewport.classList.contains('paginated-mode')) {
+          dom.sheetChapterTitle.textContent = `${state.subPageIndex + 1} / ${state.subPageCount}`;
+          const screenDetail = state.subPageCount > 1 ? ` (Tela ${state.subPageIndex + 1}/${state.subPageCount})` : '';
+          const sheetPagePart = `${pageStr}${screenDetail}`;
+          dom.sheetFooterInfo.textContent = `${secTitle}${sheetPagePart}${timeOrDetail ? ' · ' + timeOrDetail : ''}`;
+        } else {
+          dom.sheetFooterInfo.textContent = `${secTitle}${kindleSummary}`;
+        }
       } else {
-        dom.sheetFooterInfo.textContent = `${sec ? sec.title : ''} · ${kindleSummary || (`${cur} de ${total} (${pct}%)`)}`;
+        const cefrPart = state.footerMode === 'cefr' ? ` · ${cefrShort}` : (state._cachedCefr ? ` · CEFR: ${state._cachedCefr.code}` : '');
+        setStatusLeft(`${state.format} · Seção ${cur}/${total} (${pct}%)${cefrPart}`, true, 'Clique para alternar');
+        dom.sheetFooterInfo.textContent = `${sec && sec.title ? sec.title + ' · ' : ''}Seção ${cur}/${total} (${pct}%)`;
       }
       dom.sheetFooterInfo.style.cursor = 'pointer';
-      dom.sheetFooterInfo.title = 'Clique para alternar o indicador de tempo/posição estilo Kindle';
+      dom.sheetFooterInfo.title = 'Clique para alternar o indicador de página/tempo estilo Kindle';
     }
 
     function cycleKindleFooterMode() {
-      const modes = ['full', 'chapter', 'book', 'loc'];
+      const modes = ['full', 'page', 'chapter', 'book', 'loc', 'cefr'];
       const next = modes[(modes.indexOf(state.footerMode) + 1) % modes.length];
       state.footerMode = next;
       localStorage.setItem('reader_footerMode', next);
       updateFooterLabels();
+      if (next === 'page') {
+        showToast('Modo Rodapé: Apenas Número de Página (Pág. X de Y)');
+      } else if (next === 'full') {
+        showToast('Modo Rodapé: Completo (Página + Tempo Restante)');
+      } else if (next === 'chapter') {
+        showToast('Modo Rodapé: Tempo Restante no Capítulo');
+      } else if (next === 'book') {
+        showToast('Modo Rodapé: Tempo Restante no Livro');
+      } else if (next === 'loc') {
+        showToast('Modo Rodapé: Posição Kindle (Pos. X)');
+      } else if (next === 'cefr') {
+        showToast(state._cachedCefr ? `Modo Nível Ativado: ${state._cachedCefr.level}` : 'Calculando nível de vocabulário...');
+      }
     }
     dom.statusLeft.addEventListener('click', cycleKindleFooterMode);
     dom.sheetFooterInfo.addEventListener('click', cycleKindleFooterMode);

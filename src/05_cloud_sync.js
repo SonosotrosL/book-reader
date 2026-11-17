@@ -4195,14 +4195,18 @@ ${r.reviewText || '_Sem resenha escrita._'}
       }
 
       // 2. Toque rápido nas bordas laterais da folha no Modo Paginado (Estilo Kindle Touch)
-      if (dom.viewport.classList.contains('paginated-mode') && dt < 280 && Math.abs(dx) < 12 && Math.abs(dy) < 12) {
+      if (dt < 320 && Math.abs(dx) < 14 && Math.abs(dy) < 14) {
         const target = e.target;
-        if (target && target.closest('a, button, input, select, textarea, .entity-note-ref, mark.user-hl, img')) return;
+        if (target && target.closest('a, button, input, select, textarea, .entity-note-ref, mark.user-hl, img, .toolbar, .statusbar, .sidebar, .modal-backdrop, .modal-card, .selection-toolbar, .popover, .tools-dropdown')) return;
         const w = window.innerWidth;
-        if (touchStartX <= w * 0.18) {
+        if (touchStartX <= w * 0.22) {
           if (state.mangaRtl) stepForward(); else stepBackward();
-        } else if (touchStartX >= w * 0.82) {
+        } else if (touchStartX >= w * 0.78) {
           if (state.mangaRtl) stepBackward(); else stepForward();
+        } else {
+          if (typeof setImmersiveMode === 'function') {
+            setImmersiveMode(!document.body.classList.contains('immersive-mode'));
+          }
         }
       }
     }, { passive: true });

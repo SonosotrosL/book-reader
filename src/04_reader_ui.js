@@ -253,6 +253,8 @@
         state.format = parsed.format;
         state.sections = parsed.sections;
         state.toc = parsed.toc;
+        state._cachedCefr = null;
+        state._extractingPdfCefr = false;
 
         document.body.classList.remove('is-shelf-home');
         applySettings();
@@ -279,7 +281,9 @@
 
         dom.headerTitle.textContent = state.title;
         dom.headerMeta.textContent = `${state.author} · ${state.format}`;
-        dom.statusLeft.textContent = `${state.format} · ${state.sections.length} seções`;
+        const statusTextEl = document.getElementById('statusLeftText');
+        if (statusTextEl) statusTextEl.textContent = `${state.format} · ${state.sections.length} seções`;
+        else dom.statusLeft.textContent = `${state.format} · ${state.sections.length} seções`;
 
         dom.emptyState.classList.add('hidden');
         const subMediaBarEl = document.getElementById('subtitleMediaBar');
@@ -545,6 +549,25 @@
     document.getElementById('btnSelDict').addEventListener('click', () => openLookupModal('dict'));
     document.getElementById('btnSelTrans').addEventListener('click', () => openLookupModal('trans'));
     document.getElementById('btnSelAnki').addEventListener('click', () => openLookupModal('anki'));
+    const btnSelQuoteCardEl = document.getElementById('btnSelQuoteCard');
+    if (btnSelQuoteCardEl) {
+      btnSelQuoteCardEl.addEventListener('click', () => {
+        if (dom.selectionToolbar) dom.selectionToolbar.classList.remove('open');
+        openQuoteCardModal({
+          text: state.selectedText || '',
+          bookTitle: (state.metadata && state.metadata.title) || state.title || 'Livro',
+          author: (state.metadata && (state.metadata.creator || state.metadata.author)) || state.author || '',
+          chapter: (state.toc && state.toc[state.currentIndex] && state.toc[state.currentIndex].label) || ''
+        });
+      });
+    }
+    const btnSelRsvpEl = document.getElementById('btnSelRsvp');
+    if (btnSelRsvpEl) {
+      btnSelRsvpEl.addEventListener('click', () => {
+        if (dom.selectionToolbar) dom.selectionToolbar.classList.remove('open');
+        openRsvpModal(state.selectedText || '');
+      });
+    }
 
     // Eventos do Modal de Dicionário / Tradutor / Anki
     document.getElementById('btnCloseModal').addEventListener('click', () => dom.lookupModal.classList.remove('open'));
@@ -624,6 +647,9 @@
       btn.addEventListener('click', () => {
         state.bookTheme = btn.dataset.bookTheme;
         applySettings();
+        if (state.format === 'PDF' && typeof syncPdfTintUi === 'function') {
+          syncPdfTintUi();
+        }
       });
     });
     document.querySelectorAll('[data-accent-val]').forEach(btn => {
@@ -696,6 +722,9 @@
       btn.addEventListener('click', () => {
         state.textAlign = btn.dataset.align;
         applySettings();
+        if (dom.viewport && dom.viewport.classList.contains('paginated-mode')) {
+          if (typeof updatePaginatedMetrics === 'function') updatePaginatedMetrics();
+        }
       });
     });
 
@@ -715,7 +744,10 @@
       state.textOrientation = mode;
       localStorage.setItem('reader_textOrientation', mode);
       applySettings();
-      showToast(mode === 'vertical' ? 'Leitura Vertical (縦書き Tate-gaki CJK) ativada' : 'Leitura Horizontal padrão ativada');
+      if (state.sections && state.sections.length) {
+        renderSection({ restoreSubPage: 0, forceRebuildContinuous: true });
+      }
+      showToast(mode === 'vertical' ? 'Leitura Vertical ativada' : 'Leitura Horizontal padrão ativada');
     }
     const btnOrientH = document.getElementById('btnTextOrientHorizontal');
     const btnOrientV = document.getElementById('btnTextOrientVertical');
@@ -1224,6 +1256,19 @@
         lines.push('_Nenhum destaque, nota ou resenha registrada para este livro ainda._');
       }
       return lines.join('\n');
+    }
+
+    const btnExportBookObsidianEl = document.getElementById('btnExportBookObsidian');
+    if (btnExportBookObsidianEl) {
+      btnExportBookObsidianEl.addEventListener('click', () => {
+        if (!activeBookInfoTarget) return;
+        const bk = activeBookInfoTarget.bookKey;
+        const hlMap = getHighlightsMap();
+        const highlights = Array.isArray(hlMap[bk]) ? hlMap[bk] : [];
+        const notes = typeof getEntityNotesMap === 'function' ? Object.values(getEntityNotesMap(bk) || {}) : [];
+        const rev = (getBookReviewsMap()[bk] || {});
+        exportBookToObsidianMarkdown(activeBookInfoTarget, highlights, notes, rev);
+      });
     }
 
     const btnExportDossierEl = document.getElementById('btnExportBookStudyDossier');
@@ -1825,6 +1870,8 @@
       state.format = '';
       state.sections = [];
       state.toc = [];
+      state._cachedCefr = null;
+      state._extractingPdfCefr = false;
       state.pathToSection = new Map();
       state.idToSection = new Map();
       state.currentIndex = 0;
@@ -1843,7 +1890,11 @@
       if (dom.headerMeta) dom.headerMeta.textContent = 'EPUB · MOBI · AZW3 · PDF · FB2 · CBZ · MD';
       if (dom.inputSectionNum) dom.inputSectionNum.value = '0';
       if (dom.lblTotalSections) dom.lblTotalSections.textContent = '/ 0';
-      if (dom.statusLeft) dom.statusLeft.textContent = 'Pronto';
+      const statusTextEl = document.getElementById('statusLeftText');
+      if (statusTextEl) statusTextEl.textContent = 'Pronto';
+      else if (dom.statusLeft) dom.statusLeft.textContent = 'Pronto';
+      const cefrBadgeEl = document.getElementById('lblCefrBadge');
+      if (cefrBadgeEl) cefrBadgeEl.classList.add('hidden');
       if (dom.statusPercent) dom.statusPercent.textContent = '0%';
       if (dom.progressFill) dom.progressFill.style.width = '0%';
       document.body.classList.add('is-shelf-home');
@@ -5115,11 +5166,23 @@
             <mark class="user-hl user-hl-${item.color || 'yellow'}">"${escapeHtml(item.text)}"</mark>
           </div>
           <div style="display:flex; gap:6px; justify-content:flex-end; margin-top:6px;">
+            <button class="tb-btn tb-btn-solid btn-q-card" style="height:24px; font-size:11px;">📷 Card</button>
             <button class="tb-btn tb-btn-solid btn-q-copy" style="height:24px; font-size:11px;">Copiar Citação</button>
             <button class="tb-btn tb-btn-solid btn-q-anki" style="height:24px; font-size:11px;">Enviar p/ Anki</button>
             <button class="tb-btn tb-btn-solid btn-q-jump" style="height:24px; font-size:11px;">Ir p/ Página</button>
           </div>
         `;
+        const btnCardItem = card.querySelector('.btn-q-card');
+        if (btnCardItem) {
+          btnCardItem.addEventListener('click', () => {
+            openQuoteCardModal({
+              text: item.text,
+              bookTitle: item.bookTitle,
+              author: item.author || '',
+              chapter: item.chapterTitle || ''
+            });
+          });
+        }
         card.querySelector('.btn-q-copy').addEventListener('click', () => {
           navigator.clipboard.writeText(`"${item.text}" — ${item.bookTitle} (${item.chapterTitle || ''})`);
           showToast('Citação copiada!');
@@ -5185,6 +5248,721 @@
     document.getElementById('btnExportQuotesMd').addEventListener('click', () => exportAllQuotes('md'));
     document.getElementById('btnExportQuotesDoc').addEventListener('click', () => exportAllQuotes('doc'));
     document.getElementById('btnExportQuotesPdf').addEventListener('click', () => exportAllQuotes('pdf'));
+
+    const btnExportQuotesObsidianEl = document.getElementById('btnExportQuotesObsidian');
+    if (btnExportQuotesObsidianEl) {
+      btnExportQuotesObsidianEl.addEventListener('click', () => exportQuotesToObsidianMarkdown());
+    }
+
+    const btnStudioQuoteCardEl = document.getElementById('btnStudioQuoteCard');
+    if (btnStudioQuoteCardEl) {
+      btnStudioQuoteCardEl.addEventListener('click', () => {
+        const { allQuotes } = collectAllQuotesData(document.getElementById('inputFilterQuotes').value || '');
+        if (!allQuotes.length) {
+          showToast('Nenhuma citação encontrada para gerar card.');
+          return;
+        }
+        const q = allQuotes[0];
+        openQuoteCardModal({
+          text: q.text,
+          bookTitle: q.bookTitle,
+          author: q.author || '',
+          chapter: q.chapterTitle || ''
+        });
+      });
+    }
+
+    // =========================================================
+    // 1. GERADOR VISUAL DE QUOTE CARDS (CANVAS 1080x1080)
+    // =========================================================
+    let activeQuoteCardData = {
+      text: '',
+      bookTitle: '',
+      author: '',
+      chapter: '',
+      theme: 'editorial',
+      coverImg: null
+    };
+
+    function openQuoteCardModal({ text, bookTitle, author, chapter }) {
+      activeQuoteCardData.text = (text || '').trim();
+      activeQuoteCardData.bookTitle = (bookTitle || state.title || 'Livro').trim();
+      activeQuoteCardData.author = (author || (state.metadata && (state.metadata.creator || state.metadata.author)) || state.author || '').trim();
+      activeQuoteCardData.chapter = (chapter || '').trim();
+      activeQuoteCardData.coverImg = null;
+
+      const coverUrl = (typeof getBookCoverDataUrl === 'function') ? getBookCoverDataUrl(state.bookKey, state.title) : '';
+      if (coverUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          activeQuoteCardData.coverImg = img;
+          renderQuoteCardCanvas();
+        };
+        img.src = coverUrl;
+      }
+
+      document.querySelectorAll('.quote-card-theme-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.cardTheme === activeQuoteCardData.theme);
+      });
+
+      renderQuoteCardCanvas();
+      const m = document.getElementById('quoteCardModal');
+      if (m) m.classList.add('open');
+    }
+
+    function renderQuoteCardCanvas() {
+      const canvas = document.getElementById('quoteCardCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = 1080;
+      const H = 1080;
+      canvas.width = W;
+      canvas.height = H;
+
+      const theme = activeQuoteCardData.theme || 'editorial';
+
+      let bgGradient = null;
+      let textColor = '#ffffff';
+      let accentColor = '#d4af37';
+      let mutedColor = 'rgba(255, 255, 255, 0.7)';
+      let borderColor = 'rgba(212, 175, 55, 0.28)';
+      let quoteMarkColor = 'rgba(212, 175, 55, 0.35)';
+      let fontFamily = 'Georgia, "Playfair Display", serif';
+
+      if (theme === 'editorial') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#1c1e24');
+        bgGradient.addColorStop(1, '#111216');
+        textColor = '#f5f5f7';
+        accentColor = '#d4af37';
+        mutedColor = '#a0a3bd';
+        borderColor = 'rgba(212, 175, 55, 0.3)';
+        quoteMarkColor = 'rgba(212, 175, 55, 0.35)';
+        fontFamily = 'Georgia, "Times New Roman", serif';
+      } else if (theme === 'midnight') {
+        ctx.fillStyle = '#000000';
+        textColor = '#ffffff';
+        accentColor = '#38bdf8';
+        mutedColor = '#94a3b8';
+        borderColor = '#27272a';
+        quoteMarkColor = 'rgba(56, 189, 248, 0.35)';
+        fontFamily = 'system-ui, -apple-system, sans-serif';
+      } else if (theme === 'sunset') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#2e1220');
+        bgGradient.addColorStop(1, '#140c1d');
+        textColor = '#fdf2f8';
+        accentColor = '#f472b6';
+        mutedColor = '#d8b4e2';
+        borderColor = 'rgba(244, 114, 182, 0.28)';
+        quoteMarkColor = 'rgba(244, 114, 182, 0.35)';
+        fontFamily = 'Georgia, serif';
+      } else if (theme === 'aurora') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#06282d');
+        bgGradient.addColorStop(1, '#051821');
+        textColor = '#f0fdf4';
+        accentColor = '#34d399';
+        mutedColor = '#a7f3d0';
+        borderColor = 'rgba(52, 211, 153, 0.28)';
+        quoteMarkColor = 'rgba(52, 211, 153, 0.35)';
+        fontFamily = 'system-ui, sans-serif';
+      } else if (theme === 'paper') {
+        bgGradient = ctx.createLinearGradient(0, 0, W, H);
+        bgGradient.addColorStop(0, '#f9f5eb');
+        bgGradient.addColorStop(1, '#ede4ce');
+        textColor = '#2b231c';
+        accentColor = '#854d0e';
+        mutedColor = '#6b5a4b';
+        borderColor = 'rgba(133, 77, 14, 0.28)';
+        quoteMarkColor = 'rgba(133, 77, 14, 0.25)';
+        fontFamily = 'Georgia, serif';
+      }
+
+      if (bgGradient) {
+        ctx.fillStyle = bgGradient;
+      } else {
+        ctx.fillStyle = '#000000';
+      }
+      ctx.fillRect(0, 0, W, H);
+
+      const pad = 64;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pad, pad, W - pad * 2, H - pad * 2);
+
+      ctx.font = `italic 110px ${fontFamily}`;
+      ctx.fillStyle = quoteMarkColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('“', pad + 36, pad + 24);
+
+      const rawText = activeQuoteCardData.text || '“A leitura engrandece a alma.”';
+      const textLen = rawText.length;
+      let fontSize = 42;
+      let lineHeight = 66;
+
+      if (textLen <= 90) {
+        fontSize = 50;
+        lineHeight = 76;
+      } else if (textLen <= 180) {
+        fontSize = 40;
+        lineHeight = 62;
+      } else if (textLen <= 320) {
+        fontSize = 32;
+        lineHeight = 50;
+      } else {
+        fontSize = 26;
+        lineHeight = 40;
+      }
+
+      ctx.font = `italic 500 ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      const maxTextWidth = W - pad * 2 - 80;
+      const words = rawText.split(' ');
+      const lines = [];
+      let currentLine = '';
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = currentLine + (currentLine ? ' ' : '') + words[n];
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxTextWidth && n > 0) {
+          lines.push(currentLine);
+          currentLine = words[n];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+
+      const maxLines = Math.floor((H - 380) / lineHeight);
+      const displayLines = lines.slice(0, maxLines);
+      if (lines.length > maxLines) {
+        displayLines[displayLines.length - 1] += '...';
+      }
+
+      const totalTextHeight = displayLines.length * lineHeight;
+      const textStartY = Math.max(pad + 140, (H - 240 - totalTextHeight) / 2 + 30);
+
+      displayLines.forEach((l, i) => {
+        ctx.fillText(l, pad + 40, textStartY + (i * lineHeight));
+      });
+
+      const footerY = H - pad - 120;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(pad + 40, footerY);
+      ctx.lineTo(W - pad - 40, footerY);
+      ctx.stroke();
+
+      let textLeft = pad + 40;
+      if (activeQuoteCardData.coverImg) {
+        const cvW = 68;
+        const cvH = 100;
+        const cvX = pad + 40;
+        const cvY = footerY + 12;
+        try {
+          ctx.save();
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(cvX, cvY, cvW, cvH, 6);
+          } else {
+            ctx.rect(cvX, cvY, cvW, cvH);
+          }
+          ctx.clip();
+          ctx.drawImage(activeQuoteCardData.coverImg, cvX, cvY, cvW, cvH);
+          ctx.restore();
+          ctx.strokeStyle = borderColor;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cvX, cvY, cvW, cvH);
+          textLeft += cvW + 18;
+        } catch {}
+      }
+
+      ctx.font = `bold 26px ${fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const displayTitle = (activeQuoteCardData.bookTitle || 'Leitor Portátil').slice(0, 48);
+      ctx.fillText(displayTitle, textLeft, footerY + 48);
+
+      let metaSubtitle = activeQuoteCardData.author || '';
+      if (activeQuoteCardData.chapter) {
+        metaSubtitle += (metaSubtitle ? ' • ' : '') + activeQuoteCardData.chapter.slice(0, 36);
+      }
+      if (!metaSubtitle) metaSubtitle = 'Destaque de Leitura';
+      ctx.font = `italic 20px ${fontFamily}`;
+      ctx.fillStyle = mutedColor;
+      ctx.fillText(metaSubtitle, textLeft, footerY + 82);
+
+      ctx.font = `600 18px system-ui, sans-serif`;
+      ctx.fillStyle = accentColor;
+      ctx.textAlign = 'right';
+      ctx.fillText('📖 Leitor Portátil', W - pad - 40, footerY + 54);
+      ctx.font = `14px system-ui, sans-serif`;
+      ctx.fillStyle = mutedColor;
+      ctx.fillText('leitor.app', W - pad - 40, footerY + 78);
+    }
+
+    // Eventos do Quote Card Modal
+    const btnCloseQuoteCardEl = document.getElementById('btnCloseQuoteCardModal');
+    if (btnCloseQuoteCardEl) {
+      btnCloseQuoteCardEl.addEventListener('click', () => {
+        const m = document.getElementById('quoteCardModal');
+        if (m) m.classList.remove('open');
+      });
+    }
+
+    document.querySelectorAll('.quote-card-theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeQuoteCardData.theme = btn.dataset.cardTheme;
+        document.querySelectorAll('.quote-card-theme-btn').forEach(b => b.classList.toggle('active', b === btn));
+        renderQuoteCardCanvas();
+      });
+    });
+
+    const btnEditQuoteTextEl = document.getElementById('btnEditQuoteCardText');
+    if (btnEditQuoteTextEl) {
+      btnEditQuoteTextEl.addEventListener('click', () => {
+        const val = prompt('Editar texto da citação:', activeQuoteCardData.text);
+        if (val != null) {
+          activeQuoteCardData.text = val.trim();
+          renderQuoteCardCanvas();
+        }
+      });
+    }
+
+    const btnCopyQuoteCardEl = document.getElementById('btnCopyQuoteCardImg');
+    if (btnCopyQuoteCardEl) {
+      btnCopyQuoteCardEl.addEventListener('click', () => {
+        const canvas = document.getElementById('quoteCardCanvas');
+        if (!canvas || !canvas.toBlob) return;
+        canvas.toBlob(async (blob) => {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            showToast('Card copiado como imagem para a Área de Transferência!');
+          } catch (e) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Quote_Card.png`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            showToast('Card baixado como PNG!');
+          }
+        });
+      });
+    }
+
+    const btnDownloadQuoteCardEl = document.getElementById('btnDownloadQuoteCardImg');
+    if (btnDownloadQuoteCardEl) {
+      btnDownloadQuoteCardEl.addEventListener('click', () => {
+        const canvas = document.getElementById('quoteCardCanvas');
+        if (!canvas) return;
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        const safe = (activeQuoteCardData.bookTitle || 'card').replace(/[^a-z0-9_-]/gi, '_').slice(0, 30);
+        a.download = `Card_${safe}.png`;
+        a.click();
+        showToast('Card visual baixado com sucesso!');
+      });
+    }
+
+    // =========================================================
+    // 2. MODO LEITURA RÁPIDA RSVP / SPRITZ
+    // =========================================================
+    let rsvpWords = [];
+    let rsvpIndex = 0;
+    let rsvpWpm = 350;
+    let rsvpTimer = null;
+    let rsvpIsPlaying = false;
+
+    function getOrpIndex(word) {
+      const clean = word.replace(/[^a-zA-Z0-9À-ž]/g, '');
+      const len = clean.length;
+      if (len <= 1) return 0;
+      if (len <= 5) return 1;
+      if (len <= 9) return 2;
+      if (len <= 13) return 3;
+      return 4;
+    }
+
+    function openRsvpModal(customText) {
+      let raw = (customText || '').trim();
+      if (!raw && dom.readerFlow) {
+        raw = (dom.readerFlow.innerText || '').trim();
+      }
+      if (!raw) {
+        showToast('Nenhum texto disponível para leitura rápida.');
+        return;
+      }
+
+      rsvpWords = raw.replace(/\s+/g, ' ').split(' ').filter(w => w.length > 0);
+      if (!rsvpWords.length) {
+        showToast('Nenhum texto detectado.');
+        return;
+      }
+
+      rsvpIndex = 0;
+      rsvpIsPlaying = false;
+      if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+
+      const bar = document.getElementById('rsvpProgressBar');
+      if (bar) {
+        bar.min = 0;
+        bar.max = rsvpWords.length - 1;
+        bar.value = 0;
+      }
+
+      const btnPlay = document.getElementById('btnRsvpTogglePlay');
+      if (btnPlay) btnPlay.textContent = '▶ Iniciar';
+
+      renderRsvpWord(0);
+      const m = document.getElementById('rsvpModal');
+      if (m) m.classList.add('open');
+    }
+
+    function renderRsvpWord(idx) {
+      if (idx < 0) idx = 0;
+      if (idx >= rsvpWords.length) {
+        rsvpIsPlaying = false;
+        if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+        const btnPlay = document.getElementById('btnRsvpTogglePlay');
+        if (btnPlay) btnPlay.textContent = '▶ Reiniciar';
+        const pLbl = document.getElementById('rsvpProgressLabel');
+        if (pLbl) pLbl.textContent = `Concluído! ${rsvpWords.length} palavras lidas.`;
+        return;
+      }
+      rsvpIndex = idx;
+      const word = rsvpWords[idx];
+      const orp = getOrpIndex(word);
+
+      const left = word.slice(0, orp);
+      const char = word.charAt(orp);
+      const right = word.slice(orp + 1);
+
+      const partLeft = document.getElementById('rsvpPartLeft');
+      const partOrp = document.getElementById('rsvpPartOrp');
+      const partRight = document.getElementById('rsvpPartRight');
+
+      if (partLeft) partLeft.textContent = left;
+      if (partOrp) partOrp.textContent = char;
+      if (partRight) partRight.textContent = right;
+
+      const bar = document.getElementById('rsvpProgressBar');
+      if (bar) bar.value = idx;
+
+      const pLbl = document.getElementById('rsvpProgressLabel');
+      if (pLbl) {
+        const pct = Math.round(((idx + 1) / rsvpWords.length) * 100);
+        pLbl.textContent = `Palavra ${idx + 1} de ${rsvpWords.length} (${pct}%)`;
+      }
+
+      const tLbl = document.getElementById('rsvpTimeLabel');
+      if (tLbl) {
+        const rem = rsvpWords.length - (idx + 1);
+        const mins = Math.ceil(rem / rsvpWpm);
+        tLbl.textContent = `Tempo restante: ~${mins} min`;
+      }
+    }
+
+    function scheduleNextRsvp() {
+      if (!rsvpIsPlaying || rsvpIndex >= rsvpWords.length - 1) return;
+      const word = rsvpWords[rsvpIndex] || '';
+      let delay = 60000 / rsvpWpm;
+
+      if (/[.!?]$/.test(word)) {
+        delay *= 2.2;
+      } else if (/[,;:\-—]$/.test(word)) {
+        delay *= 1.6;
+      } else if (word.length > 10) {
+        delay *= 1.25;
+      }
+
+      rsvpTimer = setTimeout(() => {
+        rsvpIndex++;
+        renderRsvpWord(rsvpIndex);
+        if (rsvpIndex < rsvpWords.length - 1) {
+          scheduleNextRsvp();
+        } else {
+          rsvpIsPlaying = false;
+          const btnPlay = document.getElementById('btnRsvpTogglePlay');
+          if (btnPlay) btnPlay.textContent = '▶ Reiniciar';
+        }
+      }, delay);
+    }
+
+    function toggleRsvpPlayback() {
+      if (rsvpIndex >= rsvpWords.length - 1) {
+        rsvpIndex = 0;
+      }
+      rsvpIsPlaying = !rsvpIsPlaying;
+      const btnPlay = document.getElementById('btnRsvpTogglePlay');
+      if (rsvpIsPlaying) {
+        if (btnPlay) btnPlay.textContent = '⏸ Pausar';
+        scheduleNextRsvp();
+      } else {
+        if (btnPlay) btnPlay.textContent = '▶ Retomar';
+        if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+      }
+    }
+
+    // Eventos RSVP
+    const btnCloseRsvpEl = document.getElementById('btnCloseRsvpModal');
+    if (btnCloseRsvpEl) {
+      btnCloseRsvpEl.addEventListener('click', () => {
+        rsvpIsPlaying = false;
+        if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+        const m = document.getElementById('rsvpModal');
+        if (m) m.classList.remove('open');
+      });
+    }
+
+    const btnRsvpPlayEl = document.getElementById('btnRsvpTogglePlay');
+    if (btnRsvpPlayEl) {
+      btnRsvpPlayEl.addEventListener('click', toggleRsvpPlayback);
+    }
+
+    const btnRsvpStepBackEl = document.getElementById('btnRsvpStepBack');
+    if (btnRsvpStepBackEl) {
+      btnRsvpStepBackEl.addEventListener('click', () => {
+        rsvpIndex = Math.max(0, rsvpIndex - 10);
+        renderRsvpWord(rsvpIndex);
+      });
+    }
+
+    const btnRsvpStepFwdEl = document.getElementById('btnRsvpStepForward');
+    if (btnRsvpStepFwdEl) {
+      btnRsvpStepFwdEl.addEventListener('click', () => {
+        rsvpIndex = Math.min(rsvpWords.length - 1, rsvpIndex + 10);
+        renderRsvpWord(rsvpIndex);
+      });
+    }
+
+    const rsvpBarEl = document.getElementById('rsvpProgressBar');
+    if (rsvpBarEl) {
+      rsvpBarEl.addEventListener('input', (e) => {
+        rsvpIndex = parseInt(e.target.value, 10);
+        renderRsvpWord(rsvpIndex);
+      });
+    }
+
+    document.querySelectorAll('.rsvp-wpm-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        rsvpWpm = parseInt(btn.dataset.wpm, 10) || 350;
+        document.querySelectorAll('.rsvp-wpm-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    const btnRsvpReadingEl = document.getElementById('btnRsvpReading');
+    if (btnRsvpReadingEl) {
+      btnRsvpReadingEl.addEventListener('click', () => {
+        const text = (dom.readerFlow ? dom.readerFlow.innerText : '') || '';
+        openRsvpModal(text);
+      });
+    }
+
+    // Atalhos de Teclado no RSVP (Espaço e Setas)
+    document.addEventListener('keydown', (e) => {
+      const rsvpM = document.getElementById('rsvpModal');
+      if (rsvpM && rsvpM.classList.contains('open')) {
+        if (e.key === ' ' || e.code === 'Space') {
+          e.preventDefault();
+          toggleRsvpPlayback();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          rsvpIndex = Math.max(0, rsvpIndex - 10);
+          renderRsvpWord(rsvpIndex);
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          rsvpIndex = Math.min(rsvpWords.length - 1, rsvpIndex + 10);
+          renderRsvpWord(rsvpIndex);
+        } else if (e.key === 'Escape') {
+          rsvpIsPlaying = false;
+          if (rsvpTimer) { clearTimeout(rsvpTimer); rsvpTimer = null; }
+          rsvpM.classList.remove('open');
+        }
+      }
+    });
+
+    // =========================================================
+    // 3. EXPORTAÇÃO OBSIDIAN / NOTION COM YAML FRONTMATTER
+    // =========================================================
+    function buildObsidianMarkdown({ title, author, format, cefr, progress, pagesRead, totalPages, highlights, notes, review }) {
+      const safeTitle = (title || 'Livro').replace(/"/g, '\\"');
+      const safeAuthor = (author || 'Desconhecido').replace(/"/g, '\\"');
+      const today = new Date().toISOString().split('T')[0];
+      const dateFormatted = new Date().toLocaleDateString('pt-BR');
+
+      const frontmatter = [
+        '---',
+        `title: "${safeTitle}"`,
+        `author: "${safeAuthor}"`,
+        `format: "${format || 'EPUB'}"`,
+        `cefr_level: "${cefr || 'N/A'}"`,
+        `progress: "${progress || '0%'}"`,
+        `pages_read: ${pagesRead || 0}`,
+        `total_pages: ${totalPages || 0}`,
+        `date_exported: "${today}"`,
+        'tags:',
+        '  - livro',
+        '  - leitura',
+        '  - obsidian',
+        '---',
+        ''
+      ].join('\n');
+
+      const lines = [
+        frontmatter,
+        `# ${title || 'Livro'}`,
+        '',
+        '> [!info] Ficha de Leitura',
+        `> - **Autor:** ${author || 'Desconhecido'}`,
+        `> - **Formato:** ${format || 'EPUB'}`,
+        `> - **Nível de Leitura (CEFR):** ${cefr || 'N/A'}`,
+        `> - **Progresso:** ${progress || '0%'} (${pagesRead || 0} de ${totalPages || 0} pág.)`,
+        `> - **Data de Exportação:** ${dateFormatted}`,
+        ''
+      ];
+
+      if (review && (review.rating || review.text)) {
+        lines.push('> [!note] Resenha & Avaliação');
+        if (review.rating) lines.push(`> **Nota:** ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)} (${review.rating}/5)`);
+        if (review.text) lines.push('>', `> ${review.text.trim().replace(/\n/g, '\n> ')}`);
+        lines.push('');
+      }
+
+      if (Array.isArray(highlights) && highlights.length) {
+        lines.push(`## 📌 Destaques & Citações (${highlights.length})`, '');
+        highlights.forEach((hl, i) => {
+          const q = (hl.text || hl.quote || '').trim();
+          const ch = hl.chapterTitle || `Trecho ${i + 1}`;
+          const dt = hl.date || '';
+          lines.push(`> [!quote] ${ch}${dt ? ` — ${dt}` : ''}`);
+          lines.push(`> "${q}"`);
+          if (hl.note) {
+            lines.push(`>\n> 💭 **Nota:** *${hl.note.trim()}*`);
+          }
+          lines.push('');
+        });
+      }
+
+      if (Array.isArray(notes) && notes.length) {
+        lines.push(`## 💡 Fichamento & Raio-X (${notes.length})`, '');
+        notes.forEach((n, i) => {
+          lines.push(`- **${n.name || n.title || `Nota ${i + 1}`}**: ${n.note || n.text || ''}`);
+        });
+        lines.push('');
+      }
+
+      try {
+        const cMap = JSON.parse(localStorage.getItem('reader_cornell_notes') || '{}');
+        const cn = (activeBookInfoTarget && activeBookInfoTarget.bookKey) ? cMap[activeBookInfoTarget.bookKey] : (cMap[state.bookKey] || null);
+        if (cn && (cn.cues || cn.notes || cn.summary)) {
+          lines.push('## 🧠 Anotações Cornell', '');
+          if (cn.cues) {
+            lines.push('> [!question] Palavras-chave / Perguntas');
+            lines.push(`> ${cn.cues.trim().replace(/\n/g, '\n> ')}`, '');
+          }
+          if (cn.notes) {
+            lines.push('> [!abstract] Notas Principais');
+            lines.push(`> ${cn.notes.trim().replace(/\n/g, '\n> ')}`, '');
+          }
+          if (cn.summary) {
+            lines.push('> [!tip] Resumo da Leitura');
+            lines.push(`> ${cn.summary.trim().replace(/\n/g, '\n> ')}`, '');
+          }
+        }
+      } catch {}
+
+      return lines.join('\n');
+    }
+
+    function exportBookToObsidianMarkdown(bookObj, highlights = [], notes = [], review = {}) {
+      const title = (bookObj && bookObj.title) || state.title || 'Livro';
+      const author = (bookObj && bookObj.author) || (state.metadata && (state.metadata.creator || state.metadata.author)) || state.author || '';
+      const format = (bookObj && bookObj.format) || state.format || 'EPUB';
+
+      let cefr = 'N/A';
+      try {
+        const cefrMap = JSON.parse(localStorage.getItem('reader_cefr_map') || '{}');
+        if (bookObj && bookObj.bookKey && cefrMap[bookObj.bookKey]) cefr = cefrMap[bookObj.bookKey].level;
+      } catch {}
+
+      const progPct = (bookObj && bookObj.progressPct != null) ? (bookObj.progressPct + '%') : (dom.statusPercent ? dom.statusPercent.textContent : '0%');
+      const pagesRead = (bookObj && bookObj.page) || state.subPageIndex + 1 || 1;
+      const totalPages = (bookObj && bookObj.totalPages) || (state.sections.length ? state.sections.length : 1);
+
+      const md = buildObsidianMarkdown({
+        title,
+        author,
+        format,
+        cefr,
+        progress: progPct,
+        pagesRead,
+        totalPages,
+        highlights,
+        notes,
+        review
+      });
+
+      const safeName = title.replace(/[^a-z0-9_-]/gi, '_').slice(0, 50);
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${safeName}_Obsidian.md`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      showToast('Exportado para Obsidian (.md)!');
+    }
+
+    function exportQuotesToObsidianMarkdown() {
+      const { allQuotes } = collectAllQuotesData(document.getElementById('inputFilterQuotes').value || '');
+      if (!allQuotes.length) {
+        showToast('Nenhuma citação encontrada para exportar.');
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const lines = [
+        '---',
+        'title: "Minhas Citações & Destaques"',
+        `total_quotes: ${allQuotes.length}`,
+        `date_exported: "${today}"`,
+        'tags:',
+        '  - citacoes',
+        '  - destaques',
+        '  - obsidian',
+        '---',
+        '',
+        '# 📖 Minhas Citações & Destaques de Leitura',
+        ''
+      ];
+
+      allQuotes.forEach((q, i) => {
+        lines.push(`> [!quote] ${q.bookTitle} — ${q.chapterTitle || 'Seção ' + (q.sectionIndex + 1)} (${q.date || ''})`);
+        lines.push(`> "${q.text}"`);
+        if (q.note) {
+          lines.push(`>\n> 💭 **Nota:** *${q.note}*`);
+        }
+        lines.push('');
+      });
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Citacoes_Obsidian.md`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      showToast('Citações exportadas para Obsidian (.md)!');
+    }
+
 
 
 

@@ -54,6 +54,22 @@
       --page-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
+    [data-theme="oled"] {
+      --bg-workspace: #000000;
+      --bg-toolbar: #000000;
+      --bg-sidebar: #050505;
+      --bg-page: #000000;
+      --bg-control: #121212;
+      --bg-control-hover: #1e1e1e;
+      --text-primary: #ededed;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-color: #27272a;
+      --accent: #38bdf8;
+      --accent-subtle: rgba(56, 189, 248, 0.15);
+      --page-shadow: none;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -102,7 +118,7 @@
       user-select: none;
       z-index: 40;
       flex-shrink: 0;
-      overflow-x: auto;
+      overflow-x: hidden;
       overflow-y: hidden;
       scrollbar-width: none;
     }
@@ -579,7 +595,8 @@
       font-style: initial;
       margin: initial;
     }
-    [data-theme="dark"] .reader-flow.original-format {
+    [data-theme="dark"] .reader-flow.original-format,
+    [data-theme="oled"] .reader-flow.original-format {
       color: var(--text-primary);
     }
 
@@ -587,23 +604,40 @@
     .reader-flow.vertical-cjk {
       writing-mode: vertical-rl !important;
       -webkit-writing-mode: vertical-rl !important;
-      text-orientation: upright !important;
+      text-orientation: mixed !important;
       letter-spacing: 0.05em;
       line-height: 1.85 !important;
       max-width: none !important;
-      width: auto !important;
-      height: calc(100vh - 120px) !important;
+      width: 100% !important;
+      height: 100% !important;
+      min-height: calc(100vh - 150px) !important;
+      max-height: calc(100vh - 120px) !important;
       overflow-x: auto !important;
       overflow-y: hidden !important;
-      padding: 20px 30px !important;
-      margin: 0 auto !important;
+      padding: 16px 24px !important;
+      direction: rtl;
+    }
+    .viewport.paginated-mode .reader-flow.vertical-cjk {
+      column-width: auto !important;
+      columns: auto !important;
+      column-gap: 0 !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .viewport.paginated-mode .page-sheet:has(.vertical-cjk),
+    .page-sheet.vertical-active {
+      max-width: 100% !important;
+      overflow-x: auto !important;
     }
     .reader-flow.vertical-cjk p {
       text-indent: 1em !important;
       margin-block-start: 0 !important;
       margin-block-end: 0 !important;
-      margin-inline-start: 0.5em !important;
-      margin-inline-end: 0.5em !important;
+      margin-inline-start: 0.6em !important;
+      margin-inline-end: 0.6em !important;
+      text-align: initial !important;
     }
 
     /* Modo Rolagem Contínua (Livro Inteiro do começo ao fim sem divisões separadas) */
@@ -822,6 +856,17 @@
       text-indent: 1.2em;
     }
 
+    /* Garantir que preferências do usuário vençam qualquer CSS do livro no Modo Adaptado */
+    .reader-flow:not(.original-format) p,
+    .reader-flow:not(.original-format) div:not(.book-center):not(.book-right):not(.manga-page-wrap):not(.continuous-placeholder),
+    .reader-flow:not(.original-format) blockquote,
+    .reader-flow:not(.original-format) section {
+      text-align: var(--book-align) !important;
+      line-height: var(--book-line-height) !important;
+      font-family: var(--book-font) !important;
+    }
+
+
     .reader-flow h1 + p,
     .reader-flow h2 + p,
     .reader-flow h3 + p,
@@ -978,13 +1023,24 @@
       filter: contrast(var(--pdf-contrast, 100%)) brightness(var(--pdf-brightness, 100%));
     }
 
-    [data-theme="sepia"] .pdf-page-container.tint-pdf canvas {
-      filter: sepia(0.32) contrast(calc(0.96 * var(--pdf-contrast-num, 1))) brightness(calc(0.97 * var(--pdf-brightness-num, 1)));
+    .pdf-page-container.tint-pdf[data-book-theme="sepia"] canvas,
+    [data-theme="sepia"] .pdf-page-container.tint-pdf:not([data-book-theme]) canvas,
+    [data-theme="sepia"] .pdf-page-container.tint-pdf[data-book-theme="same"] canvas {
+      filter: sepia(0.35) contrast(calc(0.96 * var(--pdf-contrast-num, 1))) brightness(calc(0.95 * var(--pdf-brightness-num, 1))) !important;
     }
 
-    [data-theme="dark"] .pdf-page-container.tint-pdf canvas {
-      filter: invert(1) hue-rotate(180deg) contrast(calc(1.1 * var(--pdf-contrast-num, 1))) brightness(calc(0.95 * var(--pdf-brightness-num, 1)));
-      background: #111;
+    .pdf-page-container.tint-pdf[data-book-theme="dark"] canvas,
+    [data-theme="dark"] .pdf-page-container.tint-pdf:not([data-book-theme]) canvas,
+    [data-theme="dark"] .pdf-page-container.tint-pdf[data-book-theme="same"] canvas {
+      filter: invert(1) hue-rotate(180deg) contrast(calc(1.1 * var(--pdf-contrast-num, 1))) brightness(calc(0.95 * var(--pdf-brightness-num, 1))) !important;
+      background: #111 !important;
+    }
+
+    .pdf-page-container.tint-pdf[data-book-theme="oled"] canvas,
+    [data-theme="oled"] .pdf-page-container.tint-pdf:not([data-book-theme]) canvas,
+    [data-theme="oled"] .pdf-page-container.tint-pdf[data-book-theme="same"] canvas {
+      filter: invert(1) contrast(calc(1.15 * var(--pdf-contrast-num, 1))) brightness(calc(0.9 * var(--pdf-brightness-num, 1))) !important;
+      background: #000 !important;
     }
 
     /* Barra de Status Inferior */
@@ -1006,7 +1062,22 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      width: 260px;
+      width: 240px;
+      flex-shrink: 0;
+    }
+
+    #statusPercent {
+      font-variant-numeric: tabular-nums;
+      min-width: 34px;
+      text-align: right;
+      display: inline-block;
+      margin-right: 12px;
+    }
+
+    #statusRight {
+      margin-left: 14px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .status-bar-track {
@@ -2193,7 +2264,7 @@
       flex-shrink: 0;
     }
     #toolbarUserGreeting {
-      max-width: 110px;
+      max-width: 130px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -2502,6 +2573,15 @@
       }
     }
 
+    @media (max-width: 1550px) {
+      #btnPdfRenderMode,
+      #btnPdfTint,
+      #btnSetPageAsCover,
+      #ambientAudioWidget {
+        display: none !important;
+      }
+    }
+
     @media (max-width: 1400px) {
       .toolbar {
         padding: 0 8px;
@@ -2514,25 +2594,31 @@
         padding: 0 7px;
         font-size: 11.5px;
       }
-      #ambientAudioWidget input[type="range"] {
-        display: none;
-      }
-      #ambientAudioWidget {
-        padding: 0 4px;
-      }
       #lblTypographyBtn {
         font-size: 11px;
       }
       #toolbarUserGreeting {
-        max-width: 80px;
+        max-width: 105px;
       }
     }
 
-    @media (max-width: 1180px) {
-      #btnPdfRenderMode,
-      #btnPdfTint,
-      #btnSetPageAsCover {
+    @media (max-width: 1300px) {
+      #btnCornellToggle {
         display: none !important;
+      }
+      .toolbar {
+        padding: 0 6px;
+        gap: 3px;
+      }
+      .toolbar-group {
+        gap: 2px;
+      }
+      .tb-btn {
+        padding: 0 6px;
+        font-size: 11px;
+      }
+      #toolbarUserGreeting {
+        max-width: 85px;
       }
     }
 
@@ -2540,26 +2626,80 @@
      * ADAPTAÇÃO COMPLETA PARA CELULAR E TELAS TOUCH (ANDROID / iOS)
      * ===================================================================== */
     @media (max-width: 768px) {
-      /* Barra superior rolável horizontalmente com toque suave */
+      /* Barra superior estilo Aplicativo Nativo (sem rolagem, limpa e espaçosa) */
       .toolbar {
-        height: 46px;
-        padding: 0 8px;
-        gap: 6px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        height: calc(44px + env(safe-area-inset-top, 0px));
+        padding: env(safe-area-inset-top, 0px) 8px 0;
+        gap: 4px;
+        overflow-x: hidden;
+        justify-content: space-between;
       }
       .toolbar::-webkit-scrollbar {
         display: none;
       }
       .toolbar-group {
         flex-shrink: 0;
-        gap: 4px;
+        gap: 3px;
       }
-      /* O título já aparece no cabeçalho da página; ocultar no meio da barra para ganhar espaço no celular */
+
+      /* No celular, ocultar controles secundários para manter a barra limpa como um app */
+      body:not(.is-shelf-home) #btnShowShelf,
+      body:not(.is-shelf-home) label[for="fileInput"],
+      body:not(.is-shelf-home) .page-stepper,
+      body:not(.is-shelf-home) .toolbar-divider,
+      #readingModeSwitch,
+      #pdfControls,
+      #flowModeGroup,
+      #btnBookmark,
+      #btnSetPageAsCover,
+      #ambientAudioWidget,
+      #btnCornellToggle,
+      #pomodoroWidget,
+      #btnFullscreen,
+      #toolbarUserGreeting,
+      .user-menu-btn span:last-child {
+        display: none !important;
+      }
+
+      /* Título do livro elegante e centralizado no topo */
       .doc-header {
+        display: flex !important;
+        flex: 1;
+        min-width: 0;
+        max-width: 155px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 0 4px;
+        pointer-events: none;
+      }
+      .doc-title {
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        text-align: center;
+      }
+      .doc-meta {
+        display: none !important;
+      }
+
+      /* Botões limpos e fáceis de tocar */
+      #btnCloseBook span {
         display: none;
+      }
+      #btnCloseBook::after {
+        content: 'Estante';
+        font-size: 11px;
+        font-weight: 500;
+      }
+      #btnSidebar span {
+        display: none;
+      }
+      body.immersive-mode .exit-immersive-pill {
+        display: none !important;
       }
       .tb-btn {
         height: 32px;
@@ -2872,10 +3012,19 @@
       }
     }
 
-    /* Modo Leitura Imersivo (Oculta barras superior e inferior no celular/paisagem/PC) */
-    body.immersive-mode .toolbar,
+    /* Modo Leitura Imersivo Suave (Estilo App Kindle / Apple Books) */
+    .toolbar, .statusbar {
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    }
+    body.immersive-mode .toolbar {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
     body.immersive-mode .statusbar {
-      display: none !important;
+      transform: translateY(100%);
+      opacity: 0;
+      pointer-events: none;
     }
     body.immersive-mode .main-layout {
       height: 100dvh !important;
@@ -2973,31 +3122,100 @@
     [data-theme="dark"][data-accent="purple"] { --accent: #a78bfa; --accent-subtle: rgba(167, 139, 250, 0.16); }
     [data-theme="dark"][data-accent="amber"] { --accent: #fbbf24; --accent-subtle: rgba(251, 191, 36, 0.16); }
     [data-theme="dark"][data-accent="rose"] { --accent: #f472b6; --accent-subtle: rgba(244, 114, 182, 0.16); }
+    [data-theme="oled"][data-accent="default"] { --accent: #38bdf8; --accent-subtle: rgba(56, 189, 248, 0.16); }
+    [data-theme="oled"][data-accent="blue"] { --accent: #60a5fa; --accent-subtle: rgba(96, 165, 250, 0.16); }
+    [data-theme="oled"][data-accent="green"] { --accent: #4ade80; --accent-subtle: rgba(74, 222, 128, 0.16); }
+    [data-theme="oled"][data-accent="purple"] { --accent: #a78bfa; --accent-subtle: rgba(167, 139, 250, 0.16); }
+    [data-theme="oled"][data-accent="amber"] { --accent: #fbbf24; --accent-subtle: rgba(251, 191, 36, 0.16); }
+    [data-theme="oled"][data-accent="rose"] { --accent: #f472b6; --accent-subtle: rgba(244, 114, 182, 0.16); }
 
     /* Tema da Folha do Livro Separado do Tema do Site/App */
-    #pageSheet[data-book-theme="light"] {
+    #pageSheet[data-book-theme="light"],
+    .page-sheet[data-book-theme="light"] {
       --bg-page: #ffffff;
       --text-primary: #1a1d20;
       --text-secondary: #495057;
       --text-muted: #868e96;
       --border-color: #d0d7de;
       --page-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.16);
+      background-color: #ffffff !important;
+      color: #1a1d20 !important;
+      border-color: #d0d7de !important;
     }
-    #pageSheet[data-book-theme="sepia"] {
+    #pageSheet[data-book-theme="light"] .reader-flow,
+    #pageSheet[data-book-theme="light"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #1a1d20 !important;
+    }
+    #pageSheet[data-book-theme="light"] .running-header,
+    #pageSheet[data-book-theme="light"] .running-footer {
+      color: #868e96 !important;
+      border-color: #d0d7de !important;
+    }
+
+    #pageSheet[data-book-theme="sepia"],
+    .page-sheet[data-book-theme="sepia"] {
       --bg-page: #f6efe0;
       --text-primary: #2c241d;
       --text-secondary: #6e6053;
       --text-muted: #8c7d6e;
       --border-color: #cfc2a9;
       --page-shadow: 0 2px 12px rgba(44, 36, 29, 0.12), 0 0 1px rgba(44, 36, 29, 0.2);
+      background-color: #f6efe0 !important;
+      color: #2c241d !important;
+      border-color: #cfc2a9 !important;
     }
-    #pageSheet[data-book-theme="dark"] {
+    #pageSheet[data-book-theme="sepia"] .reader-flow,
+    #pageSheet[data-book-theme="sepia"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #2c241d !important;
+    }
+    #pageSheet[data-book-theme="sepia"] .running-header,
+    #pageSheet[data-book-theme="sepia"] .running-footer {
+      color: #6e6053 !important;
+      border-color: #cfc2a9 !important;
+    }
+
+    #pageSheet[data-book-theme="dark"],
+    .page-sheet[data-book-theme="dark"] {
       --bg-page: #1c1f24;
       --text-primary: #d4d8de;
       --text-secondary: #9aa2ce;
       --text-muted: #6e7681;
       --border-color: #2b3038;
       --page-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.06);
+      background-color: #1c1f24 !important;
+      color: #d4d8de !important;
+      border-color: #2b3038 !important;
+    }
+    #pageSheet[data-book-theme="dark"] .reader-flow,
+    #pageSheet[data-book-theme="dark"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #d4d8de !important;
+    }
+    #pageSheet[data-book-theme="dark"] .running-header,
+    #pageSheet[data-book-theme="dark"] .running-footer {
+      color: #6e7681 !important;
+      border-color: #2b3038 !important;
+    }
+
+    #pageSheet[data-book-theme="oled"],
+    .page-sheet[data-book-theme="oled"] {
+      --bg-page: #000000;
+      --text-primary: #ededed;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-color: #222222;
+      --page-shadow: none;
+      background-color: #000000 !important;
+      color: #ededed !important;
+      border-color: #222222 !important;
+    }
+    #pageSheet[data-book-theme="oled"] .reader-flow,
+    #pageSheet[data-book-theme="oled"] .reader-flow:not(.original-format) :is(p, div, span, h1, h2, h3, h4, h5, h6, li, blockquote, em, strong) {
+      color: #ededed !important;
+    }
+    #pageSheet[data-book-theme="oled"] .running-header,
+    #pageSheet[data-book-theme="oled"] .running-footer {
+      color: #71717a !important;
+      border-color: #222222 !important;
     }
 
     /* Modo Tira Vertical Contínua (Webtoon / Tapas Long Strip sem espaços) */
@@ -3335,4 +3553,48 @@
       background: var(--accent-subtle);
       color: var(--accent);
       border: 1px solid var(--accent);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.15s ease, background 0.15s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cefr-badge:hover {
+      transform: scale(1.05);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Quote Card Generator & RSVP Spritz Styles */
+    .quote-card-theme-btn {
+      font-size: 11.5px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--bg-control);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .quote-card-theme-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .rsvp-wpm-btn {
+      font-size: 11.5px;
+      padding: 3px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--bg-control);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .rsvp-wpm-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
     }

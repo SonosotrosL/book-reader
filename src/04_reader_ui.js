@@ -568,6 +568,14 @@
         openRsvpModal(state.selectedText || '');
       });
     }
+    const btnSelAiTutorEl = document.getElementById('btnSelAiTutor');
+    if (btnSelAiTutorEl) {
+      btnSelAiTutorEl.addEventListener('click', () => {
+        const text = state.selectedText || '';
+        if (dom.selectionToolbar) dom.selectionToolbar.classList.remove('open');
+        openAiTutorModal({ text });
+      });
+    }
 
     // Eventos do Modal de Dicionário / Tradutor / Anki
     document.getElementById('btnCloseModal').addEventListener('click', () => dom.lookupModal.classList.remove('open'));
@@ -1721,7 +1729,7 @@
               <button class="btn primary btn-read-book" style="flex:1;">${b.isLocal ? (h ? 'Continuar' : 'Ler') : (h ? 'Baixar e Continuar' : 'Baixar e Ler')}</button>
               ${b.isLocal && !b.inCloud ? '<button class="btn btn-up-cloud" title="Enviar este livro para sua Estante na Nuvem">Nuvem</button>' : ''}
               ${showCopyCloudBtn ? '<button class="btn btn-copy-cloud" title="Copiar/espelhar este livro para outro banco na nuvem">⇄ Nuvem</button>' : ''}
-              ${b.isLocal && b.inCloud ? '<button class="btn btn-evict-local" title="Liberar espaço deste dispositivo mantendo o livro salvo na Nuvem">☁ Só Nuvem</button>' : ''}
+              ${b.isLocal && b.inCloud ? '<button class="btn btn-evict-local" title="Liberar espaço deste dispositivo mantendo o livro salvo na Nuvem">Só Nuvem</button>' : ''}
               ${b.isLocal ? '<button class="btn btn-dl-book" title="Baixar arquivo original">↓</button>' : ''}
               <button class="btn btn-del-book" title="Remover">${b.isLocal ? '✕' : '✕ Nuvem'}</button>
             </div>
@@ -2928,19 +2936,71 @@
     let ttsCurrentIdx = 0;
     let ttsPlaying = false;
 
+    function isVoiceNeural(v) {
+      const name = (v && v.name ? v.name : '').toLowerCase();
+      return /natural|neural|online|enhanced|siri|premium|google|network/i.test(name);
+    }
+
     function populateVoices() {
-      if (!('speechSynthesis' in window)) return;
+      if (!('speechSynthesis' in window) || !selectTtsVoice) return;
       const voices = window.speechSynthesis.getVoices();
       if (!voices.length) return;
       selectTtsVoice.innerHTML = '';
-      voices.forEach((v, i) => {
+
+      const mapped = voices.map((v, originalIdx) => ({
+        voice: v,
+        originalIdx,
+        isNeural: isVoiceNeural(v),
+        isPt: (v.lang || '').toLowerCase().startsWith('pt'),
+        isEn: (v.lang || '').toLowerCase().startsWith('en')
+      }));
+
+      mapped.sort((a, b) => {
+        const score = item => {
+          if (item.isPt && item.isNeural) return 100;
+          if (item.isPt) return 80;
+          if (item.isEn && item.isNeural) return 60;
+          if (item.isNeural) return 40;
+          if (item.isEn) return 20;
+          return 0;
+        };
+        return score(b) - score(a);
+      });
+
+      const savedVoiceName = localStorage.getItem('reader_tts_voice_name') || '';
+      let chosenOpt = null;
+
+      mapped.forEach((item) => {
+        const v = item.voice;
         const opt = document.createElement('option');
-        opt.value = String(i);
-        opt.textContent = `${v.name} (${v.lang})`;
-        if (v.lang.toLowerCase().startsWith('pt') && !selectTtsVoice.value) opt.selected = true;
+        opt.value = String(item.originalIdx);
+        const neuralBadge = item.isNeural ? '[Neural] ' : '';
+        opt.textContent = `${neuralBadge}${v.name} (${v.lang})`;
+
+        if (savedVoiceName && v.name === savedVoiceName) {
+          opt.selected = true;
+          chosenOpt = opt;
+        } else if (!chosenOpt && item.isPt && item.isNeural) {
+          opt.selected = true;
+          chosenOpt = opt;
+        } else if (!chosenOpt && item.isPt) {
+          opt.selected = true;
+          chosenOpt = opt;
+        }
         selectTtsVoice.appendChild(opt);
       });
     }
+
+    if (selectTtsVoice) {
+      selectTtsVoice.addEventListener('change', () => {
+        const voices = window.speechSynthesis.getVoices();
+        const vIdx = parseInt(selectTtsVoice.value, 10);
+        if (!isNaN(vIdx) && voices[vIdx]) {
+          localStorage.setItem('reader_tts_voice_name', voices[vIdx].name);
+        }
+      });
+    }
+
     if ('speechSynthesis' in window) {
       populateVoices();
       window.speechSynthesis.onvoiceschanged = populateVoices;
@@ -3055,7 +3115,7 @@
       if (!lblPomodoroEl) return;
       const m = String(Math.floor(__pomodoroSec / 60)).padStart(2, '0');
       const s = String(__pomodoroSec % 60).padStart(2, '0');
-      lblPomodoroEl.textContent = `⏱ ${m}:${s}`;
+      lblPomodoroEl.textContent = `${m}:${s}`;
     }
     function resetPomodoroTimer(silent = false) {
       if (__pomodoroInterval) {
@@ -3922,7 +3982,8 @@
       });
     }
 
-    async function callGeminiOrLocal(prompt, bookContext) {
+    async function callGeminiOrLocal(prompt, bookContext, customSystem = '') {
+      const sysInstruction = customSystem || 'Você é o assistente inteligente de leitura NotebookLM. Responda em português com clareza e embasamento no texto da obra fornecida.';
       if (state.geminiApiKey) {
         try {
           const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(state.geminiApiKey)}`, {
@@ -3931,7 +3992,7 @@
             body: JSON.stringify({
               contents: [{
                 parts: [
-                  { text: `Você é o assistente inteligente de leitura NotebookLM. Responda em português com clareza e embasamento no texto da obra fornecida.\n\nCONTEXTO DO LIVRO:\n${bookContext.slice(0, 40000)}\n\nPERGUNTA/TAREFA:\n${prompt}` }
+                  { text: `${sysInstruction}\n\nCONTEXTO DO LIVRO:\n${bookContext.slice(0, 40000)}\n\nPERGUNTA/TAREFA:\n${prompt}` }
                 ]
               }]
             })
@@ -5219,7 +5280,7 @@
             <mark class="user-hl user-hl-${item.color || 'yellow'}">"${escapeHtml(item.text)}"</mark>
           </div>
           <div style="display:flex; gap:6px; justify-content:flex-end; margin-top:6px;">
-            <button class="tb-btn tb-btn-solid btn-q-card" style="height:24px; font-size:11px;">📷 Card</button>
+            <button class="tb-btn tb-btn-solid btn-q-card" style="height:24px; font-size:11px;">Card</button>
             <button class="tb-btn tb-btn-solid btn-q-copy" style="height:24px; font-size:11px;">Copiar Citação</button>
             <button class="tb-btn tb-btn-solid btn-q-anki" style="height:24px; font-size:11px;">Enviar p/ Anki</button>
             <button class="tb-btn tb-btn-solid btn-q-jump" style="height:24px; font-size:11px;">Ir p/ Página</button>
@@ -5556,7 +5617,7 @@
       ctx.font = `600 18px system-ui, sans-serif`;
       ctx.fillStyle = accentColor;
       ctx.textAlign = 'right';
-      ctx.fillText('📖 Leitor Portátil', W - pad - 40, footerY + 54);
+      ctx.fillText('Leitor Portátil', W - pad - 40, footerY + 54);
       ctx.font = `14px system-ui, sans-serif`;
       ctx.fillStyle = mutedColor;
       ctx.fillText('leitor.app', W - pad - 40, footerY + 78);
@@ -5845,6 +5906,356 @@
     });
 
     // =========================================================
+    // 2B. RECURSOS DE INTELIGÊNCIA ARTIFICIAL: RECAP INTELIGENTE & TUTOR IA
+    // =========================================================
+
+    // Função utilitária para falar texto com a melhor voz neural disponível
+    function speakTextWithBestVoice(text) {
+      if (!('speechSynthesis' in window)) {
+        showToast('Síntese de voz não suportada pelo navegador.');
+        return;
+      }
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        showToast('Áudio interrompido.');
+        return;
+      }
+      const clean = (text || '').replace(/[#*_`>]/g, '').trim();
+      if (!clean) return;
+      const utter = new SpeechSynthesisUtterance(clean);
+      utter.rate = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const vIdx = selectTtsVoice ? parseInt(selectTtsVoice.value, 10) : NaN;
+      if (!isNaN(vIdx) && voices[vIdx]) {
+        utter.voice = voices[vIdx];
+        utter.lang = voices[vIdx].lang;
+      }
+      window.speechSynthesis.speak(utter);
+      showToast('Ouvindo com voz sintetizada...');
+    }
+
+    // --- RECAP INTELIGENTE ("O QUE ACONTECEU ATÉ AQUI?") ---
+    function openAiRecapModal() {
+      if (!state.sections || !state.sections.length) {
+        showToast('Abra um livro primeiro para recapitular a história.');
+        return;
+      }
+      const toolsM = document.getElementById('toolsDropdown');
+      if (toolsM) toolsM.classList.remove('open');
+
+      const modal = document.getElementById('aiRecapModal');
+      const bookTitle = document.getElementById('aiRecapBookTitle');
+      const posText = document.getElementById('aiRecapPositionText');
+      const apiKeyBox = document.getElementById('aiRecapApiKeyBox');
+      const inpKey = document.getElementById('inputAiRecapKey');
+
+      if (bookTitle) bookTitle.textContent = state.title || 'Livro';
+      const cur = state.currentIndex + 1;
+      const sec = state.sections[state.currentIndex];
+      const secTitle = sec ? (sec.title || `Capítulo ${cur}`) : `Capítulo ${cur}`;
+      const metrics = (typeof computeKindleReadingMetrics === 'function') ? computeKindleReadingMetrics() : null;
+      const locStr = metrics ? ` · Pág. ${metrics.estCurrentPage} de ${metrics.estTotalPages} · Pos. ${metrics.currentLoc} de ${metrics.totalLoc}` : '';
+      if (posText) posText.textContent = `Atualmente no Capítulo ${cur} (${secTitle})${locStr}`;
+
+      if (apiKeyBox && inpKey) {
+        if (state.geminiApiKey) {
+          apiKeyBox.style.display = 'none';
+          inpKey.value = state.geminiApiKey;
+        } else {
+          apiKeyBox.style.display = 'block';
+          inpKey.value = '';
+        }
+      }
+
+      if (modal) modal.classList.add('open');
+      generateAiRecap();
+    }
+
+    async function generateAiRecap() {
+      const loading = document.getElementById('aiRecapLoading');
+      const content = document.getElementById('aiRecapContent');
+      const sourceInfo = document.getElementById('aiRecapSourceInfo');
+      if (!content || !loading) return;
+
+      loading.style.display = 'block';
+      content.style.display = 'none';
+
+      if (window.speechSynthesis && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+
+      const cur = state.currentIndex + 1;
+      const sec = state.sections[state.currentIndex];
+      const secTitle = sec ? (sec.title || `Capítulo ${cur}`) : `Capítulo ${cur}`;
+
+      if (state.currentIndex === 0) {
+        loading.style.display = 'none';
+        content.style.display = 'block';
+        content.textContent = `Você está no primeiro capítulo da obra ("${secTitle}").\n\nAinda não há capítulos anteriores para recapitular! Comece sua leitura e, quando fizer uma pausa de alguns dias ou semanas, clique aqui para relembrar os acontecimentos sem nenhum spoiler do que vem pela frente.`;
+        if (sourceInfo) sourceInfo.textContent = 'Início do Livro';
+        return;
+      }
+
+      // Reunir histórico dos capítulos anteriores até currentIndex - 1
+      let pastChaptersSummary = [];
+      let recentFullText = '';
+
+      for (let i = 0; i < state.currentIndex; i++) {
+        const s = state.sections[i];
+        if (!s) continue;
+        const title = s.title || `Capítulo ${i + 1}`;
+        const raw = (s.text || '').trim();
+        if (i >= state.currentIndex - 2) {
+          // Os últimos 2 capítulos anteriores recebem texto completo
+          recentFullText += `\n\n--- [${title}] ---\n` + raw.slice(0, 16000);
+        } else if (raw) {
+          // Capítulos mais antigos recebem snippet de abertura e fechamento
+          const snippet = raw.slice(0, 280) + '... ' + (raw.length > 500 ? raw.slice(-280) : '');
+          pastChaptersSummary.push(`- ${title}: "${snippet}"`);
+        }
+      }
+
+      const bookContext = `LIVRO: ${state.title}\nCAPÍTULOS ANTERIORES JÁ LIDOS:\n${pastChaptersSummary.join('\n')}\n\nÚLTIMOS CAPÍTULOS ANTES DO ATUAL:\n${recentFullText}`;
+
+      const prompt = `Você é um assistente e tutor literário cuidadoso.
+O leitor está lendo a obra "${state.title}" e está no capítulo/seção ${cur} ("${secTitle}").
+Gere um "O Que Aconteceu Até Aqui? (Recap Inteligente)" conciso e envolvente dos acontecimentos da história estritamente ANTES deste capítulo.
+
+REGRAS CRÍTICAS E OBRIGATÓRIAS:
+1. SEM SPOILERS: NÃO fale nada sobre o que acontece no capítulo ${cur} ou capítulos futuros. O leitor AINDA NÃO LEU o capítulo atual.
+2. ESTRUTURA DO RESUMO:
+   - ONDE A HISTÓRIA PAROU: Em que situação os personagens foram deixados no final do capítulo anterior.
+   - PERSONAGENS EM DESTAQUE: Quem são os personagens principais ativos no momento e seus objetivos imediatos.
+   - CONFLITO / MISTÉRIO ATUAL: O principal problema ou dilema que eles estão enfrentando agora.
+3. Seja didático, claro, com parágrafos bem pontuados e formatação agradável em português.`;
+
+      let recapResult = '';
+      if (state.geminiApiKey) {
+        recapResult = await callGeminiOrLocal(prompt, bookContext, 'Você é um assistente e tutor literário especialista em resumos e recapitulações inteligentes sem spoilers.');
+      } else {
+        const lines = [
+          `Recapitulação dos Capítulos Lidos até aqui em "${state.title}":`,
+          '',
+          `Você leu ${state.currentIndex} capítulos e está iniciando o Capítulo ${cur} ("${secTitle}").`,
+          '',
+          'Linha do tempo dos acontecimentos lidos:'
+        ];
+        for (let i = 0; i < state.currentIndex; i++) {
+          const s = state.sections[i];
+          const t = s ? (s.title || `Capítulo ${i + 1}`) : `Capítulo ${i + 1}`;
+          const clean = s && s.text ? s.text.replace(/\s+/g, ' ').slice(0, 150).trim() : '';
+          lines.push(`• ${t}: "${clean}..."`);
+        }
+        lines.push('', 'Dica: Adicione sua chave gratuita do Gemini no campo acima para gerar um resumo narrativo inteligente e ultra-detalhado com Inteligência Artificial!');
+        recapResult = lines.join('\n');
+      }
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+      content.textContent = recapResult;
+      if (sourceInfo) {
+        sourceInfo.textContent = state.geminiApiKey ? 'Resumo gerado por Google Gemini AI' : 'Resumo automático offline (adicione chave p/ IA)';
+      }
+    }
+
+    const btnOpenAiRecapEl = document.getElementById('btnOpenAiRecap');
+    if (btnOpenAiRecapEl) btnOpenAiRecapEl.addEventListener('click', openAiRecapModal);
+
+    const btnCloseAiRecapModal = document.getElementById('btnCloseAiRecapModal');
+    if (btnCloseAiRecapModal) btnCloseAiRecapModal.addEventListener('click', () => {
+      if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      const m = document.getElementById('aiRecapModal');
+      if (m) m.classList.remove('open');
+    });
+
+    const btnCloseAiRecapFooter = document.getElementById('btnCloseAiRecapModalFooter');
+    if (btnCloseAiRecapFooter) btnCloseAiRecapFooter.addEventListener('click', () => {
+      if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      const m = document.getElementById('aiRecapModal');
+      if (m) m.classList.remove('open');
+    });
+
+    const btnRegenerateAiRecap = document.getElementById('btnRegenerateAiRecap');
+    if (btnRegenerateAiRecap) btnRegenerateAiRecap.addEventListener('click', generateAiRecap);
+
+    const btnSpeakAiRecap = document.getElementById('btnSpeakAiRecap');
+    if (btnSpeakAiRecap) btnSpeakAiRecap.addEventListener('click', () => {
+      const c = document.getElementById('aiRecapContent');
+      speakTextWithBestVoice(c ? c.textContent : '');
+    });
+
+    const btnCopyAiRecap = document.getElementById('btnCopyAiRecap');
+    if (btnCopyAiRecap) btnCopyAiRecap.addEventListener('click', () => {
+      const c = document.getElementById('aiRecapContent');
+      if (c && c.textContent) {
+        navigator.clipboard.writeText(c.textContent);
+        showToast('Resumo copiado com sucesso!');
+      }
+    });
+
+    const btnSaveAiRecapKey = document.getElementById('btnSaveAiRecapKey');
+    const inputAiRecapKey = document.getElementById('inputAiRecapKey');
+    if (btnSaveAiRecapKey && inputAiRecapKey) {
+      btnSaveAiRecapKey.addEventListener('click', () => {
+        state.geminiApiKey = inputAiRecapKey.value.trim();
+        localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
+        showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso!' : 'Chave removida.');
+        const box = document.getElementById('aiRecapApiKeyBox');
+        if (state.geminiApiKey && box) box.style.display = 'none';
+        generateAiRecap();
+      });
+    }
+
+    // --- TUTOR DE DÚVIDAS / CONVERSAR COM O LIVRO ---
+    let activeTutorSnippet = '';
+
+    function openAiTutorModal(opts = {}) {
+      const modal = document.getElementById('aiTutorModal');
+      const snippetBox = document.getElementById('aiTutorSnippetBox');
+      const snippetText = document.getElementById('aiTutorSnippetText');
+      const inp = document.getElementById('inputAiTutorQuestion');
+      const ans = document.getElementById('aiTutorAnswer');
+
+      const toolsM = document.getElementById('toolsDropdown');
+      if (toolsM) toolsM.classList.remove('open');
+
+      activeTutorSnippet = (opts.text || '').trim();
+      const cur = state.currentIndex + 1;
+      const sec = state.sections && state.sections[state.currentIndex];
+      const secTitle = sec ? (sec.title || `Capítulo ${cur}`) : `Capítulo ${cur}`;
+
+      if (activeTutorSnippet) {
+        if (snippetText) snippetText.textContent = `"${activeTutorSnippet.slice(0, 280)}${activeTutorSnippet.length > 280 ? '...' : ''}"`;
+        if (snippetBox) snippetBox.style.display = 'block';
+      } else {
+        if (snippetText) snippetText.textContent = `Livro: ${state.title || 'Livro'} · Capítulo ${cur} (${secTitle})`;
+        if (snippetBox) snippetBox.style.display = 'block';
+      }
+
+      if (ans) {
+        ans.textContent = 'Clique em uma das opções sugeridas acima ou faça qualquer pergunta sobre o trecho ou a história.';
+      }
+      if (inp) inp.value = '';
+
+      if (modal) modal.classList.add('open');
+      if (inp) inp.focus();
+    }
+
+    async function sendAiTutorQuestion(customQuestion = '') {
+      const inp = document.getElementById('inputAiTutorQuestion');
+      const q = (customQuestion || (inp ? inp.value : '')).trim();
+      if (!q) {
+        showToast('Digite uma pergunta ou selecione um botão de ajuda.');
+        return;
+      }
+
+      const loading = document.getElementById('aiTutorLoading');
+      const ans = document.getElementById('aiTutorAnswer');
+      if (!ans || !loading) return;
+
+      loading.style.display = 'block';
+      ans.style.display = 'none';
+
+      if (window.speechSynthesis && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+
+      const cur = state.currentIndex + 1;
+      const sec = state.sections && state.sections[state.currentIndex];
+      const secTitle = sec ? (sec.title || `Capítulo ${cur}`) : `Capítulo ${cur}`;
+      const secText = sec ? (sec.text || '').slice(0, 24000) : '';
+
+      const context = `LIVRO: ${state.title || 'Livro'}\nCAPÍTULO ATUAL: ${cur} (${secTitle})\nTRECHO SELECIONADO:\n${activeTutorSnippet || '(Nenhum trecho específico selecionado)'}\n\nTEXTO DO CAPÍTULO:\n${secText}`;
+
+      const sysInstruction = `Você é um tutor literário particular de alto nível para quem está lendo o livro "${state.title || 'Livro'}".
+Responda de forma didática, clara e em português natural.
+REGRA DE OURO: Não dê spoilers de capítulos futuros. Baseie-se apenas no trecho selecionado e no contexto deste capítulo e dos anteriores.`;
+
+      const prompt = `Pergunta/Dúvida do leitor:
+${q}
+
+Trecho de referência no livro:
+"${activeTutorSnippet || secTitle}"
+
+Responda com clareza, explicando termos difíceis, personagens ou motivações sem estragar as surpresas futuras da leitura.`;
+
+      const result = await callGeminiOrLocal(prompt, context, sysInstruction);
+
+      loading.style.display = 'none';
+      ans.style.display = 'block';
+      ans.textContent = result;
+    }
+
+    const btnOpenAiTutorEl = document.getElementById('btnOpenAiTutor');
+    if (btnOpenAiTutorEl) btnOpenAiTutorEl.addEventListener('click', () => openAiTutorModal());
+
+    const btnCloseAiTutorModal = document.getElementById('btnCloseAiTutorModal');
+    if (btnCloseAiTutorModal) btnCloseAiTutorModal.addEventListener('click', () => {
+      if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      const m = document.getElementById('aiTutorModal');
+      if (m) m.classList.remove('open');
+    });
+
+    const btnCloseAiTutorFooter = document.getElementById('btnCloseAiTutorModalFooter');
+    if (btnCloseAiTutorFooter) btnCloseAiTutorFooter.addEventListener('click', () => {
+      if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      const m = document.getElementById('aiTutorModal');
+      if (m) m.classList.remove('open');
+    });
+
+    const btnSendAiTutorQuestion = document.getElementById('btnSendAiTutorQuestion');
+    if (btnSendAiTutorQuestion) btnSendAiTutorQuestion.addEventListener('click', () => sendAiTutorQuestion());
+
+    const inputAiTutorQuestion = document.getElementById('inputAiTutorQuestion');
+    if (inputAiTutorQuestion) {
+      inputAiTutorQuestion.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendAiTutorQuestion();
+      });
+    }
+
+    document.querySelectorAll('.ai-tutor-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.preset;
+        let q = '';
+        if (preset === 'explain') q = 'Explique este trecho de forma simples e didática para um leitor em português:';
+        else if (preset === 'character') q = 'Quem são os personagens citados neste trecho, qual sua importância e o que fizeram até este ponto da história sem spoilers do futuro?';
+        else if (preset === 'context') q = 'Qual é o contexto histórico, científico, filosófico ou literário deste parágrafo dentro da narrativa?';
+        else if (preset === 'recap') q = 'Faça um resumo direto em 2 ou 3 frases deste trecho:';
+        sendAiTutorQuestion(q);
+      });
+    });
+
+    const btnSpeakAiTutor = document.getElementById('btnSpeakAiTutor');
+    if (btnSpeakAiTutor) btnSpeakAiTutor.addEventListener('click', () => {
+      const ans = document.getElementById('aiTutorAnswer');
+      speakTextWithBestVoice(ans ? ans.textContent : '');
+    });
+
+    const btnCopyAiTutor = document.getElementById('btnCopyAiTutor');
+    if (btnCopyAiTutor) btnCopyAiTutor.addEventListener('click', () => {
+      const ans = document.getElementById('aiTutorAnswer');
+      if (ans && ans.textContent) {
+        navigator.clipboard.writeText(ans.textContent);
+        showToast('Resposta copiada!');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const recapM = document.getElementById('aiRecapModal');
+        if (recapM && recapM.classList.contains('open')) {
+          if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+          recapM.classList.remove('open');
+        }
+        const tutorM = document.getElementById('aiTutorModal');
+        if (tutorM && tutorM.classList.contains('open')) {
+          if (window.speechSynthesis && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+          tutorM.classList.remove('open');
+        }
+      }
+    });
+
+    // =========================================================
     // 3. EXPORTAÇÃO OBSIDIAN / NOTION COM YAML FRONTMATTER
     // =========================================================
     function buildObsidianMarkdown({ title, author, format, cefr, progress, pagesRead, totalPages, highlights, notes, review }) {
@@ -5892,7 +6303,7 @@
       }
 
       if (Array.isArray(highlights) && highlights.length) {
-        lines.push(`## 📌 Destaques & Citações (${highlights.length})`, '');
+        lines.push(`## Destaques & Citações (${highlights.length})`, '');
         highlights.forEach((hl, i) => {
           const q = (hl.text || hl.quote || '').trim();
           const ch = hl.chapterTitle || `Trecho ${i + 1}`;
@@ -5900,14 +6311,14 @@
           lines.push(`> [!quote] ${ch}${dt ? ` — ${dt}` : ''}`);
           lines.push(`> "${q}"`);
           if (hl.note) {
-            lines.push(`>\n> 💭 **Nota:** *${hl.note.trim()}*`);
+            lines.push(`>\n> **Nota:** *${hl.note.trim()}*`);
           }
           lines.push('');
         });
       }
 
       if (Array.isArray(notes) && notes.length) {
-        lines.push(`## 💡 Fichamento & Raio-X (${notes.length})`, '');
+        lines.push(`## Fichamento & Raio-X (${notes.length})`, '');
         notes.forEach((n, i) => {
           lines.push(`- **${n.name || n.title || `Nota ${i + 1}`}**: ${n.note || n.text || ''}`);
         });
@@ -5918,7 +6329,7 @@
         const cMap = JSON.parse(localStorage.getItem('reader_cornell_notes') || '{}');
         const cn = (activeBookInfoTarget && activeBookInfoTarget.bookKey) ? cMap[activeBookInfoTarget.bookKey] : (cMap[state.bookKey] || null);
         if (cn && (cn.cues || cn.notes || cn.summary)) {
-          lines.push('## 🧠 Anotações Cornell', '');
+          lines.push('## Anotações Cornell', '');
           if (cn.cues) {
             lines.push('> [!question] Palavras-chave / Perguntas');
             lines.push(`> ${cn.cues.trim().replace(/\n/g, '\n> ')}`, '');
@@ -5994,7 +6405,7 @@
         '  - obsidian',
         '---',
         '',
-        '# 📖 Minhas Citações & Destaques de Leitura',
+        '# Minhas Citações & Destaques de Leitura',
         ''
       ];
 
@@ -6002,7 +6413,7 @@
         lines.push(`> [!quote] ${q.bookTitle} — ${q.chapterTitle || 'Seção ' + (q.sectionIndex + 1)} (${q.date || ''})`);
         lines.push(`> "${q.text}"`);
         if (q.note) {
-          lines.push(`>\n> 💭 **Nota:** *${q.note}*`);
+          lines.push(`>\n> **Nota:** *${q.note}*`);
         }
         lines.push('');
       });
@@ -6081,7 +6492,7 @@
       btnShadowEl.addEventListener('click', async () => {
         if (__shadowRec && __shadowRec.state === 'recording') {
           __shadowRec.stop();
-          btnShadowEl.textContent = '🎙 Shadowing';
+          btnShadowEl.textContent = 'Shadowing';
           btnShadowEl.classList.remove('active');
           return;
         }
@@ -6102,7 +6513,7 @@
             audioShadowEl.play().catch(() => {});
           };
           __shadowRec.start();
-          btnShadowEl.textContent = '⏹ Parar Voz';
+          btnShadowEl.textContent = 'Parar Gravação';
           btnShadowEl.classList.add('active');
         } catch (err) {
           showToast('Permissão de microfone negada: ' + err.message, true);

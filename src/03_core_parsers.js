@@ -2773,7 +2773,12 @@
       const total = state.sections.length;
       if (!total) return;
       const cur = state.currentIndex + 1;
-      const pct = Math.round((cur / Math.max(1, total)) * 100);
+      const metrics = computeKindleReadingMetrics();
+      // O percentual deve refletir o progresso real de leitura no livro (Posição/palavras),
+      // e não apenas o índice bruto de arquivos de capítulo (que causava 'Pos. 7538 (50%)' em vez de 84%)
+      const pct = (metrics && metrics.totalLoc > 0 && state.format !== 'PDF')
+        ? Math.min(100, Math.max(0, Math.round((metrics.currentLoc / metrics.totalLoc) * 100)))
+        : Math.round((cur / Math.max(1, total)) * 100);
 
       dom.inputSectionNum.value = String(cur);
       dom.lblTotalSections.textContent = `/ ${total}`;
@@ -2880,7 +2885,6 @@
       }
 
       const sec = state.sections[state.currentIndex];
-      const metrics = computeKindleReadingMetrics();
 
       let kindleSummary = '';
       const cefrShort = state._cachedCefr ? `Nível: CEFR ${state._cachedCefr.code} (${state._cachedCefr.level.split('(')[1] ? state._cachedCefr.level.split('(')[1].replace(')', '') : state._cachedCefr.level})` : 'Nível: Calculando CEFR...';
@@ -4210,7 +4214,7 @@
           }
           let finalBack = translated;
           if (transliteration) {
-            finalBack = `🗣 Pronúncia / Fonética: [ ${transliteration} ]\n\n📖 Tradução: ${translated}`;
+            finalBack = `Pronúncia / Fonética: [ ${transliteration} ]\n\nTradução: ${translated}`;
           }
           if (dictExtra) {
             finalBack += `\n\n${dictExtra}`;

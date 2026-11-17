@@ -113,7 +113,7 @@
       <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnCornellToggle" title="Abrir Notas no Método Cornell (Palavras-chave, Anotações e Resumo)" style="font-size:11px;">Cornell</button>
       <div id="pomodoroWidget" class="hidden" style="display:inline-flex; align-items:center; gap:2px;">
         <button class="tb-btn tb-btn-solid" id="btnPomodoroToggle" title="Iniciar / Pausar Timer Pomodoro" style="font-size:11px;">
-          <span id="lblPomodoroTimer">⏱ 25:00</span>
+          <span id="lblPomodoroTimer">25:00</span>
         </button>
         <button class="tb-btn tb-btn-icon" id="btnPomodoroReset" title="Reiniciar Pomodoro" style="font-size:11px; width:24px;">↺</button>
       </div>
@@ -181,10 +181,18 @@
   <!-- Menu Dropdown de Recursos -->
   <div class="tools-dropdown" id="toolsDropdown">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px 6px; border-bottom:1px solid var(--border-color); margin-bottom:4px;">
-      <span style="font-weight:700; font-size:11.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">⚡ Recursos &amp; Ferramentas</span>
+      <span style="font-weight:700; font-size:11.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">Recursos &amp; Ferramentas</span>
       <button type="button" class="tb-btn tb-btn-icon" id="btnCloseToolsDropdown" title="Fechar (Esc)" style="width:26px; height:26px; font-size:13px; cursor:pointer;">✕</button>
     </div>
     <div class="reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Leitura &amp; Recursos do Livro</div>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiRecap">
+      <span>O Que Aconteceu Até Aqui? (Recap IA)</span>
+      <span class="menu-item-sub">Sem Spoilers</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiTutor">
+      <span>Tutor IA (Conversar com o Livro)</span>
+      <span class="menu-item-sub">Tire Dúvidas</span>
+    </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnWordWiseToggle">
       <span>Word Wise (Dicas Acima de Palavras)</span>
       <span class="menu-item-sub" id="lblWordWiseState">Desativado</span>
@@ -245,8 +253,8 @@
     </div>
 
     <div class="segmented" style="width:100%; margin-bottom:12px;" id="typoPopoverTabs">
-      <button type="button" class="active" id="tabBtnTypoBook" style="flex:1;">📖 Livro &amp; Leitura</button>
-      <button type="button" id="tabBtnTypoSite" style="flex:1;">🎨 Site &amp; Estante</button>
+      <button type="button" class="active" id="tabBtnTypoBook" style="flex:1;">Livro &amp; Leitura</button>
+      <button type="button" id="tabBtnTypoSite" style="flex:1;">Site &amp; Estante</button>
     </div>
 
     <!-- Aba 1: Livro & Leitura -->
@@ -452,10 +460,11 @@
     <button class="tb-btn" id="btnSelDict" title="Consultar Dicionário / Wiktionary">Dicionário</button>
     <button class="tb-btn" id="btnSelTrans" title="Traduzir trecho selecionado">Traduzir</button>
     <button class="tb-btn" id="btnSelSpeak" title="Ouvir pronúncia/leitura deste trecho">Ouvir</button>
+    <button class="tb-btn tb-btn-solid" id="btnSelAiTutor" title="Tutor IA: Explicar trecho, tirar dúvidas ou entender personagens com Inteligência Artificial" style="border-color:#8b5cf6; color:#8b5cf6; font-weight:600;">Tutor IA</button>
     <span id="selectionQuickTransBadge" class="quick-trans-pill hidden" title="Tradução instantânea"></span>
     <button class="tb-btn tb-btn-solid" id="btnSelAnki" title="Salvar palavra ou frase para o Anki">+ Anki</button>
-    <button class="tb-btn" id="btnSelQuoteCard" title="Criar Card Visual para Instagram / Redes Sociais">📷 Card</button>
-    <button class="tb-btn" id="btnSelRsvp" title="Ler este trecho em Leitura Rápida RSVP (Spritz)">⚡ RSVP</button>
+    <button class="tb-btn" id="btnSelQuoteCard" title="Criar Card Visual para Instagram / Redes Sociais">Card</button>
+    <button class="tb-btn" id="btnSelRsvp" title="Ler este trecho em Leitura Rápida RSVP (Spritz)">RSVP</button>
   </div>
 
   <!-- Card Flutuante (X-Ray Popover) que abre ao clicar no nome de um Personagem / Nota no livro -->
@@ -550,8 +559,9 @@
     <label style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-secondary); cursor:pointer;" title="Avançar automaticamente para o próximo capítulo ao terminar de narrar">
       <input type="checkbox" id="chkTtsAutoNext" checked /> Auto-Cap
     </label>
+    <span title="Vozes [Neural] possuem qualidade de voz humana com entonação natural realista (Edge / Chrome)" style="font-size:10px; background:rgba(139,92,246,0.15); color:var(--accent); padding:2px 6px; border-radius:4px; font-weight:600; cursor:help; white-space:nowrap;">Voz Neural</span>
     <select id="selectTtsVoice" style="height:26px; max-width:160px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;"></select>
-    <button class="tb-btn" id="btnShadowingRec" title="Gravar sua pronúncia (Shadowing) para comparar com o áudio">🎙 Shadowing</button>
+    <button class="tb-btn" id="btnShadowingRec" title="Gravar sua pronúncia (Shadowing) para comparar com o áudio">Shadowing</button>
     <audio id="audioShadowingPlayback" controls class="hidden" style="height:26px; max-width:170px;"></audio>
     <button class="tb-btn tb-btn-icon" id="btnTtsClose">✕</button>
   </div>
@@ -1651,7 +1661,7 @@
             <div id="catalogDetailTags" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
             <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px;">
               <div id="catalogDetailPrimaryActions" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-              <button class="tb-btn tb-btn-solid hidden" id="btnFollowCatalogSeries" style="height:30px;">🔔 Acompanhar Série</button>
+              <button class="tb-btn tb-btn-solid hidden" id="btnFollowCatalogSeries" style="height:30px;">Acompanhar Série</button>
             </div>
             <div style="margin-top:4px;">
               <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Sinopse / Informações</div>
@@ -2216,7 +2226,7 @@
               <button class="tb-btn tb-btn-solid" id="btnBatchSelectAll" style="height:26px; font-size:11px;">Marcar Visíveis</button>
               <button class="tb-btn tb-btn-solid" id="btnBatchUploadCloud" style="height:26px; font-size:11px;">Subir p/ Nuvem</button>
               <button class="tb-btn tb-btn-solid" id="btnBatchMoveGroup" style="height:26px; font-size:11px;">Mover p/ Grupo</button>
-              <button class="tb-btn tb-btn-solid" id="btnBatchEvictLocal" style="height:26px; font-size:11px;">☁ Só Nuvem</button>
+              <button class="tb-btn tb-btn-solid" id="btnBatchEvictLocal" style="height:26px; font-size:11px;">Só Nuvem</button>
               <button class="tb-btn tb-btn-solid" id="btnBatchCompileCbz" style="height:26px; font-size:11px;" title="Unir capítulos .cbz selecionados em um único volume .cbz">Compilar Volume (.cbz)</button>
               <button class="tb-btn" id="btnBatchDelete" style="height:26px; font-size:11px; border-color:#ef4444; color:#ef4444;">Remover</button>
               <button class="tb-btn" id="btnBatchClear" style="height:26px; font-size:11px;">Fechar</button>
@@ -2331,7 +2341,7 @@
   <div class="modal-backdrop" id="quoteCardModal">
     <div class="modal-card" style="max-width:540px; width:94vw;">
       <div class="modal-header">
-        <span>📷 Criar Card Visual de Citação</span>
+        <span>Criar Card Visual de Citação</span>
         <button class="tb-btn tb-btn-icon" id="btnCloseQuoteCardModal" title="Fechar (Esc)">✕</button>
       </div>
       <div class="modal-body" style="gap:12px;">
@@ -2351,10 +2361,10 @@
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px;">
-          <button type="button" class="btn" id="btnEditQuoteCardText">✏️ Editar Texto</button>
+          <button type="button" class="btn" id="btnEditQuoteCardText">Editar Texto</button>
           <div style="display:flex; gap:6px;">
-            <button type="button" class="btn" id="btnCopyQuoteCardImg">📋 Copiar Imagem</button>
-            <button type="button" class="btn primary" id="btnDownloadQuoteCardImg">⬇ Baixar PNG (1080x1080)</button>
+            <button type="button" class="btn" id="btnCopyQuoteCardImg">Copiar Imagem</button>
+            <button type="button" class="btn primary" id="btnDownloadQuoteCardImg">Baixar PNG (1080x1080)</button>
           </div>
         </div>
       </div>
@@ -2365,7 +2375,7 @@
   <div class="modal-backdrop" id="rsvpModal">
     <div class="modal-card" style="max-width:580px; width:94vw;">
       <div class="modal-header">
-        <span>⚡ Leitura Rápida RSVP (Spritz)</span>
+        <span>Leitura Rápida RSVP (Spritz)</span>
         <button class="tb-btn tb-btn-icon" id="btnCloseRsvpModal" title="Fechar (Esc)">✕</button>
       </div>
       <div class="modal-body" style="gap:14px;">
@@ -2423,6 +2433,96 @@
         <div id="qrCodeContainer" style="padding:12px; background:#fff; border-radius:8px; border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; width:200px; height:200px; margin:0 auto;"></div>
         <div id="qrCodeLinkText" style="font-size:11px; color:var(--text-muted); word-break:break-all; max-width:100%;"></div>
         <button class="tb-btn tb-btn-solid" id="btnCopyQrUrl" style="width:100%; border-color:var(--accent); color:var(--accent); font-weight:600;">Copiar Link de Leitura</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal IA: O que aconteceu até aqui? (Recap Inteligente Sem Spoilers) -->
+  <div class="modal-backdrop" id="aiRecapModal">
+    <div class="modal-card" style="max-width:620px; width:94vw;">
+      <div class="modal-header">
+        <span style="display:flex; align-items:center; gap:6px;">O Que Aconteceu Até Aqui? (Recap IA)</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseAiRecapModal" title="Fechar (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="gap:12px;">
+        <div style="background:var(--bg-toolbar); padding:10px 12px; border-radius:6px; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:4px;">
+          <div style="font-size:13px; font-weight:700; color:var(--text-primary);" id="aiRecapBookTitle">Livro</div>
+          <div style="font-size:11.5px; color:var(--text-muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+            <span id="aiRecapPositionText">Posição: Calculando...</span>
+            <span style="color:var(--accent); font-weight:600;">Sem Spoilers dos Próximos Capítulos</span>
+          </div>
+        </div>
+
+        <div id="aiRecapApiKeyBox" style="background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.25); border-radius:6px; padding:8px 12px; font-size:11.5px; display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Chave Gemini API (opcional para IA profunda da Google):</span>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-weight:600;">Obter Grátis ↗</a>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <input type="password" id="inputAiRecapKey" placeholder="Cole sua chave AIzaSy... (ou deixe vazio para resumo local)" style="flex:1; height:26px; border:1px solid var(--border-color); border-radius:4px; padding:0 8px; font-size:11px; background:var(--bg-page); color:var(--text-primary);" />
+            <button class="tb-btn tb-btn-solid" id="btnSaveAiRecapKey" style="height:26px; font-size:11px;">Salvar</button>
+          </div>
+        </div>
+
+        <div id="aiRecapLoading" style="display:none; text-align:center; padding:24px 12px; color:var(--accent); font-size:13px;">
+          <div class="spinner" style="margin:0 auto 10px; width:28px; height:28px; border:3px solid var(--border-color); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+          <span>Analisando os capítulos lidos e gerando o resumo até aqui...</span>
+        </div>
+
+        <div id="aiRecapContent" style="min-height:180px; max-height:46vh; overflow-y:auto; line-height:1.65; font-size:13px; background:var(--bg-page); border:1px solid var(--border-color); border-radius:6px; padding:14px; white-space:pre-wrap; color:var(--text-primary); user-select:text;"></div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span style="font-size:11px; color:var(--text-muted);" id="aiRecapSourceInfo">Gerado por IA</span>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="tb-btn" id="btnRegenerateAiRecap" title="Gerar novamente">Atualizar</button>
+          <button class="tb-btn" id="btnSpeakAiRecap" title="Ouvir em áudio">Ouvir</button>
+          <button class="tb-btn" id="btnCopyAiRecap" title="Copiar texto para área de transferência">Copiar</button>
+          <button class="tb-btn tb-btn-solid" id="btnCloseAiRecapModalFooter">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal IA: Tutor de Dúvidas / Conversar com o Livro -->
+  <div class="modal-backdrop" id="aiTutorModal">
+    <div class="modal-card" style="max-width:620px; width:94vw;">
+      <div class="modal-header">
+        <span style="display:flex; align-items:center; gap:6px;">Tutor IA · Dúvidas &amp; Explicações</span>
+        <button class="tb-btn tb-btn-icon" id="btnCloseAiTutorModal" title="Fechar (Esc)">✕</button>
+      </div>
+      <div class="modal-body" style="gap:10px;">
+        <div id="aiTutorSnippetBox" style="background:var(--bg-toolbar); border-left:3px solid var(--accent); padding:8px 12px; font-style:italic; font-size:12px; max-height:85px; overflow-y:auto; border-radius:0 4px 4px 0; color:var(--text-secondary);">
+          <span id="aiTutorSnippetText">Nenhum trecho selecionado. Fazendo perguntas sobre o capítulo atual.</span>
+        </div>
+
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="tb-btn ai-tutor-preset-btn" data-preset="explain" style="font-size:11px; padding:3px 8px;">Explicar Simples</button>
+          <button class="tb-btn ai-tutor-preset-btn" data-preset="character" style="font-size:11px; padding:3px 8px;">Quem é esse personagem?</button>
+          <button class="tb-btn ai-tutor-preset-btn" data-preset="context" style="font-size:11px; padding:3px 8px;">Contexto e Significado</button>
+          <button class="tb-btn ai-tutor-preset-btn" data-preset="recap" style="font-size:11px; padding:3px 8px;">Resumir Trecho</button>
+        </div>
+
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="inputAiTutorQuestion" placeholder="Faça uma pergunta sobre o trecho ou o livro..." style="flex:1; height:32px; border:1px solid var(--border-color); border-radius:6px; padding:0 8px; font-size:12px; background:var(--bg-page); color:var(--text-primary);" />
+          <button class="tb-btn tb-btn-solid" id="btnSendAiTutorQuestion" style="height:32px; padding:0 12px; font-weight:600;">Perguntar</button>
+        </div>
+
+        <div id="aiTutorLoading" style="display:none; text-align:center; padding:18px; color:var(--accent); font-size:12.5px;">
+          <div class="spinner" style="margin:0 auto 8px; width:24px; height:24px; border:2px solid var(--border-color); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+          <span>Consultando o assistente de leitura com o texto do livro...</span>
+        </div>
+
+        <div id="aiTutorAnswer" style="min-height:130px; max-height:42vh; overflow-y:auto; line-height:1.6; font-size:12.5px; background:var(--bg-page); border:1px solid var(--border-color); border-radius:6px; padding:12px; white-space:pre-wrap; color:var(--text-primary); user-select:text;">
+          Clique em uma das opções sugeridas acima ou digite sua dúvida no campo de pergunta.
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; color:var(--text-muted);">Tutor inteligente sem spoilers</span>
+        <div style="display:flex; gap:6px;">
+          <button class="tb-btn" id="btnSpeakAiTutor" title="Ouvir resposta">Ouvir</button>
+          <button class="tb-btn" id="btnCopyAiTutor" title="Copiar resposta">Copiar</button>
+          <button class="tb-btn tb-btn-solid" id="btnCloseAiTutorModalFooter">Fechar</button>
+        </div>
       </div>
     </div>
   </div>

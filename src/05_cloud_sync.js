@@ -515,7 +515,7 @@
         row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px;';
         if (item.isFolder) {
           row.innerHTML = `
-            <div style="font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📁 ${escapeHtml(item.name)}</div>
+            <div style="font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">[Pasta] ${escapeHtml(item.name)}</div>
             <button class="tb-btn tb-btn-solid btn-open-drive-folder" style="height:26px; font-size:11px; flex-shrink:0;">Abrir Pasta</button>
           `;
           row.querySelector('.btn-open-drive-folder').addEventListener('click', () => {

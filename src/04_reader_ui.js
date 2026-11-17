@@ -636,7 +636,23 @@
 
     dom.inputSectionNum.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && state.sections.length) {
-        const val = parseInt(dom.inputSectionNum.value, 10);
+        const raw = dom.inputSectionNum.value.trim();
+        if (raw.includes('%')) {
+          const pctVal = parseFloat(raw.replace('%', ''));
+          if (!isNaN(pctVal)) {
+            seekBookByRatio(pctVal / 100);
+            return;
+          }
+        }
+        if (/^pos\b/i.test(raw)) {
+          const locVal = parseInt(raw.replace(/[^0-9]/g, ''), 10);
+          const metrics = (typeof computeKindleReadingMetrics === 'function') ? computeKindleReadingMetrics() : null;
+          if (!isNaN(locVal) && metrics && metrics.totalLoc > 0) {
+            seekBookByRatio(locVal / metrics.totalLoc);
+            return;
+          }
+        }
+        const val = parseInt(raw, 10);
         if (!isNaN(val)) {
           state.currentIndex = Math.max(0, Math.min(state.sections.length - 1, val - 1));
           renderSection();
@@ -864,19 +880,373 @@
     const btnPdfTintToolbarEl = document.getElementById('btnPdfTintToolbar');
     if (btnPdfTintToolbarEl) btnPdfTintToolbarEl.addEventListener('click', togglePdfTintMode);
 
-    // Busca e Barra de Progresso
+    // Busca e Barra de Progresso com Navegação Ponderada e Tooltip
     document.getElementById('btnRunSearch').addEventListener('click', runBookSearch);
     dom.inputSearch.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') runBookSearch();
     });
 
-    dom.progressTrack.addEventListener('click', (e) => {
-      if (!state.sections.length) return;
+    const scrubTooltipEl = document.getElementById('progressScrubTooltip');
+
+    function calculateBookProgressLocation(ratio) {
+      if (!state.sections.length) return null;
+      const clamped = Math.max(0, Math.min(1, ratio));
+      const cum = (typeof getBookCumulativeMetrics === 'function') ? getBookCumulativeMetrics() : null;
+
+      if (!cum || cum.totalWords <= 0 || state.format === 'PDF') {
+        const secIdx = Math.max(0, Math.min(state.sections.length - 1, Math.round(clamped * (state.sections.length - 1))));
+        const sec = state.sections[secIdx];
+        const pageNum = sec ? (sec.pageNumber || secIdx + 1) : (secIdx + 1);
+        return {
+          secIdx,
+          secTitle: sec ? (sec.title || `Capítulo ${secIdx + 1}`) : `Capítulo ${secIdx + 1}`,
+          intraFraction: 0,
+          pct: Math.round(clamped * 100),
+          estPage: pageNum,
+          totalPages: state.sections.length
+        };
+      }
+
+      const targetWordPos = clamped * cum.totalWords;
+      let chosenSec = cum.secData[0];
+      for (let i = 0; i < cum.secData.length; i++) {
+        const item = cum.secData[i];
+        if (targetWordPos >= item.startWords && targetWordPos < (item.startWords + item.words)) {
+          chosenSec = item;
+          break;
+        }
+        if (i === cum.secData.length - 1) chosenSec = item;
+      }
+
+      const intraFraction = Math.max(0, Math.min(1, (targetWordPos - chosenSec.startWords) / Math.max(1, chosenSec.words)));
+      const estPage = Math.max(1, Math.round(targetWordPos / 250));
+      const totalPages = Math.max(estPage, Math.round(cum.totalWords / 250));
+
+      return {
+        secIdx: chosenSec.idx,
+        secTitle: chosenSec.title,
+        intraFraction,
+        pct: Math.round(clamped * 100),
+        estPage,
+        totalPages
+      };
+    }
+
+    async function seekBookByRatio(ratio) {
+      const loc = calculateBookProgressLocation(ratio);
+      if (!loc) return;
+
+      state.currentIndex = loc.secIdx;
+      const isPaginated = dom.viewport.classList.contains('paginated-mode');
+
+      if (isPaginated) {
+        await renderSection({ restoreSubPage: 0 });
+        setTimeout(() => {
+          if (state.subPageCount > 1) {
+            state.subPageIndex = Math.max(0, Math.min(state.subPageCount - 1, Math.floor(loc.intraFraction * state.subPageCount)));
+            if (typeof updatePaginatedMetrics === 'function') updatePaginatedMetrics();
+          }
+        }, 50);
+      } else {
+        await renderSection({ restoreScrollRatio: loc.intraFraction });
+      }
+
+      showToast(`Pág. ${loc.estPage} de ${loc.totalPages} · ${loc.secTitle} (${loc.pct}%)`);
+    }
+
+    function updateScrubTooltip(e) {
+      if (!scrubTooltipEl || !dom.progressTrack || !state.sections.length) return;
       const r = dom.progressTrack.getBoundingClientRect();
       const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      state.currentIndex = Math.floor(ratio * (state.sections.length - 1));
-      renderSection();
+      const loc = calculateBookProgressLocation(ratio);
+      if (!loc) return;
+
+      const posX = e.clientX - r.left;
+      scrubTooltipEl.style.left = `${posX}px`;
+      scrubTooltipEl.style.display = 'block';
+      scrubTooltipEl.textContent = `${loc.secTitle} · Pág. ${loc.estPage}/${loc.totalPages} (${loc.pct}%)`;
+    }
+
+    function hideScrubTooltip() {
+      if (scrubTooltipEl) scrubTooltipEl.style.display = 'none';
+    }
+
+    let isScrubbingProgress = false;
+
+    dom.progressTrack.addEventListener('mousemove', (e) => {
+      updateScrubTooltip(e);
+      if (isScrubbingProgress && (e.buttons & 1)) {
+        const r = dom.progressTrack.getBoundingClientRect();
+        seekBookByRatio((e.clientX - r.left) / r.width);
+      }
     });
+
+    dom.progressTrack.addEventListener('mouseleave', () => {
+      if (!isScrubbingProgress) hideScrubTooltip();
+    });
+
+    dom.progressTrack.addEventListener('mousedown', (e) => {
+      isScrubbingProgress = true;
+      const r = dom.progressTrack.getBoundingClientRect();
+      seekBookByRatio((e.clientX - r.left) / r.width);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isScrubbingProgress) {
+        isScrubbingProgress = false;
+        hideScrubTooltip();
+      }
+    });
+
+    // Suporte a Touch no celular / tablet
+    dom.progressTrack.addEventListener('touchstart', (e) => {
+      if (!e.touches.length) return;
+      isScrubbingProgress = true;
+      const touch = e.touches[0];
+      const r = dom.progressTrack.getBoundingClientRect();
+      seekBookByRatio((touch.clientX - r.left) / r.width);
+      updateScrubTooltip(touch);
+    }, { passive: true });
+
+    dom.progressTrack.addEventListener('touchmove', (e) => {
+      if (!e.touches.length || !isScrubbingProgress) return;
+      const touch = e.touches[0];
+      updateScrubTooltip(touch);
+    }, { passive: true });
+
+    dom.progressTrack.addEventListener('touchend', () => {
+      isScrubbingProgress = false;
+      setTimeout(hideScrubTooltip, 1200);
+    });
+
+    /* =====================================================================
+     * NAVEGAÇÃO PRECISA: IR PARA PORCENTAGEM (%), POSIÇÃO KINDLE OU PÁGINA
+     * ===================================================================== */
+    let goToPosTargetRatio = 0;
+
+    function getChapterStartRatio(secIdx) {
+      const cum = (typeof getBookCumulativeMetrics === 'function') ? getBookCumulativeMetrics() : null;
+      if (cum && cum.secData && cum.secData[secIdx] && cum.totalWords > 0) {
+        return Math.max(0, Math.min(1, cum.secData[secIdx].startWords / cum.totalWords));
+      }
+      return Math.max(0, Math.min(1, secIdx / Math.max(1, state.sections.length)));
+    }
+
+    function updateGoToPositionPreview(ratio) {
+      const clamped = Math.max(0, Math.min(1, ratio));
+      const loc = calculateBookProgressLocation(clamped);
+      const metrics = (typeof computeKindleReadingMetrics === 'function') ? computeKindleReadingMetrics() : null;
+      const totalLoc = metrics ? metrics.totalLoc : Math.round(state.sections.length * 15);
+      const totalPages = metrics ? metrics.estTotalPages : state.sections.length;
+
+      const calcLoc = Math.max(1, Math.round(clamped * totalLoc));
+      const calcPage = loc ? loc.estPage : Math.max(1, Math.round(clamped * totalPages));
+      const calcPct = Math.round(clamped * 100);
+      const secTitle = loc ? loc.secTitle : `Capítulo ${Math.round(clamped * state.sections.length) + 1}`;
+
+      const titleEl = document.getElementById('goToPosPreviewTitle');
+      const detailsEl = document.getElementById('goToPosPreviewDetails');
+
+      if (titleEl) {
+        titleEl.textContent = `Destino: ${secTitle} · ${calcPct}%`;
+      }
+      if (detailsEl) {
+        detailsEl.innerHTML = `<strong>Pág. ${calcPage}</strong> de ${totalPages} · <strong>Posição Kindle (Loc): ${calcLoc}</strong> de ${totalLoc}<br/>` +
+          `<span style="color:var(--text-muted); font-size:11px;">Ao confirmar, o leitor abrirá exatamente neste ponto da narrativa.</span>`;
+      }
+    }
+
+    function syncGoToFromRatio(ratio) {
+      goToPosTargetRatio = Math.max(0, Math.min(1, ratio));
+      const metrics = (typeof computeKindleReadingMetrics === 'function') ? computeKindleReadingMetrics() : null;
+      const totalLoc = metrics ? metrics.totalLoc : Math.round(state.sections.length * 15);
+      const totalPages = metrics ? metrics.estTotalPages : state.sections.length;
+
+      const calcLoc = Math.max(1, Math.round(goToPosTargetRatio * totalLoc));
+      const calcPage = Math.max(1, Math.round(goToPosTargetRatio * totalPages));
+      const calcPct = Math.round(goToPosTargetRatio * 100);
+
+      const inpPct = document.getElementById('inputGoToPercent');
+      const rngPct = document.getElementById('rangeGoToPercent');
+      const inpLoc = document.getElementById('inputGoToLocation');
+      const inpPage = document.getElementById('inputGoToPage');
+      const selChapter = document.getElementById('selectGoToChapter');
+
+      if (inpPct && document.activeElement !== inpPct) inpPct.value = String(calcPct);
+      if (rngPct && document.activeElement !== rngPct) rngPct.value = String(calcPct);
+      if (inpLoc && document.activeElement !== inpLoc) inpLoc.value = String(calcLoc);
+      if (inpPage && document.activeElement !== inpPage) inpPage.value = String(calcPage);
+
+      const loc = calculateBookProgressLocation(goToPosTargetRatio);
+      if (loc && selChapter && document.activeElement !== selChapter) {
+        selChapter.value = String(loc.secIdx);
+      }
+
+      updateGoToPositionPreview(goToPosTargetRatio);
+    }
+
+    function openGoToPositionModal() {
+      if (!state.sections || !state.sections.length) {
+        showToast('Abra um livro primeiro para navegar por porcentagem ou posição.');
+        return;
+      }
+      const toolsM = document.getElementById('toolsDropdown');
+      if (toolsM) toolsM.classList.remove('open');
+
+      const modal = document.getElementById('goToPositionModal');
+      const bookTitle = document.getElementById('goToPosBookTitle');
+      const currentInfo = document.getElementById('goToPosCurrentInfo');
+      const inpPct = document.getElementById('inputGoToPercent');
+      const rngPct = document.getElementById('rangeGoToPercent');
+      const inpLoc = document.getElementById('inputGoToLocation');
+      const lblLocMax = document.getElementById('lblGoToLocationMax');
+      const inpPage = document.getElementById('inputGoToPage');
+      const lblPageMax = document.getElementById('lblGoToPageMax');
+      const selChapter = document.getElementById('selectGoToChapter');
+
+      if (bookTitle) bookTitle.textContent = state.title || 'Livro';
+
+      const metrics = (typeof computeKindleReadingMetrics === 'function') ? computeKindleReadingMetrics() : null;
+      const totalLoc = metrics ? metrics.totalLoc : Math.round(state.sections.length * 15);
+      const currentLoc = metrics ? metrics.currentLoc : Math.round((state.currentIndex + 1) * 15);
+      const totalPages = metrics ? metrics.estTotalPages : state.sections.length;
+      const currentPage = metrics ? metrics.estCurrentPage : (state.currentIndex + 1);
+
+      const curSec = state.sections[state.currentIndex];
+      const curTitle = curSec ? (curSec.title || `Capítulo ${state.currentIndex + 1}`) : `Capítulo ${state.currentIndex + 1}`;
+      const currentPct = totalLoc > 0 ? Math.round((currentLoc / totalLoc) * 100) : 0;
+
+      if (currentInfo) {
+        currentInfo.textContent = `Atualmente no Capítulo ${state.currentIndex + 1} (${curTitle}) · Pág. ${currentPage} de ${totalPages} · Pos. ${currentLoc} de ${totalLoc} (${currentPct}%)`;
+      }
+
+      if (lblLocMax) lblLocMax.textContent = `Posição Kindle (Loc) [1 a ${totalLoc}]:`;
+      if (inpLoc) {
+        inpLoc.max = String(totalLoc);
+        inpLoc.value = String(currentLoc);
+      }
+
+      if (lblPageMax) lblPageMax.textContent = `Página Estimada [1 a ${totalPages}]:`;
+      if (inpPage) {
+        inpPage.max = String(totalPages);
+        inpPage.value = String(currentPage);
+      }
+
+      if (selChapter) {
+        selChapter.innerHTML = '';
+        state.sections.forEach((sec, idx) => {
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          const t = sec.title || `Capítulo ${idx + 1}`;
+          opt.textContent = `${idx + 1}. ${t}`;
+          if (idx === state.currentIndex) opt.selected = true;
+          selChapter.appendChild(opt);
+        });
+      }
+
+      goToPosTargetRatio = totalLoc > 0 ? (currentLoc / totalLoc) : (state.currentIndex / Math.max(1, state.sections.length));
+      if (inpPct) inpPct.value = String(currentPct);
+      if (rngPct) rngPct.value = String(currentPct);
+
+      updateGoToPositionPreview(goToPosTargetRatio);
+
+      if (modal) modal.classList.add('open');
+      if (inpPct) {
+        inpPct.focus();
+        inpPct.select();
+      }
+    }
+
+    function confirmGoToPosition() {
+      const modal = document.getElementById('goToPositionModal');
+      if (modal) modal.classList.remove('open');
+      seekBookByRatio(goToPosTargetRatio);
+    }
+
+    // Eventos do Modal "Ir Para"
+    const btnConfirmGoTo = document.getElementById('btnConfirmGoToPosition');
+    if (btnConfirmGoTo) btnConfirmGoTo.addEventListener('click', confirmGoToPosition);
+
+    const btnCloseGoTo = document.getElementById('btnCloseGoToPositionModal');
+    if (btnCloseGoTo) btnCloseGoTo.addEventListener('click', () => {
+      const m = document.getElementById('goToPositionModal');
+      if (m) m.classList.remove('open');
+    });
+
+    const btnCloseGoToFooter = document.getElementById('btnCloseGoToPositionModalFooter');
+    if (btnCloseGoToFooter) btnCloseGoToFooter.addEventListener('click', () => {
+      const m = document.getElementById('goToPositionModal');
+      if (m) m.classList.remove('open');
+    });
+
+    // Inputs e Sliders sincronizados
+    const rngGoToPct = document.getElementById('rangeGoToPercent');
+    if (rngGoToPct) {
+      rngGoToPct.addEventListener('input', () => {
+        syncGoToFromRatio(parseFloat(rngGoToPct.value) / 100);
+      });
+    }
+
+    const inpGoToPct = document.getElementById('inputGoToPercent');
+    if (inpGoToPct) {
+      inpGoToPct.addEventListener('input', () => {
+        const val = parseFloat(inpGoToPct.value);
+        if (!isNaN(val)) syncGoToFromRatio(val / 100);
+      });
+      inpGoToPct.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') confirmGoToPosition();
+      });
+    }
+
+    const inpGoToLoc = document.getElementById('inputGoToLocation');
+    if (inpGoToLoc) {
+      inpGoToLoc.addEventListener('input', () => {
+        const val = parseInt(inpGoToLoc.value, 10);
+        const metrics = (typeof computeKindleReadingMetrics === 'function') ? computeKindleReadingMetrics() : null;
+        const totalLoc = metrics ? metrics.totalLoc : Math.round(state.sections.length * 15);
+        if (!isNaN(val) && totalLoc > 0) syncGoToFromRatio(val / totalLoc);
+      });
+      inpGoToLoc.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') confirmGoToPosition();
+      });
+    }
+
+    const inpGoToPg = document.getElementById('inputGoToPage');
+    if (inpGoToPg) {
+      inpGoToPg.addEventListener('input', () => {
+        const val = parseInt(inpGoToPg.value, 10);
+        const metrics = (typeof computeKindleReadingMetrics === 'function') ? computeKindleReadingMetrics() : null;
+        const totalPages = metrics ? metrics.estTotalPages : state.sections.length;
+        if (!isNaN(val) && totalPages > 0) syncGoToFromRatio(val / totalPages);
+      });
+      inpGoToPg.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') confirmGoToPosition();
+      });
+    }
+
+    const selGoToChap = document.getElementById('selectGoToChapter');
+    if (selGoToChap) {
+      selGoToChap.addEventListener('change', () => {
+        const idx = parseInt(selGoToChap.value, 10);
+        if (!isNaN(idx)) syncGoToFromRatio(getChapterStartRatio(idx));
+      });
+    }
+
+    // Botões de Atalho Rápido de Porcentagem
+    const bindQuickPos = (id, ratio) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', () => syncGoToFromRatio(ratio));
+    };
+    bindQuickPos('btnQuickPos0', 0);
+    bindQuickPos('btnQuickPos25', 0.25);
+    bindQuickPos('btnQuickPos50', 0.5);
+    bindQuickPos('btnQuickPos75', 0.75);
+    bindQuickPos('btnQuickPos100', 1);
+
+    // Gatilhos de Abertura: Clique na % do rodapé e Menu Ferramentas
+    if (dom.statusPercent) dom.statusPercent.addEventListener('click', openGoToPositionModal);
+    const btnMenuGoTo = document.getElementById('btnMenuGoToPosition');
+    if (btnMenuGoTo) btnMenuGoTo.addEventListener('click', openGoToPositionModal);
 
     // Drag & Drop
     window.addEventListener('dragover', (e) => {
@@ -897,6 +1267,11 @@
     // Atalhos de Teclado
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        const goToMod = document.getElementById('goToPositionModal');
+        if (goToMod && goToMod.classList.contains('open')) {
+          goToMod.classList.remove('open');
+          return;
+        }
         const qrM = document.getElementById('qrCodeModal');
         if (qrM && qrM.classList.contains('open')) {
           qrM.classList.remove('open');
@@ -953,6 +1328,9 @@
       } else if (e.key === 't' || e.key === 'T') {
         dom.sidebar.classList.toggle('hidden-sidebar');
         if (dom.viewport.classList.contains('paginated-mode')) setTimeout(updatePaginatedMetrics, 200);
+      } else if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        openGoToPositionModal();
       } else if (e.key === '+' || e.key === '=') {
         if (state.format === 'PDF' && state.pdfViewMode === 'canvas') document.getElementById('btnZoomIn').click();
         else { state.fontSize = Math.min(34, state.fontSize + 1); applySettings(); }
@@ -3978,6 +4356,7 @@
       document.getElementById('btnSaveGeminiKey').addEventListener('click', () => {
         state.geminiApiKey = inpGemini.value.trim();
         localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
+        if (typeof updateAiKeyBadges === 'function') updateAiKeyBadges();
         showToast(state.geminiApiKey ? 'Chave Gemini API salva com sucesso!' : 'Chave removida. Usando modo offline.');
       });
     }
@@ -3986,37 +4365,38 @@
       const sysInstruction = customSystem || 'Você é o assistente inteligente de leitura NotebookLM. Responda em português com clareza e embasamento no texto da obra fornecida.';
       if (state.geminiApiKey) {
         try {
-          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(state.geminiApiKey)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: `${sysInstruction}\n\nCONTEXTO DO LIVRO:\n${bookContext.slice(0, 40000)}\n\nPERGUNTA/TAREFA:\n${prompt}` }
-                ]
-              }]
-            })
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) return text;
+          const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+          let lastErrMsg = '';
+          for (const model of modelsToTry) {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(state.geminiApiKey)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [
+                    { text: `${sysInstruction}\n\nCONTEXTO DO LIVRO:\n${bookContext.slice(0, 40000)}\n\nPERGUNTA/TAREFA:\n${prompt}` }
+                  ]
+                }]
+              })
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) return { success: true, text };
+            } else {
+              const errData = await resp.json().catch(() => ({}));
+              lastErrMsg = errData?.error?.message || `Código HTTP ${resp.status}`;
+              if (resp.status === 401) break;
+            }
           }
+          console.warn('Erro Gemini API:', lastErrMsg);
+          return { error: true, message: lastErrMsg };
         } catch (e) {
           console.warn('Erro Gemini API:', e);
+          return { error: true, message: e.message || 'Falha de conexão com a API' };
         }
       }
-      const queryWords = prompt.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-      const matchedSecs = (state.sections || []).filter(s => {
-        const t = (s.text || '').toLowerCase();
-        return queryWords.some(w => t.includes(w));
-      }).slice(0, 3);
-
-      if (matchedSecs.length) {
-        const snippets = matchedSecs.map((s, idx) => `[Seção ${s.pageNumber || idx + 1}: ${s.title}]\n"...${(s.text || '').slice(0, 240).trim()}..."`).join('\n\n');
-        return `Passagens identificadas no livro "${state.title}":\n\n${snippets}\n\n(Dica: adicione sua chave gratuita do Gemini no campo acima para respostas detalhadas com IA)`;
-      }
-      return `Com base na obra "${state.title}", os temas abordados tratam da jornada principal dos capítulos lidos.`;
+      return { offline: true };
     }
 
     let podcastUtterances = [];
@@ -4036,8 +4416,12 @@
 
       let scriptText = '';
       if (state.geminiApiKey) {
-        scriptText = await callGeminiOrLocal(prompt, context);
-      } else {
+        const gemRes = await callGeminiOrLocal(prompt, context);
+        if (gemRes && gemRes.success) {
+          scriptText = gemRes.text;
+        }
+      }
+      if (!scriptText) {
         scriptText = `Alex: Cara, você viu o que aconteceu neste capítulo de "${state.title}"? O autor constrói uma atmosfera incrível logo nas primeiras linhas!\n` +
           `Sam: Com certeza, Alex! O ponto alto é como o texto aprofunda a motivação dos personagens de forma sutil.\n` +
           `Alex: Exatamente! Dá muita vontade de ver o que vai acontecer a seguir.\n` +
@@ -4145,7 +4529,13 @@
         const curSec = state.sections[state.currentIndex] || state.sections[0];
         const context = curSec ? (curSec.text || '').slice(0, 10000) : '';
         const ans = await callGeminiOrLocal(q, context);
-        aiMsg.innerHTML = `<strong>NotebookLM:</strong> ${escapeHtml(ans).replace(/\n/g, '<br/>')}`;
+        if (ans && ans.success) {
+          aiMsg.innerHTML = `<strong>NotebookLM:</strong> ${escapeHtml(ans.text).replace(/\n/g, '<br/>')}`;
+        } else if (ans && ans.error) {
+          aiMsg.innerHTML = `<strong style="color:var(--danger,#ef4444);">Erro Gemini:</strong> ${escapeHtml(ans.message)}. Verifique sua chave no painel de configurações.`;
+        } else {
+          aiMsg.innerHTML = `<strong>NotebookLM (Offline):</strong> Para conversar livremente com a inteligência artificial sobre o conteúdo do livro, insira sua chave gratuita do Google Gemini no campo acima.`;
+        }
         list.scrollTop = list.scrollHeight;
       };
       btnSendNlm.addEventListener('click', doSend);
@@ -4165,8 +4555,16 @@
         const context = curSec ? (curSec.text || '').slice(0, 8000) : '';
         const prompt = `Crie um Guia de Estudo estruturado estilo NotebookLM para o livro "${state.title}".\n1. RESUMO EXECUTIVO\n2. 5 CONCEITOS E LIÇÕES-CHAVE\n3. FAQ DO CAPÍTULO\n4. GLOSSÁRIO`;
         const res = await callGeminiOrLocal(prompt, context);
-        if (content) content.innerText = res;
-        showToast('Guia de Estudo gerado com sucesso!');
+        if (res && res.success) {
+          if (content) content.innerText = res.text;
+          showToast('Guia de Estudo gerado com sucesso!');
+        } else if (res && res.error) {
+          if (content) content.innerHTML = `<span style="color:var(--danger,#ef4444);">Erro na API: ${escapeHtml(res.message)}. Verifique sua chave Gemini.</span>`;
+        } else {
+          const capTitle = curSec ? (curSec.title || 'Capítulo Atual') : 'Início';
+          if (content) content.innerText = `GUIA DE ESTUDO (MODO ESTRUTURADO LOCAL)\n\nObra: ${state.title}\nCapítulo: ${capTitle}\n\n1. RESUMO GERAL\nO capítulo desenvolve a narrativa a partir das premissas estabelecidas na obra, aprofundando o arco dos personagens e o ritmo da trama.\n\n2. MODO IA AVANÇADO\nPara gerar perguntas frequentes automatizadas, sínteses aprofundadas e análise conceitual via Google Gemini AI, insira sua chave gratuita no topo da janela.`;
+          showToast('Guia básico gerado em modo offline!');
+        }
       });
     }
 
@@ -5934,8 +6332,223 @@
       showToast('Ouvindo com voz sintetizada...');
     }
 
+    // --- AUXILIARES NARRATIVOS (FILTRO DE FRONT-MATTER E RECAP OFFLINE) ---
+    function isFrontMatterOrLegal(sec) {
+      if (!sec) return true;
+      const t = (sec.title || '').trim().toLowerCase();
+      const raw = (sec.text || '').slice(0, 3000).toLowerCase();
+
+      // Identificadores de capa, sumário, créditos e metadados legais
+      const titleBlacklist = [
+        /odinrights/i, /elivros/i, /sum[aá]rio/i, /^[íi]ndice/i, /table\s+of\s+contents/i,
+        /dramatis\s+personae/i, /copyright/i, /ficha\s+catalogr[aá]fica/i, /cr[ée]ditos/i,
+        /folha\s+de\s+rosto/i, /portada/i, /dedicat[oó]ria/i, /ep[íi]grafe/i,
+        /nota\s+(?:da|do)\s+tradu/i, /sobre\s+a\s+obra/i, /sobre\s+o\s+autor/i,
+        /^capa$/i, /^cover$/i, /^titlepage$/i, /sinopse/i
+      ];
+      if (titleBlacklist.some(p => p.test(t))) return true;
+
+      // Conteúdos piratas ou de metadados editoriais que poluem o resumo
+      const textBlacklist = [
+        /dados\s+de\s+odinright/i,
+        /disponibilizada\s+pela\s+equipe\s+elivros/i,
+        /todos\s+os\s+direitos\s+reservados/i,
+        /ficha\s+catalogr[aá]fica/i,
+        /c\s*o\s*p\s*y\s*r\s*i\s*g\s*h\s*t/i,
+        /dramatis\s+personae\s+organiza/i,
+        /publicado\s+originalmente/i
+      ];
+      if (textBlacklist.some(p => p.test(raw))) return true;
+
+      const cleanLen = (sec.text || '').replace(/\s+/g, ' ').trim().length;
+      if (cleanLen < 80 && !/(cap[íi]tulo|chapter|parte|pr[oó]logo|ep[íi]logo)/i.test(t)) {
+        return true;
+      }
+      return false;
+    }
+
+    function buildOfflineStoryRecap(targetIdx) {
+      if (!state.sections || !state.sections.length) return 'Nenhum conteúdo carregado.';
+
+      // Filtrar apenas seções narrativas anteriores à posição atual
+      const pastStorySections = [];
+      for (let i = 0; i < targetIdx; i++) {
+        const s = state.sections[i];
+        if (s && !isFrontMatterOrLegal(s)) {
+          pastStorySections.push({ sec: s, origIndex: i });
+        }
+      }
+
+      const curSec = state.sections[targetIdx];
+      const curTitle = curSec ? (curSec.title || `Capítulo ${targetIdx + 1}`) : `Capítulo ${targetIdx + 1}`;
+
+      if (!pastStorySections.length) {
+        return `Você está no início da obra ("${curTitle}").\n\nOs capítulos anteriores lidos até aqui continham apenas informações editoriais, capa ou sumário. Comece sua leitura e, quando avançar pela trama, utilize esta ferramenta para recapitular os acontecimentos sem spoilers!`;
+      }
+
+      const lastStory = pastStorySections[pastStorySections.length - 1].sec;
+      const lastTitle = lastStory.title || `Capítulo ${pastStorySections[pastStorySections.length - 1].origIndex + 1}`;
+
+      // Extrair parágrafos substanciais do desfecho do capítulo anterior
+      const paras = (lastStory.text || '')
+        .split(/\n{2,}|\r\n\r\n/)
+        .map(p => p.replace(/\s+/g, ' ').trim())
+        .filter(p => p.length >= 60 && !/^(cap[íi]tulo|chapter|\d+|sum[aá]rio)/i.test(p));
+
+      let whereItStopped = '';
+      if (paras.length >= 2) {
+        whereItStopped = paras.slice(-2).join('\n\n');
+      } else if (paras.length === 1) {
+        whereItStopped = paras[0];
+      } else {
+        whereItStopped = (lastStory.text || '').replace(/\s+/g, ' ').slice(-500).trim();
+      }
+
+      // Trajetória narrativa recente (até os últimos 4 capítulos)
+      const recentTrajectory = [];
+      const sliceStart = Math.max(0, pastStorySections.length - 4);
+      for (let k = sliceStart; k < pastStorySections.length; k++) {
+        const item = pastStorySections[k];
+        const sTitle = item.sec.title || `Capítulo ${item.origIndex + 1}`;
+        const sParas = (item.sec.text || '')
+          .split(/\n{2,}|\r\n\r\n/)
+          .map(p => p.replace(/\s+/g, ' ').trim())
+          .filter(p => p.length >= 50 && !/^(cap[íi]tulo|chapter|\d+)/i.test(p));
+        
+        let anchor = '';
+        if (sParas.length > 0) {
+          const sample = sParas[0].slice(0, 160);
+          anchor = `"${sample}..."`;
+        }
+        recentTrajectory.push(`• ${sTitle}: ${anchor}`);
+      }
+
+      const lines = [
+        `MODO LOCAL (OFFLINE): "${state.title || 'Livro'}"`,
+        `Capítulos lidos: ${pastStorySections.length} · Posição atual: ${curTitle}`,
+        '',
+        'Nota: Como a IA online não foi acionada (chave não configurada ou inválida), o modo local exibe os marcos reais extraídos dos capítulos anteriores:',
+        '',
+        '1. ONDE A HISTÓRIA PAROU (Conclusão do Capítulo Anterior: "' + lastTitle + '"):',
+        whereItStopped,
+        '',
+        '2. PASSAGENS DOS CAPÍTULOS RECENTES:',
+        recentTrajectory.join('\n'),
+        '',
+        '3. SITUAÇÃO ATUAL:',
+        `Você está posicionado para ler "${curTitle}". Boa continuação de leitura!`
+      ];
+
+      return lines.join('\n');
+    }
+
+    // --- GERENCIAMENTO VISUAL DA CHAVE GEMINI API ---
+    
+    function updateRecapSpoilerButtons() {
+      const btnNo = document.getElementById('btnRecapNoSpoilers');
+      const btnYes = document.getElementById('btnRecapWithSpoilers');
+      if (btnNo && btnYes) {
+        if (state.recapSpoilerMode) {
+          btnNo.classList.remove('active');
+          btnYes.classList.add('active');
+        } else {
+          btnNo.classList.add('active');
+          btnYes.classList.remove('active');
+        }
+      }
+    }
+
+    function updateTutorSpoilerButtons() {
+      const btnNo = document.getElementById('btnTutorNoSpoilers');
+      const btnYes = document.getElementById('btnTutorWithSpoilers');
+      const srcInfo = document.getElementById('aiTutorSourceInfo');
+      if (btnNo && btnYes) {
+        if (state.tutorSpoilerMode) {
+          btnNo.classList.remove('active');
+          btnYes.classList.add('active');
+          if (srcInfo) srcInfo.textContent = 'Modo Com Spoilers ativo (revelações completas)';
+        } else {
+          btnNo.classList.add('active');
+          btnYes.classList.remove('active');
+          if (srcInfo) srcInfo.textContent = 'Tutor inteligente sem spoilers';
+        }
+      }
+    }
+
+    function updateAiKeyBadges() {
+      const hasKey = Boolean(state.geminiApiKey && state.geminiApiKey.trim());
+      const masked = hasKey ? `${state.geminiApiKey.slice(0, 6)}...${state.geminiApiKey.slice(-4)}` : '';
+
+      const recapBadge = document.getElementById('aiRecapKeyStatusBadge');
+      const recapBtn = document.getElementById('btnToggleAiRecapApiKey');
+      const tutorBadge = document.getElementById('aiTutorKeyStatusBadge');
+      const tutorBtn = document.getElementById('btnToggleAiTutorApiKey');
+
+      const badgeHtml = hasKey
+        ? `<span style="background:rgba(34,197,94,0.15); color:#22c55e; padding:2px 7px; border-radius:4px; font-weight:600;">Gemini Ativo (${masked})</span>`
+        : `<span style="background:rgba(100,116,139,0.15); color:var(--text-secondary); padding:2px 7px; border-radius:4px; font-weight:600;">Modo Local (Sem Chave)</span>`;
+
+      if (recapBadge) recapBadge.innerHTML = badgeHtml;
+      if (tutorBadge) tutorBadge.innerHTML = badgeHtml;
+      if (recapBtn) recapBtn.textContent = hasKey ? 'Ver / Alterar Chave' : 'Configurar Chave Gemini';
+      if (tutorBtn) tutorBtn.textContent = hasKey ? 'Ver / Alterar Chave' : 'Configurar Chave Gemini';
+
+      const inpR = document.getElementById('inputAiRecapKey');
+      if (inpR) inpR.value = state.geminiApiKey || '';
+      const inpT = document.getElementById('inputAiTutorKey');
+      if (inpT) inpT.value = state.geminiApiKey || '';
+      const inpNlm = document.getElementById('inputGeminiApiKey');
+      if (inpNlm) inpNlm.value = state.geminiApiKey || '';
+    }
+
+    async function testGeminiApiKey(key, resultContainerId) {
+      const container = document.getElementById(resultContainerId);
+      if (!container) return;
+      const k = (key || '').trim();
+      if (!k) {
+        container.style.display = 'block';
+        container.innerHTML = `<span style="color:#ef4444; font-weight:600;">Digite ou cole uma chave antes de testar.</span>`;
+        return;
+      }
+
+      container.style.display = 'block';
+      container.innerHTML = `<span style="color:var(--accent);">Testando conexão com Google Gemini 2.5 Flash...</span>`;
+
+      try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(k)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Responda apenas: OK' }] }]
+          })
+        });
+        if (resp.ok) {
+          container.innerHTML = `<span style="color:#22c55e; font-weight:600;">Sucesso: Chave válida e funcionando! Google Gemini 2.5 Flash conectado.</span>`;
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          const msg = errData?.error?.message || `Código HTTP ${resp.status}`;
+          container.innerHTML = `<span style="color:#ef4444; font-weight:600;">Falha na Chave (HTTP ${resp.status}): ${escapeHtml(msg)}</span>`;
+        }
+      } catch (e) {
+        container.innerHTML = `<span style="color:#ef4444; font-weight:600;">Erro de rede ou conexão: ${escapeHtml(e.message)}</span>`;
+      }
+    }
+
+    function clearGeminiKey() {
+      state.geminiApiKey = '';
+      localStorage.removeItem('reader_geminiApiKey');
+      updateAiKeyBadges();
+
+      const resR = document.getElementById('aiRecapKeyTestResult');
+      const resT = document.getElementById('aiTutorKeyTestResult');
+      if (resR) { resR.style.display = 'block'; resR.innerHTML = '<span style="color:var(--text-muted);">Chave removida. O leitor agora está no modo local estruturado.</span>'; }
+      if (resT) { resT.style.display = 'block'; resT.innerHTML = '<span style="color:var(--text-muted);">Chave removida. O leitor agora está no modo local estruturado.</span>'; }
+      showToast('Chave Gemini removida. Usando modo local.');
+    }
+
     // --- RECAP INTELIGENTE ("O QUE ACONTECEU ATÉ AQUI?") ---
     function openAiRecapModal() {
+      updateRecapSpoilerButtons();
       if (!state.sections || !state.sections.length) {
         showToast('Abra um livro primeiro para recapitular a história.');
         return;
@@ -5957,14 +6570,43 @@
       const locStr = metrics ? ` · Pág. ${metrics.estCurrentPage} de ${metrics.estTotalPages} · Pos. ${metrics.currentLoc} de ${metrics.totalLoc}` : '';
       if (posText) posText.textContent = `Atualmente no Capítulo ${cur} (${secTitle})${locStr}`;
 
-      if (apiKeyBox && inpKey) {
-        if (state.geminiApiKey) {
-          apiKeyBox.style.display = 'none';
-          inpKey.value = state.geminiApiKey;
-        } else {
-          apiKeyBox.style.display = 'block';
-          inpKey.value = '';
-        }
+      updateAiKeyBadges();
+
+      if (apiKeyBox) {
+        apiKeyBox.style.display = 'none';
+      }
+
+      const btnToggleKey = document.getElementById('btnToggleAiRecapApiKey');
+      if (btnToggleKey && !btnToggleKey._hasBoundToggle) {
+        btnToggleKey._hasBoundToggle = true;
+        btnToggleKey.addEventListener('click', () => {
+          const b = document.getElementById('aiRecapApiKeyBox');
+          if (b) {
+            b.style.display = b.style.display === 'none' ? 'block' : 'none';
+            if (b.style.display === 'block') {
+              const k = document.getElementById('inputAiRecapKey');
+              if (k) k.focus();
+            }
+          }
+        });
+      }
+
+      const btnTestKey = document.getElementById('btnTestAiRecapKey');
+      if (btnTestKey && !btnTestKey._hasBoundTest) {
+        btnTestKey._hasBoundTest = true;
+        btnTestKey.addEventListener('click', () => {
+          const k = document.getElementById('inputAiRecapKey');
+          testGeminiApiKey(k ? k.value : '', 'aiRecapKeyTestResult');
+        });
+      }
+
+      const btnClearKey = document.getElementById('btnClearAiRecapKey');
+      if (btnClearKey && !btnClearKey._hasBoundClear) {
+        btnClearKey._hasBoundClear = true;
+        btnClearKey.addEventListener('click', () => {
+          clearGeminiKey();
+          generateAiRecap();
+        });
       }
 
       if (modal) modal.classList.add('open');
@@ -5988,38 +6630,70 @@
       const sec = state.sections[state.currentIndex];
       const secTitle = sec ? (sec.title || `Capítulo ${cur}`) : `Capítulo ${cur}`;
 
-      if (state.currentIndex === 0) {
+      // Filtrar apenas seções narrativas reais anteriores (ignorando sumários, capas e avisos de direitos)
+      const storySections = [];
+      for (let i = 0; i < state.currentIndex; i++) {
+        const s = state.sections[i];
+        if (s && !isFrontMatterOrLegal(s)) {
+          storySections.push({ sec: s, index: i });
+        }
+      }
+
+      if (storySections.length === 0) {
         loading.style.display = 'none';
         content.style.display = 'block';
-        content.textContent = `Você está no primeiro capítulo da obra ("${secTitle}").\n\nAinda não há capítulos anteriores para recapitular! Comece sua leitura e, quando fizer uma pausa de alguns dias ou semanas, clique aqui para relembrar os acontecimentos sem nenhum spoiler do que vem pela frente.`;
+        content.textContent = `Você está no início da narrativa ("${secTitle}").\n\nAinda não há capítulos narrativos anteriores para recapitular! Comece sua leitura e, quando fizer uma pausa de alguns dias ou semanas, clique aqui para relembrar os acontecimentos sem nenhum spoiler do que vem pela frente.`;
         if (sourceInfo) sourceInfo.textContent = 'Início do Livro';
         return;
       }
 
-      // Reunir histórico dos capítulos anteriores até currentIndex - 1
+      // Preparar contexto com foco nos últimos capítulos lidos
       let pastChaptersSummary = [];
       let recentFullText = '';
 
-      for (let i = 0; i < state.currentIndex; i++) {
-        const s = state.sections[i];
-        if (!s) continue;
-        const title = s.title || `Capítulo ${i + 1}`;
+      for (let j = 0; j < storySections.length; j++) {
+        const item = storySections[j];
+        const s = item.sec;
+        const title = s.title || `Capítulo ${item.index + 1}`;
         const raw = (s.text || '').trim();
-        if (i >= state.currentIndex - 2) {
-          // Os últimos 2 capítulos anteriores recebem texto completo
+        if (j >= storySections.length - 2) {
           recentFullText += `\n\n--- [${title}] ---\n` + raw.slice(0, 16000);
         } else if (raw) {
-          // Capítulos mais antigos recebem snippet de abertura e fechamento
-          const snippet = raw.slice(0, 280) + '... ' + (raw.length > 500 ? raw.slice(-280) : '');
+          const snippet = raw.slice(0, 320) + '... ' + (raw.length > 600 ? raw.slice(-320) : '');
           pastChaptersSummary.push(`- ${title}: "${snippet}"`);
         }
       }
 
-      const bookContext = `LIVRO: ${state.title}\nCAPÍTULOS ANTERIORES JÁ LIDOS:\n${pastChaptersSummary.join('\n')}\n\nÚLTIMOS CAPÍTULOS ANTES DO ATUAL:\n${recentFullText}`;
+      const bookContext = `LIVRO: ${state.title}\nCAPÍTULOS ANTERIORES JÁ LIDOS (SEM FRONT-MATTER):\n${pastChaptersSummary.join('\n')}\n\nÚLTIMOS CAPÍTULOS ANTES DO ATUAL:\n${recentFullText}`;
 
-      const prompt = `Você é um assistente e tutor literário cuidadoso.
+      const isSpoiler = Boolean(state.recapSpoilerMode);
+      let prompt = '';
+      let sysInstruction = '';
+
+      if (isSpoiler) {
+        sysInstruction = 'Você é um crítico e tutor literário especialista em análise narrativa panorâmica aprofundada, com permissão total para revelações e spoilers da obra.';
+        prompt = `Você é um especialista em literatura e análise narrativa da obra "${state.title}".
+O leitor está na seção/capítulo ${cur} ("${secTitle}").
+O leitor ATIVOU EXPLICITAMENTE O MODO COM SPOILERS E ANÁLISE COMPLETA.
+
+Gere um resumo aprofundado dos acontecimentos até aqui, complementado com revelações e conexões diretas com o desenvolvimento futuro e o desfecho da história.
+
+ESTRUTURA DA RESPOSTA (MODO COM SPOILERS):
+1. O QUE ACONTECEU ATÉ ESTE PONTO:
+   Resumo claro e cronológico dos eventos cruciais ocorridos até este capítulo.
+2. REVELAÇÕES & SEGREDOS OCULTOS (COM SPOILERS):
+   Explique os mistérios por trás dos acontecimentos deste trecho, os verdadeiros planos dos personagens envolvidos e revelações futuras que ressignificam o que está acontecendo agora.
+3. PRENÚNCIOS (FORESHADOWING) & CONEXÃO COM O DESFECHO:
+   Como os detalhes e diálogos deste momento da obra prenunciam o clímax e a resolução final da história.
+4. DESTINO DOS PERSONAGENS ENVOLVIDOS:
+   Um breve panorama sobre o arco e o destino futuro dos personagens ativos nesta parte.
+
+Seja didático, perspicaz e aprofundado, com linguagem analítica primorosa em português. Não use emojis.`;
+      } else {
+        sysInstruction = 'Você é um assistente e tutor literário especialista em resumos e recapitulações inteligentes sem spoilers.';
+        prompt = `Você é um tutor literário especialista em síntese narrativa.
 O leitor está lendo a obra "${state.title}" e está no capítulo/seção ${cur} ("${secTitle}").
-Gere um "O Que Aconteceu Até Aqui? (Recap Inteligente)" conciso e envolvente dos acontecimentos da história estritamente ANTES deste capítulo.
+Gere um "O Que Aconteceu Até Aqui? (Recap Inteligente)" conciso, instigante e envolvente dos acontecimentos da história estritamente ANTES deste capítulo.
 
 REGRAS CRÍTICAS E OBRIGATÓRIAS:
 1. SEM SPOILERS: NÃO fale nada sobre o que acontece no capítulo ${cur} ou capítulos futuros. O leitor AINDA NÃO LEU o capítulo atual.
@@ -6027,35 +6701,41 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
    - ONDE A HISTÓRIA PAROU: Em que situação os personagens foram deixados no final do capítulo anterior.
    - PERSONAGENS EM DESTAQUE: Quem são os personagens principais ativos no momento e seus objetivos imediatos.
    - CONFLITO / MISTÉRIO ATUAL: O principal problema ou dilema que eles estão enfrentando agora.
-3. Seja didático, claro, com parágrafos bem pontuados e formatação agradável em português.`;
+3. Seja didático, claro, com parágrafos bem pontuados e formatação agradável em português. Ignore qualquer aviso editorial ou copyright. Não use emojis.`;
+      }
 
       let recapResult = '';
+      let sourceTag = '';
+
       if (state.geminiApiKey) {
-        recapResult = await callGeminiOrLocal(prompt, bookContext, 'Você é um assistente e tutor literário especialista em resumos e recapitulações inteligentes sem spoilers.');
-      } else {
-        const lines = [
-          `Recapitulação dos Capítulos Lidos até aqui em "${state.title}":`,
-          '',
-          `Você leu ${state.currentIndex} capítulos e está iniciando o Capítulo ${cur} ("${secTitle}").`,
-          '',
-          'Linha do tempo dos acontecimentos lidos:'
-        ];
-        for (let i = 0; i < state.currentIndex; i++) {
-          const s = state.sections[i];
-          const t = s ? (s.title || `Capítulo ${i + 1}`) : `Capítulo ${i + 1}`;
-          const clean = s && s.text ? s.text.replace(/\s+/g, ' ').slice(0, 150).trim() : '';
-          lines.push(`• ${t}: "${clean}..."`);
+        const gemRes = await callGeminiOrLocal(prompt, bookContext, sysInstruction);
+        if (gemRes && gemRes.success) {
+          recapResult = gemRes.text;
+          sourceTag = isSpoiler
+            ? 'Resumo com Spoilers e Revelações (Google Gemini 2.5 Flash)'
+            : 'Resumo Sem Spoilers (Google Gemini 2.5 Flash)';
+        } else if (gemRes && gemRes.error) {
+          const apiKeyBox = document.getElementById('aiRecapApiKeyBox');
+          if (apiKeyBox) apiKeyBox.style.display = 'block';
+          const offlineText = buildOfflineStoryRecap(state.currentIndex);
+          recapResult = `[Aviso: Falha na conexão com Google Gemini (${gemRes.message}). Verifique sua chave no botão de configuração acima]\n\n` + offlineText;
+          sourceTag = 'Recapitulação narrativa local (chave Gemini inválida)';
+        } else {
+          recapResult = buildOfflineStoryRecap(state.currentIndex);
+          sourceTag = 'Recapitulação narrativa local (modo offline)';
         }
-        lines.push('', 'Dica: Adicione sua chave gratuita do Gemini no campo acima para gerar um resumo narrativo inteligente e ultra-detalhado com Inteligência Artificial!');
-        recapResult = lines.join('\n');
+      } else {
+        const offlineText = buildOfflineStoryRecap(state.currentIndex);
+        recapResult = isSpoiler
+          ? `[Modo Com Spoilers: Para obter revelações futuras completas geradas por IA, adicione sua chave gratuita do Gemini no botão acima]\n\n` + offlineText
+          : offlineText;
+        sourceTag = 'Recapitulação narrativa local (modo offline)';
       }
 
       loading.style.display = 'none';
       content.style.display = 'block';
       content.textContent = recapResult;
-      if (sourceInfo) {
-        sourceInfo.textContent = state.geminiApiKey ? 'Resumo gerado por Google Gemini AI' : 'Resumo automático offline (adicione chave p/ IA)';
-      }
+      if (sourceInfo) sourceInfo.textContent = sourceTag;
     }
 
     const btnOpenAiRecapEl = document.getElementById('btnOpenAiRecap');
@@ -6077,6 +6757,43 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
 
     const btnRegenerateAiRecap = document.getElementById('btnRegenerateAiRecap');
     if (btnRegenerateAiRecap) btnRegenerateAiRecap.addEventListener('click', generateAiRecap);
+    // --- CONTROLES GLOBAIS DE SPOILERS (RECAP & TUTOR) ---
+    const btnRecapNoEl = document.getElementById('btnRecapNoSpoilers');
+    if (btnRecapNoEl) {
+      btnRecapNoEl.addEventListener('click', () => {
+        if (!state.recapSpoilerMode) return;
+        state.recapSpoilerMode = false;
+        updateRecapSpoilerButtons();
+        generateAiRecap();
+      });
+    }
+
+    const btnRecapYesEl = document.getElementById('btnRecapWithSpoilers');
+    if (btnRecapYesEl) {
+      btnRecapYesEl.addEventListener('click', () => {
+        if (state.recapSpoilerMode) return;
+        state.recapSpoilerMode = true;
+        updateRecapSpoilerButtons();
+        generateAiRecap();
+      });
+    }
+
+    const btnTutorNoEl = document.getElementById('btnTutorNoSpoilers');
+    if (btnTutorNoEl) {
+      btnTutorNoEl.addEventListener('click', () => {
+        state.tutorSpoilerMode = false;
+        updateTutorSpoilerButtons();
+      });
+    }
+
+    const btnTutorYesEl = document.getElementById('btnTutorWithSpoilers');
+    if (btnTutorYesEl) {
+      btnTutorYesEl.addEventListener('click', () => {
+        state.tutorSpoilerMode = true;
+        updateTutorSpoilerButtons();
+      });
+    }
+
 
     const btnSpeakAiRecap = document.getElementById('btnSpeakAiRecap');
     if (btnSpeakAiRecap) btnSpeakAiRecap.addEventListener('click', () => {
@@ -6099,9 +6816,15 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
       btnSaveAiRecapKey.addEventListener('click', () => {
         state.geminiApiKey = inputAiRecapKey.value.trim();
         localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
+        updateAiKeyBadges();
         showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso!' : 'Chave removida.');
-        const box = document.getElementById('aiRecapApiKeyBox');
-        if (state.geminiApiKey && box) box.style.display = 'none';
+        const resBox = document.getElementById('aiRecapKeyTestResult');
+        if (resBox) {
+          resBox.style.display = 'block';
+          resBox.innerHTML = state.geminiApiKey
+            ? '<span style="color:#22c55e;">Chave salva! Clique em "Testar Conexão" para validar.</span>'
+            : '<span style="color:var(--text-muted);">Modo local ativado.</span>';
+        }
         generateAiRecap();
       });
     }
@@ -6109,12 +6832,176 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
     // --- TUTOR DE DÚVIDAS / CONVERSAR COM O LIVRO ---
     let activeTutorSnippet = '';
 
+    function answerTutorLocally(question, snippet) {
+      const q = (question || '').trim();
+      const s = (snippet || '').trim();
+      const cur = state.currentIndex + 1;
+      const curSec = state.sections && state.sections[state.currentIndex];
+      const curTitle = curSec ? (curSec.title || `Capítulo ${cur}`) : `Capítulo ${cur}`;
+      const curText = curSec ? (curSec.text || '') : '';
+
+      // 1. Identificar se é uma pergunta sobre PERSONAGEM
+      const isCharacterQuery = /quem\s+(?:é|e|são|sao)(?:\s+|$)|personagem|protagonista/i.test(q);
+      
+      if (isCharacterQuery) {
+        // Tentar extrair o nome do personagem da pergunta ou do snippet
+        let charName = '';
+        const matchName = q.match(/quem\s+(?:é|e|são|sao)\s+(?:o|a|os|as)?\s*([a-zA-ZÀ-ÿ\s'-]+?)(?:\?|\.|$)/i);
+        if (matchName && matchName[1] && !/esse|este|esta|o\s+personagem/i.test(matchName[1])) {
+          charName = matchName[1].trim();
+        } else if (s) {
+          // Extrair palavras com inicial maiúscula do snippet (nomes próprios)
+          const words = s.match(/\b[A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)?\b/g) || [];
+          const stopWords = ['A', 'O', 'Os', 'As', 'Um', 'Uma', 'Ele', 'Ela', 'Eles', 'Elas', 'Para', 'Como', 'Quando', 'Depois', 'Mas', 'Por', 'Capítulo'];
+          const filtered = words.filter(w => !stopWords.includes(w) && w.length > 2);
+          if (filtered.length) charName = filtered[0];
+        }
+
+        // Buscar em listas de personagens da obra (como "Dramatis personae", "Personagens", etc.)
+        let dramatisBio = '';
+        let foundSectionTitle = '';
+        if (state.sections) {
+          for (let i = 0; i < state.sections.length; i++) {
+            const sec = state.sections[i];
+            const secT = (sec.title || '').toLowerCase();
+            const isDramatis = /dramatis\s+personae|personagen/i.test(secT) || /dramatis\s+personae/i.test((sec.text || '').slice(0, 1000));
+            if (isDramatis && sec.text) {
+              const text = sec.text;
+              if (charName) {
+                // Procurar ocorrência do nome em linhas ou frases da lista
+                const regex = new RegExp(`(?:^|[\\r\\n•\\-]\\s*).*?${charName}.*?(?:(?=[\\r\\n•\\-])|$)`, 'gmi');
+                const matches = text.match(regex);
+                if (matches && matches.length) {
+                  dramatisBio = matches.map(m => m.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 3).join('\n• ');
+                  foundSectionTitle = sec.title || 'Dramatis Personae';
+                  break;
+                }
+              } else {
+                // Se não especificou o nome, pegar os principais personagens listados
+                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 15 && l.length < 300).slice(0, 6);
+                if (lines.length) {
+                  dramatisBio = lines.join('\n• ');
+                  foundSectionTitle = sec.title || 'Dramatis Personae';
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // Buscar ocorrências do personagem no capítulo atual e nos capítulos anteriores lidos
+        const contextualMentions = [];
+        const targetWord = charName || (s ? s.slice(0, 40) : '');
+        if (targetWord && state.sections) {
+          // No capítulo atual primeiro
+          if (curSec && curSec.text) {
+            const paras = curSec.text.split(/\n{2,}|\r\n\r\n/).map(p => p.replace(/\s+/g, ' ').trim());
+            const relevant = paras.filter(p => p.toLowerCase().includes(targetWord.toLowerCase()) && p.length > 40 && p.length < 800);
+            if (relevant.length) {
+              contextualMentions.push(`No Capítulo Atual (${curTitle}):\n"${relevant[0]}"`);
+            }
+          }
+          // Nos capítulos anteriores recentes (sem front-matter)
+          for (let i = state.currentIndex - 1; i >= Math.max(0, state.currentIndex - 5); i--) {
+            const prev = state.sections[i];
+            if (prev && !isFrontMatterOrLegal(prev) && prev.text && prev.text.toLowerCase().includes(targetWord.toLowerCase())) {
+              const paras = prev.text.split(/\n{2,}|\r\n\r\n/).map(p => p.replace(/\s+/g, ' ').trim());
+              const match = paras.find(p => p.toLowerCase().includes(targetWord.toLowerCase()) && p.length > 50 && p.length < 600);
+              if (match) {
+                contextualMentions.push(`Em "${prev.title || `Capítulo ${i + 1}`}":\n"${match}"`);
+                if (contextualMentions.length >= 3) break;
+              }
+            }
+          }
+        }
+
+        // Montar resposta direta ao leitor
+        const titleHeader = charName ? `PERSONAGEM: ${charName}` : 'PERSONAGENS NA HISTÓRIA';
+        const parts = [
+          titleHeader,
+          `Obra: ${state.title || 'Livro'} · Posição: ${curTitle}`
+        ];
+
+        if (dramatisBio) {
+          parts.push('', `Ficha e Definição da Obra (${foundSectionTitle}):\n• ${dramatisBio}`);
+        }
+
+        if (contextualMentions.length) {
+          parts.push('', 'Aparições e Contexto Narrativo até o Momento:\n' + contextualMentions.join('\n\n'));
+        } else if (!dramatisBio) {
+          parts.push('', `Não foram encontradas fichas explícitas para "${charName || q}" nas páginas já lidas.`,
+            `Certifique-se da grafia ou selecione diretamente o parágrafo no livro com o mouse/toque antes de clicar em "Quem é esse personagem?".`);
+        }
+
+        return parts.join('\n');
+      }
+
+      // 2. EXPLICAR SIMPLES
+      if (/explicar\s+simples|explique|o\s+que\s+significa|descomplique/i.test(q)) {
+        if (s) {
+          return `EXPLICAÇÃO SIMPLIFICADA DO TRECHO:\n\n"${s}"\n\n` +
+            `Ideia Central:\nO autor está descrevendo a cena ou reflexão em foco no momento da história (${curTitle}).`;
+        }
+        return `EXPLICAÇÃO DO CAPÍTULO ATUAL (${curTitle}):\n\n` +
+          `Você está na leitura de "${state.title}". O texto deste capítulo desenvolve os eventos decorrentes dos capítulos anteriores.\n` +
+          `Dica: Selecione um parágrafo específico no texto do livro para obter uma explicação direta dele.`;
+      }
+
+      // 3. CONTEXTO E SIGNIFICADO
+      if (/contexto|significado|onde\s+estamos/i.test(q)) {
+        const recap = buildOfflineStoryRecap(state.currentIndex);
+        return `CONTEXTO DA LEITURA:\n\n${recap}`;
+      }
+
+      // 4. RESUMIR TRECHO
+      if (/resumir\s+trecho|resuma|síntese/i.test(q)) {
+        if (s) {
+          const sentences = s.split(/[.!?]+/).map(st => st.trim()).filter(st => st.length > 20);
+          const first = sentences[0] || s;
+          const last = sentences.length > 1 ? sentences[sentences.length - 1] : '';
+          return `RESUMO DO TRECHO:\n\n• Ideia inicial: "${first}"\n${last ? `• Conclusão do parágrafo: "${last}"\n` : ''}\n(Trecho selecionado do ${curTitle})`;
+        }
+        return `RESUMO DO CAPÍTULO ATUAL (${curTitle}):\n\n` +
+          (curText ? curText.replace(/\s+/g, ' ').slice(0, 450) + '...' : 'Início do capítulo.');
+      }
+
+      // 5. PERGUNTA LIVRE GERAL (ex: busca por termos ou conceitos no livro)
+      const keywords = q.replace(/[?.,!]/g, '').split(/\s+/).filter(w => w.length > 3 && !/como|onde|quando|qual|porque|por\s+que/i.test(w));
+      const foundParas = [];
+      if (keywords.length && curSec && curSec.text) {
+        const paras = curSec.text.split(/\n{2,}|\r\n\r\n/).map(p => p.replace(/\s+/g, ' ').trim());
+        for (const p of paras) {
+          if (p.length < 40) continue;
+          const matched = keywords.filter(kw => p.toLowerCase().includes(kw.toLowerCase()));
+          if (matched.length >= Math.min(2, keywords.length)) {
+            foundParas.push(p);
+            if (foundParas.length >= 2) break;
+          }
+        }
+      }
+
+      if (foundParas.length) {
+        return `RESPOSTA COM BASE NO CAPÍTULO ATUAL (${curTitle}):\n\n` +
+          `Trechos relevantes encontrados para sua dúvida ("${q}"):\n\n` +
+          foundParas.map(p => `• "${p}"`).join('\n\n');
+      }
+
+      return `CONSULTA LOCAL ("${q}"):\n\n` +
+        `Capítulo Atual: ${curTitle}\n` +
+        `Obra: ${state.title}\n\n` +
+        `Não foi possível localizar uma resposta exata no modo local sem IA para esta pergunta específica.\n` +
+        `Dica: Você pode selecionar o trecho correspondente no livro antes de abrir o Tutor.`;
+    }
+
     function openAiTutorModal(opts = {}) {
       const modal = document.getElementById('aiTutorModal');
       const snippetBox = document.getElementById('aiTutorSnippetBox');
       const snippetText = document.getElementById('aiTutorSnippetText');
       const inp = document.getElementById('inputAiTutorQuestion');
       const ans = document.getElementById('aiTutorAnswer');
+      const bookInfo = document.getElementById('aiTutorBookInfo');
+      const apiKeyBox = document.getElementById('aiTutorApiKeyBox');
+      const inpKey = document.getElementById('inputAiTutorKey');
 
       const toolsM = document.getElementById('toolsDropdown');
       if (toolsM) toolsM.classList.remove('open');
@@ -6124,12 +7011,91 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
       const sec = state.sections && state.sections[state.currentIndex];
       const secTitle = sec ? (sec.title || `Capítulo ${cur}`) : `Capítulo ${cur}`;
 
+      if (bookInfo) {
+        bookInfo.textContent = `Livro: ${state.title || 'Livro'} · Capítulo ${cur} (${secTitle})`;
+      }
+
       if (activeTutorSnippet) {
         if (snippetText) snippetText.textContent = `"${activeTutorSnippet.slice(0, 280)}${activeTutorSnippet.length > 280 ? '...' : ''}"`;
         if (snippetBox) snippetBox.style.display = 'block';
       } else {
-        if (snippetText) snippetText.textContent = `Livro: ${state.title || 'Livro'} · Capítulo ${cur} (${secTitle})`;
+        if (snippetText) snippetText.textContent = `Nenhum trecho selecionado. Fazendo perguntas sobre o capítulo atual (${secTitle}).`;
         if (snippetBox) snippetBox.style.display = 'block';
+      }
+
+      updateAiKeyBadges();
+
+      if (apiKeyBox) {
+        apiKeyBox.style.display = 'none';
+      }
+
+      const btnToggleKey = document.getElementById('btnToggleAiTutorApiKey');
+      if (btnToggleKey && !btnToggleKey._hasBoundToggle) {
+        btnToggleKey._hasBoundToggle = true;
+        btnToggleKey.addEventListener('click', () => {
+          const b = document.getElementById('aiTutorApiKeyBox');
+          if (b) {
+            b.style.display = b.style.display === 'none' ? 'block' : 'none';
+            if (b.style.display === 'block') {
+              const k = document.getElementById('inputAiTutorKey');
+              if (k) k.focus();
+            }
+          }
+        });
+      }
+
+      const btnSaveKey = document.getElementById('btnSaveAiTutorKey');
+      if (btnSaveKey && !btnSaveKey._hasBoundSave) {
+        btnSaveKey._hasBoundSave = true;
+        btnSaveKey.addEventListener('click', () => {
+          const k = document.getElementById('inputAiTutorKey');
+          state.geminiApiKey = k ? k.value.trim() : '';
+          localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
+          updateAiKeyBadges();
+          showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso!' : 'Chave removida.');
+          const resBox = document.getElementById('aiTutorKeyTestResult');
+          if (resBox) {
+            resBox.style.display = 'block';
+            resBox.innerHTML = state.geminiApiKey
+              ? '<span style="color:#22c55e;">Chave salva! Clique em "Testar Conexão" para validar.</span>'
+              : '<span style="color:var(--text-muted);">Modo local ativado.</span>';
+          }
+        });
+      }
+
+      const btnTestKey = document.getElementById('btnTestAiTutorKey');
+      if (btnTestKey && !btnTestKey._hasBoundTest) {
+        btnTestKey._hasBoundTest = true;
+        btnTestKey.addEventListener('click', () => {
+          const k = document.getElementById('inputAiTutorKey');
+          testGeminiApiKey(k ? k.value : '', 'aiTutorKeyTestResult');
+        });
+      }
+
+      const btnClearKey = document.getElementById('btnClearAiTutorKey');
+      if (btnClearKey && !btnClearKey._hasBoundClear) {
+        btnClearKey._hasBoundClear = true;
+        btnClearKey.addEventListener('click', () => {
+          clearGeminiKey();
+        });
+      }
+
+      updateTutorSpoilerButtons();
+      const btnTutorNo = document.getElementById('btnTutorNoSpoilers');
+      const btnTutorYes = document.getElementById('btnTutorWithSpoilers');
+      if (btnTutorNo && !btnTutorNo._hasBoundSpoiler) {
+        btnTutorNo._hasBoundSpoiler = true;
+        btnTutorNo.addEventListener('click', () => {
+          state.tutorSpoilerMode = false;
+          updateTutorSpoilerButtons();
+        });
+      }
+      if (btnTutorYes && !btnTutorYes._hasBoundSpoiler) {
+        btnTutorYes._hasBoundSpoiler = true;
+        btnTutorYes.addEventListener('click', () => {
+          state.tutorSpoilerMode = true;
+          updateTutorSpoilerButtons();
+        });
       }
 
       if (ans) {
@@ -6167,23 +7133,67 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
 
       const context = `LIVRO: ${state.title || 'Livro'}\nCAPÍTULO ATUAL: ${cur} (${secTitle})\nTRECHO SELECIONADO:\n${activeTutorSnippet || '(Nenhum trecho específico selecionado)'}\n\nTEXTO DO CAPÍTULO:\n${secText}`;
 
-      const sysInstruction = `Você é um tutor literário particular de alto nível para quem está lendo o livro "${state.title || 'Livro'}".
-Responda de forma didática, clara e em português natural.
-REGRA DE OURO: Não dê spoilers de capítulos futuros. Baseie-se apenas no trecho selecionado e no contexto deste capítulo e dos anteriores.`;
+      const isSpoiler = Boolean(state.tutorSpoilerMode);
+      let sysInstruction = '';
+      let prompt = '';
 
-      const prompt = `Pergunta/Dúvida do leitor:
+      if (isSpoiler) {
+        sysInstruction = `Você é um tutor e especialista literário particular para quem está estudando a obra "${state.title || 'Livro'}".
+O usuário ATIVOU O MODO COM SPOILERS E REVELAÇÕES.
+Responda com liberdade total para revelar segredos, identidades verdadeiras, resoluções de mistérios, destino dos personagens e conexões com o desfecho da obra. Não use emojis.`;
+
+        prompt = `Pergunta/Dúvida do leitor (MODO COM SPOILERS ATIVADO):
 ${q}
 
 Trecho de referência no livro:
 "${activeTutorSnippet || secTitle}"
 
-Responda com clareza, explicando termos difíceis, personagens ou motivações sem estragar as surpresas futuras da leitura.`;
+Instrução de resposta (MODO COM SPOILERS ATIVADO):
+Responda de forma completa, aprofundada e sem omitir revelações. Explique o significado deste ponto, as verdadeiras intenções dos personagens, os segredos ocultos da trama e como isso se resolve mais adiante ou no final do livro. Não use emojis.`;
+      } else {
+        sysInstruction = `Você é um tutor literário particular de alto nível para quem está lendo o livro "${state.title || 'Livro'}".
+Responda de forma didática, clara e em português natural.
+REGRA DE OURO: Não dê spoilers de capítulos futuros. Baseie-se apenas no trecho selecionado e no contexto deste capítulo e dos anteriores. Não use emojis.`;
 
-      const result = await callGeminiOrLocal(prompt, context, sysInstruction);
+        prompt = `Pergunta/Dúvida do leitor:
+${q}
 
+Trecho de referência no livro:
+"${activeTutorSnippet || secTitle}"
+
+Responda com clareza, explicando termos difíceis, personagens ou motivações sem estragar as surpresas futuras da leitura. Não use emojis.`;
+      }
+
+      if (state.geminiApiKey) {
+        const result = await callGeminiOrLocal(prompt, context, sysInstruction);
+        loading.style.display = 'none';
+        ans.style.display = 'block';
+        if (result && result.success) {
+          ans.textContent = result.text;
+          const tutorSrc = document.getElementById('aiTutorSourceInfo');
+          if (tutorSrc) tutorSrc.textContent = isSpoiler
+            ? 'Google Gemini 2.5 Flash (Modo Com Spoilers)'
+            : 'Google Gemini 2.5 Flash (Modo Sem Spoilers)';
+          return;
+        } else if (result && result.error) {
+          const box = document.getElementById('aiTutorApiKeyBox');
+          if (box) box.style.display = 'block';
+          const localAns = answerTutorLocally(q, activeTutorSnippet);
+          ans.innerHTML = `<div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:var(--text);padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:0.9rem;"><strong>Aviso da IA:</strong> Não foi possível conectar ao Google Gemini (${escapeHtml(result.message)}). Verifique sua chave acima. Respondendo com o motor local inteligente do livro:</div>` +
+            `<div style="white-space:pre-wrap;">${escapeHtml(localAns)}</div>`;
+          const tutorSrc = document.getElementById('aiTutorSourceInfo');
+          if (tutorSrc) tutorSrc.textContent = 'Motor Analítico Local (Chave Gemini Inválida)';
+          return;
+        }
+      }
+
+      // Modo Local Inteligente (sem chave ou offline)
+      const localAns = answerTutorLocally(q, activeTutorSnippet);
       loading.style.display = 'none';
       ans.style.display = 'block';
-      ans.textContent = result;
+      ans.textContent = localAns;
+      const tutorSrc = document.getElementById('aiTutorSourceInfo');
+      if (tutorSrc) tutorSrc.textContent = 'Motor Analítico Local (Offline)';
     }
 
     const btnOpenAiTutorEl = document.getElementById('btnOpenAiTutor');
@@ -6216,11 +7226,22 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
     document.querySelectorAll('.ai-tutor-preset-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const preset = btn.dataset.preset;
+        const inp = document.getElementById('inputAiTutorQuestion');
         let q = '';
-        if (preset === 'explain') q = 'Explique este trecho de forma simples e didática para um leitor em português:';
-        else if (preset === 'character') q = 'Quem são os personagens citados neste trecho, qual sua importância e o que fizeram até este ponto da história sem spoilers do futuro?';
-        else if (preset === 'context') q = 'Qual é o contexto histórico, científico, filosófico ou literário deste parágrafo dentro da narrativa?';
+        if (preset === 'explain') q = 'Explique este trecho de forma simples e didática:';
+        else if (preset === 'character') {
+          if (inp && inp.value.trim() && !/explicar|contexto|resumir/i.test(inp.value)) {
+            q = inp.value.trim();
+          } else {
+            q = 'Quem é esse personagem?';
+          }
+        }
+        else if (preset === 'context') q = 'Qual é o contexto histórico, narrativo e significado deste ponto da obra?';
         else if (preset === 'recap') q = 'Faça um resumo direto em 2 ou 3 frases deste trecho:';
+
+        if (inp && (!inp.value.trim() || preset !== 'character')) {
+          inp.value = q;
+        }
         sendAiTutorQuestion(q);
       });
     });

@@ -2719,8 +2719,50 @@
       }
     }
 
+    function getBookCumulativeMetrics() {
+      const total = state.sections ? state.sections.length : 0;
+      if (!total) return null;
+      if (state._bookCumulative && state._bookCumulative.key === (state.bookKey || state.title) && state._bookCumulative.sectionsCount === total) {
+        return state._bookCumulative;
+      }
+
+      const isPdf = state.format === 'PDF';
+      let totalWords = 0;
+      const secData = [];
+
+      for (let i = 0; i < total; i++) {
+        const s = state.sections[i];
+        let w = 250;
+        if (isPdf) {
+          w = 250;
+        } else if (s && s.text) {
+          w = Math.max(30, s.text.trim().split(/\s+/).length);
+        } else if (s && s.rawSlice) {
+          w = Math.max(30, Math.round(s.rawSlice.length / 6));
+        } else if (s && s.html) {
+          w = Math.max(30, Math.round(s.html.length / 7));
+        }
+        secData.push({
+          idx: i,
+          title: s ? (s.title || `Capítulo ${i + 1}`) : `Capítulo ${i + 1}`,
+          startWords: totalWords,
+          words: w
+        });
+        totalWords += w;
+      }
+
+      const result = {
+        key: state.bookKey || state.title,
+        sectionsCount: total,
+        totalWords: Math.max(1, totalWords),
+        secData
+      };
+      state._bookCumulative = result;
+      return result;
+    }
+
     function computeKindleReadingMetrics() {
-      const total = state.sections.length;
+      const total = state.sections ? state.sections.length : 0;
       if (!total) return null;
       const wpm = Math.max(110, state.readingWpm || 215);
       const sec = state.sections[state.currentIndex];
@@ -2737,15 +2779,11 @@
       const wordsLeftInChapter = Math.max(0, Math.round(secWords * (1 - secFractionDone)));
       const minLeftChapter = Math.max(1, Math.ceil(wordsLeftInChapter / wpm));
 
-      // Palavras totais e restantes no livro
-      let wordsBefore = 0;
-      let totalBookWords = 0;
-      for (let i = 0; i < total; i++) {
-        const s = state.sections[i];
-        const w = (s && s.text) ? s.text.trim().split(/\s+/).length : 250;
-        if (i < state.currentIndex) wordsBefore += w;
-        totalBookWords += w;
-      }
+      const cum = getBookCumulativeMetrics();
+      const currentSecData = cum && cum.secData[state.currentIndex] ? cum.secData[state.currentIndex] : null;
+      const wordsBefore = currentSecData ? currentSecData.startWords : (state.currentIndex * 250);
+      const totalBookWords = cum ? cum.totalWords : (total * 250);
+
       const currentWordsRead = wordsBefore + Math.round(secWords * secFractionDone);
       const wordsLeftBook = Math.max(0, totalBookWords - currentWordsRead);
       const minLeftBook = Math.max(1, Math.ceil(wordsLeftBook / wpm));
@@ -2792,12 +2830,19 @@
 
       if (dom.progressTrack && total > 1 && dom.progressTrack.dataset.renderedBook !== (state.bookKey || '')) {
         dom.progressTrack.querySelectorAll('.chapter-tick-marker').forEach(el => el.remove());
-        const step = Math.max(1, Math.floor(total / 40));
-        for (let i = 1; i < total; i += step) {
-          const tick = document.createElement('div');
-          tick.className = 'chapter-tick-marker';
-          tick.style.left = `${(i / total) * 100}%`;
-          dom.progressTrack.appendChild(tick);
+        const cum = getBookCumulativeMetrics();
+        if (cum && cum.totalWords > 0) {
+          cum.secData.forEach((secItem, idx) => {
+            if (idx === 0) return;
+            const pctPos = (secItem.startWords / cum.totalWords) * 100;
+            if (pctPos > 1 && pctPos < 99) {
+              const tick = document.createElement('div');
+              tick.className = 'chapter-tick-marker';
+              tick.style.left = `${pctPos}%`;
+              tick.title = `${secItem.title} (${Math.round(pctPos)}%)`;
+              dom.progressTrack.appendChild(tick);
+            }
+          });
         }
         dom.progressTrack.dataset.renderedBook = state.bookKey || '';
       }

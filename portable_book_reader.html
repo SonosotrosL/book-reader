@@ -3663,6 +3663,116 @@
   color: #d97706 !important;
   font-weight: 700 !important;
 }
+
+/* Dica do visualizador de imagens: texto certo para mouse ou toque */
+.lightbox-hint .hint-touch { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .lightbox-hint .hint-mouse { display: none; }
+  .lightbox-hint .hint-touch { display: inline; }
+}
+
+/* =====================================================================
+ * LIMPEZA DE REDUNDÂNCIAS + EXPERIÊNCIA MOBILE (estante e leitor)
+ * ===================================================================== */
+/* "Estante" é agora um botão único (fecha o livro salvando o progresso) */
+#btnShowShelf { display: none !important; }
+/* Na estante, "+ Abrir" da barra duplicava "+ Adicionar Livro" */
+body.is-shelf-home .toolbar label[for="fileInput"] { display: none !important; }
+body.is-shelf-home .doc-meta { display: none !important; }
+
+@media (max-width: 768px) {
+  /* ---------- Barra do leitor cabendo em 360–390px ---------- */
+  #btnCloseBook::after { content: none !important; }
+  #btnCloseBook span,
+  #btnSidebar span,
+  #btnMangaStrip span { display: none !important; }
+  #btnMangaStrip::after { content: '▤'; font-size: 15px; }
+  #lblTypographyBtn { display: none; }
+  #btnTypography::after { content: 'Aa'; font-weight: 700; font-size: 13px; }
+  #btnToolsMenuToggle span { display: none; }
+  #btnToolsMenuToggle::after { content: '⋯'; font-size: 20px; line-height: 1; }
+  body:not(.is-shelf-home) .user-menu-wrap,
+  body:not(.is-shelf-home) #btnImmersive { display: none !important; }
+  .toolbar .tb-btn { padding-left: 8px; padding-right: 8px; }
+
+  /* ---------- Estante: livros já na primeira tela ---------- */
+  body.is-shelf-home .empty-header { flex-direction: column !important; align-items: stretch !important; gap: 8px; margin-bottom: 10px; }
+  body.is-shelf-home .empty-header h1 { font-size: 20px; margin: 0; }
+  body.is-shelf-home .shelf-header-actions { flex-direction: row !important; justify-content: flex-start !important; width: 100%; }
+  body.is-shelf-home .shelf-header-actions .tb-btn { width: auto !important; flex: 0 0 auto; }
+  .bookshelf-grid .book-card-cover:not(:has(img)) { aspect-ratio: 3 / 2; }
+  body.is-shelf-home .shelf-subtitle,
+  body.is-shelf-home #lblOfflineStatusBadge { display: none !important; }
+  body.is-shelf-home .shelf-header-actions .tb-btn { white-space: nowrap; height: 32px; overflow: hidden; text-overflow: ellipsis; }
+  body.is-shelf-home #btnResumeLastBook { order: -1; flex: 1 1 100% !important; max-width: 100%; justify-content: center; }
+
+  .drop-area { padding: 10px !important; margin-bottom: 10px !important; }
+  .drop-area .drop-hint { display: none; }
+  .drop-area #inputBookUrl { width: auto !important; flex: 1; min-width: 0; }
+
+  .shelf-controls-row,
+  .shelf-tabs-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .shelf-controls-row::-webkit-scrollbar,
+  .shelf-tabs-row::-webkit-scrollbar,
+  .shelf-header-actions::-webkit-scrollbar { display: none; }
+  .shelf-controls-row > *,
+  .shelf-tabs-row > * { flex-shrink: 0; }
+  .shelf-controls-row #inputFilterShelf { min-width: 150px; }
+
+  /* Grade de capas em 2 colunas */
+  .bookshelf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  .bookshelf-grid .book-card { padding: 8px !important; }
+  .bookshelf-grid .book-card-top span:last-child { display: none; }
+  .bookshelf-grid .book-card-body-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .bookshelf-grid .book-card-cover { width: 100% !important; height: auto !important; aspect-ratio: 2 / 3; }
+  .bookshelf-grid .book-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .bookshelf-grid .book-card-title { font-size: 12.5px; -webkit-line-clamp: 2; }
+  .bookshelf-grid .book-card-author { font-size: 11px; }
+  .bookshelf-grid .book-card-iconrow .btn-book-cover,
+  .bookshelf-grid .book-card-iconrow .btn-book-group,
+  .bookshelf-grid .book-card-rating { display: none !important; }
+  .bookshelf-grid .book-card-actions { flex-wrap: wrap; gap: 4px; }
+  .bookshelf-grid .book-card-actions .btn-read-book { flex-basis: 100% !important; font-size: 12px; }
+  .bookshelf-grid .book-card-actions .btn:not(.btn-read-book) { flex: 1; height: 26px; font-size: 11px; padding: 0 4px; }
+}
+
+/* Opções do painel de aparência conforme o tipo de arquivo aberto */
+body:not([data-book-kind="manga"]) .ctx-manga-only,
+body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
+
+/* Barra superior no desktop: cabe em telas de 1024px a 1500px sem cortar botões */
+@media (min-width: 769px) and (max-width: 1500px) {
+  #btnFullscreen,
+  #btnImmersive,
+  #toolbarUserGreeting,
+  #btnPdfTintToolbar,
+  #btnSetPageAsCover { display: none !important; }
+  .doc-header { max-width: 220px; min-width: 0; }
+}
+@media (min-width: 769px) and (max-width: 1250px) {
+  #btnSidebar span,
+  #btnCloseBook span,
+  .toolbar label[for="fileInput"] span,
+  #lblZoom,
+  #lblTypographyBtn,
+  #btnToolsMenuToggle span { display: none !important; }
+  #btnTypography::after { content: 'Aa'; font-weight: 700; }
+  #btnToolsMenuToggle::after { content: '⋯'; font-size: 18px; line-height: 1; }
+  #flowModeGroup button { padding: 0 6px; font-size: 11px; }
+  .doc-header { max-width: 150px; }
+}
+@media (min-width: 769px) and (max-width: 1600px) {
+  body[data-book-kind="pdf"] #lblTypographyBtn,
+  body[data-book-kind="pdf"] #btnToolsMenuToggle span { display: none !important; }
+  body[data-book-kind="pdf"] #btnTypography::after { content: 'Aa'; font-weight: 700; }
+  body[data-book-kind="pdf"] #btnToolsMenuToggle::after { content: '⋯'; font-size: 18px; line-height: 1; }
+}
 </style>
 </head>
 <body class="is-shelf-home">
@@ -3681,9 +3791,9 @@
         <span>Estante</span>
       </button>
 
-      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnCloseBook" title="Fechar este livro e voltar para a Estante" style="border-color:rgba(239,68,68,0.4); color:#ef4444; font-weight:600;">
-        <svg class="icon" viewBox="0 0 24 24" style="stroke:#ef4444;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        <span>Fechar</span>
+      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnCloseBook" title="Voltar para a Estante (seu progresso fica salvo)">
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <span>Estante</span>
       </button>
 
       <label class="tb-btn tb-btn-solid" for="fileInput" title="Abrir arquivo do computador (.epub, .mobi, .azw3, .pdf, .docx, .odt, .rtf, .cbz, .fb2, .md, .txt)">
@@ -3752,7 +3862,7 @@
 
       <!-- Controle exclusivo do Modo Mangá (oculto no Modo Livro comum!) -->
       <button class="tb-btn tb-btn-solid hidden" id="btnMangaRtl" title="Alternar sentido de leitura do Mangá: Direita → Esquerda (Oriental) ou Esquerda → Direita">
-        <span id="lblMangaDir">Mangá Japonês (Direita ← Esquerda)</span>
+        <span id="lblMangaDir">Japonês ←</span>
       </button>
       <button class="tb-btn tb-btn-solid hidden" id="btnMangaStrip" title="Modo Tira Vertical Contínua (ideal para WEBTOON e Tapas sem espaços entre imagens)">
         <span>Tira Webtoon</span>
@@ -3849,68 +3959,82 @@
       <span style="font-weight:700; font-size:11.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">Recursos &amp; Ferramentas</span>
       <button type="button" class="tb-btn tb-btn-icon" id="btnCloseToolsDropdown" title="Fechar (Esc)" style="width:26px; height:26px; font-size:13px; cursor:pointer;">✕</button>
     </div>
-    <div class="reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Leitura &amp; Recursos do Livro</div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Navegação</div>
     <button class="menu-item-btn reader-only-ctrl" id="btnMenuGoToPosition">
       <span>Ir Para Posição / Porcentagem</span>
-      <span class="menu-item-sub">Porcentagem (%), Posição Kindle ou Página (G)</span>
-    </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiRecap">
-      <span>O Que Aconteceu Até Aqui? (Recap IA)</span>
-      <span class="menu-item-sub">Sem Spoilers</span>
-    </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiTutor">
-      <span>Tutor IA (Conversar com o Livro)</span>
-      <span class="menu-item-sub">Tire Dúvidas</span>
-    </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnWordWiseToggle">
-      <span>Word Wise (Dicas Acima de Palavras)</span>
-      <span class="menu-item-sub" id="lblWordWiseState">Desativado</span>
+      <span class="menu-item-sub">Tecla G</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnPageFlipOpen">
-      <span>Page Flip (Folhear Livro c/ Pino)</span>
+      <span>Folhear Livro (Miniaturas)</span>
       <span class="menu-item-sub">Grade</span>
     </button>
+    <div class="reader-only-ctrl" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">IA &amp; Estudo</div>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiRecap">
+      <span>Recap: O Que Aconteceu Até Aqui?</span>
+      <span class="menu-item-sub">Sem spoilers</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiTutor">
+      <span>Tutor IA (Perguntar ao Livro)</span>
+      <span class="menu-item-sub">Dúvidas</span>
+    </button>
     <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioXray">
-      <span>Raio-X do Livro (Personagens &amp; Termos)</span>
+      <span>Raio-X (Personagens &amp; Termos)</span>
       <span class="menu-item-sub">Auto X-Ray</span>
     </button>
-    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioReviews">
-      <span>Avaliação (Estrelas) &amp; Resenha</span>
-      <span class="menu-item-sub">Notas</span>
+    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioNotebookLM">
+      <span>NotebookLM (Chat, Podcast, Dossiê)</span>
+      <span class="menu-item-sub">Estúdio</span>
     </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnWordWiseToggle">
+      <span>Word Wise (Dicas Acima das Palavras)</span>
+      <span class="menu-item-sub" id="lblWordWiseState">Desativado</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenVocab">
+      <span>Meus Cartões (Anki / Revisão)</span>
+      <span class="menu-item-sub">Aba lateral</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnMenuAiKeyStatus" data-open-studio-tab="paneStudioNotebookLM">
+      <span>Chave da IA (Gemini)</span>
+      <span class="menu-item-sub" id="lblMenuAiKeyState">—</span>
+    </button>
+    <div class="reader-only-ctrl" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Ouvir &amp; Foco</div>
     <button class="menu-item-btn reader-only-ctrl" id="btnTtsToggle">
-      <span>Ouvir Livro (Narração por Voz)</span>
+      <span>Ouvir Livro (Narração)</span>
       <span class="menu-item-sub">TTS</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnParallelToggle">
-      <span>Leitura Paralela (Lado a Lado)</span>
-      <span class="menu-item-sub">2 Telas</span>
+      <span>Tradução Lado a Lado</span>
+      <span class="menu-item-sub">2 colunas</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnRulerToggle">
       <span>Régua de Foco Visual</span>
       <span class="menu-item-sub">Guia</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnRsvpReading">
-      <span>Leitura Rápida RSVP (Spritz)</span>
+      <span>Leitura Rápida (RSVP)</span>
       <span class="menu-item-sub">Velocidade</span>
     </button>
-    <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-    <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Ferramentas &amp; Utilidades</div>
-    <button class="menu-item-btn" id="btnToolsStudio" data-open-studio-tab="paneStudioConvert">
-      <span>Central de Ferramentas ↗</span>
-      <span class="menu-item-sub">KCC · NotebookLM · IA · Metas</span>
+    <div class="reader-only-ctrl" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Este Livro</div>
+    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioReviews">
+      <span>Avaliação &amp; Resenha</span>
+      <span class="menu-item-sub">Estrelas</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnMenuQrCode">
       <span>Continuar no Celular</span>
-      <span class="menu-item-sub">QR Code de Leitura</span>
+      <span class="menu-item-sub">QR Code</span>
     </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnOpenVocab">
-      <span>Meus Cartões Salvos (Anki)</span>
-      <span class="menu-item-sub">Aba Lateral</span>
+    <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Ferramentas</div>
+    <button class="menu-item-btn" id="btnToolsStudio" data-open-studio-tab="paneStudioConvert">
+      <span>Central de Ferramentas ↗</span>
+      <span class="menu-item-sub">Conversor · Kindle · Metas</span>
     </button>
     <button class="menu-item-btn" id="btnMenuAnkiLogin">
-      <span>Conexão Direta Anki</span>
-      <span class="menu-item-sub">AnkiConnect</span>
+      <span>Conectar Anki</span>
+      <span class="menu-item-sub">AnkiConnect / AnkiWeb</span>
     </button>
   </div>
 
@@ -3922,14 +4046,14 @@
     </div>
 
     <div class="segmented" style="width:100%; margin-bottom:12px;" id="typoPopoverTabs">
-      <button type="button" class="active" id="tabBtnTypoBook" style="flex:1;">Livro &amp; Leitura</button>
-      <button type="button" id="tabBtnTypoSite" style="flex:1;">Site &amp; Estante</button>
+      <button type="button" class="active" id="tabBtnTypoBook" style="flex:1;">Leitura</button>
+      <button type="button" id="tabBtnTypoSite" style="flex:1;">App e estante</button>
     </div>
 
     <!-- Aba 1: Livro & Leitura -->
     <div id="tabContentTypoBook">
       <div class="prop-row">
-        <div class="prop-label"><span>Papel da Folha do Livro</span></div>
+        <div class="prop-label"><span>Cor da página</span></div>
         <div class="prop-controls">
           <button class="book-theme-opt active" data-book-theme="same" title="Segue o mesmo tema escolhido para o site">Site</button>
           <button class="book-theme-opt" data-book-theme="light">Claro</button>
@@ -3967,7 +4091,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Espaçamento entre Linhas</span></div>
+        <div class="prop-label"><span>Entrelinha</span></div>
         <div class="prop-controls">
           <button class="line-opt" data-lh="1.45">Compacto</button>
           <button class="line-opt active" data-lh="1.72">Normal</button>
@@ -3976,7 +4100,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Largura da Coluna (Rolagem)</span></div>
+        <div class="prop-label"><span>Largura do texto</span></div>
         <div class="prop-controls">
           <button class="width-opt" data-mw="600px">Estreita</button>
           <button class="width-opt active" data-mw="720px">Média</button>
@@ -3985,7 +4109,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Alinhamento &amp; Opções PDF</span></div>
+        <div class="prop-label"><span>Alinhamento</span></div>
         <div class="prop-controls">
           <button class="align-opt active" data-align="justify">Justificado</button>
           <button class="align-opt" data-align="left">À Esquerda</button>
@@ -3994,7 +4118,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Orientação de Leitura</span></div>
+        <div class="prop-label"><span>Direção do texto</span></div>
         <div class="prop-controls">
           <button id="btnTextOrientHorizontal" class="active" title="Leitura padrão ocidental (linhas horizontais)">Horizontal</button>
           <button id="btnTextOrientVertical" title="Leitura vertical tradicional (Tate-gaki CJK)">Vertical (縦書き)</button>
@@ -4002,14 +4126,14 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Formatação do Livro</span></div>
+        <div class="prop-label"><span>Estilo do livro</span></div>
         <div class="prop-controls">
           <button id="btnStyleAdapted" class="active" title="Modo adaptado: aplica sua fonte, tamanho, espaçamento e cores escolhidos acima">Adaptado</button>
           <button id="btnStyleOriginal" title="Formatação original: respeita os recuos, fontes e estilos próprios definidos pelo editor do livro">Original do Livro</button>
         </div>
       </div>
 
-      <div class="prop-row">
+      <div class="prop-row ctx-manga-only">
         <div class="prop-label">
           <span>Largura Webtoon / Long Strip</span>
           <span id="lblWebtoonWidth">100%</span>
@@ -4019,7 +4143,7 @@
         </div>
       </div>
 
-      <div class="prop-row">
+      <div class="prop-row ctx-pdf-only">
         <div class="prop-label">
           <span>PDF Escaneado: Contraste / Brilho</span>
           <span id="lblPdfAdjust">100% / 100%</span>
@@ -4040,7 +4164,7 @@
     <!-- Aba 2: Site & Estante -->
     <div id="tabContentTypoSite" class="hidden">
       <div class="prop-row">
-        <div class="prop-label"><span>Tema do Site / App</span></div>
+        <div class="prop-label"><span>Tema do app</span></div>
         <div class="prop-controls">
           <button data-theme-val="light">Claro</button>
           <button class="active" data-theme-val="sepia">Sépia</button>
@@ -4050,7 +4174,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Cor de Destaque</span></div>
+        <div class="prop-label"><span>Cor de destaque</span></div>
         <div class="accent-swatch-row" id="accentSwatchRow">
           <button type="button" class="accent-swatch-btn active" data-accent-val="default" style="background:#7c3f1c;" title="Marrom Editorial (Padrão)"></button>
           <button type="button" class="accent-swatch-btn" data-accent-val="blue" style="background:#2563eb;" title="Azul"></button>
@@ -4062,7 +4186,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Tamanho da Grade da Estante</span></div>
+        <div class="prop-label"><span>Tamanho das capas</span></div>
         <div class="prop-controls">
           <button class="density-opt" data-density="compact">Compacta</button>
           <button class="density-opt active" data-density="normal">Padrão</button>
@@ -4081,28 +4205,28 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Pacotes de Ferramentas (Interface Limpa)</span></div>
+        <div class="prop-label"><span>Mostrar ferramentas extras</span></div>
         <div class="prop-controls" style="flex-direction:column; align-items:flex-start; gap:6px;">
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableStudyTools" /> Habilitar Ferramentas de Estudo (Cornell, Quiz, Dossiê, Citações)
+            <input type="checkbox" id="chkEnableStudyTools" /> Estudo (Cornell, quiz, dossiê, citações)
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableLangTools" /> Habilitar Ferramentas de Idiomas (Tradução rápida, SRS, Frequência, Shadowing)
+            <input type="checkbox" id="chkEnableLangTools" /> Idiomas (tradução rápida, revisão de cartões, frequência, pronúncia)
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableAmbientAudio" /> Exibir Sons Ambiente na Barra
+            <input type="checkbox" id="chkEnableAmbientAudio" /> Sons ambiente na barra
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableBionic" /> Habilitar Leitura Biônica (Destaque guiado nas primeiras letras)
+            <input type="checkbox" id="chkEnableBionic" /> Leitura biônica (início das palavras em negrito)
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;" title="Quando desativado (padrão), o app NÃO baixa nenhum capítulo sozinho; só baixa quando você clica em Próximo Capítulo">
-            <input type="checkbox" id="chkAutoPrefetchChapter" /> Pré-carregar próximo capítulo online automaticamente
+            <input type="checkbox" id="chkAutoPrefetchChapter" /> Pré-carregar o próximo capítulo (mangás online)
           </label>
         </div>
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Timer Pomodoro na Barra</span></div>
+        <div class="prop-label"><span>Pomodoro</span></div>
         <div class="prop-controls" style="align-items:center; justify-content:space-between; gap:8px;">
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
             <input type="checkbox" id="chkEnablePomodoro" /> Exibir Pomodoro
@@ -4208,7 +4332,6 @@
     <span style="font-size:11.5px; font-weight:600; color:var(--accent);">Narração (TTS):</span>
     <span id="lblTtsStatus" style="font-size:11px; color:var(--text-muted);">Pronto</span>
     <button class="tb-btn tb-btn-solid" id="btnTtsPlayPause">▶ Ler Capítulo</button>
-    <button class="tb-btn tb-btn-solid" id="btnExportChapterAudio" title="Exportar áudio narrado deste capítulo para ouvir no celular ou carro" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Baixar Áudio (.mp3)</button>
     <button class="tb-btn" id="btnTtsPrevPara" title="Parágrafo Anterior">⏮</button>
     <button class="tb-btn" id="btnTtsNextPara" title="Próximo Parágrafo">⏭</button>
     <button class="tb-btn" id="btnTtsStop" title="Parar">⏹</button>
@@ -4256,7 +4379,7 @@
     <div class="lightbox-stage" id="lightboxStage">
       <img id="imgLightboxTarget" src="" alt="Visualização Ampliada" draggable="false" />
     </div>
-    <div class="lightbox-hint">Use a roda do mouse (scroll) para Zoom · Arraste para explorar detalhes · Esc ou clique fora para fechar</div>
+    <div class="lightbox-hint"><span class="hint-mouse">Roda do mouse para zoom · Arraste para explorar · Esc ou clique fora para fechar</span><span class="hint-touch">Use os botões − / + ou pinça para zoom · Arraste para explorar · Toque fora para fechar</span></div>
   </div>
 
   <!-- Modal Integrado de Dicionário, Tradutor, Wikipédia e Cartão Anki Direto -->
@@ -4362,7 +4485,7 @@
         <div style="border:1px solid var(--border-color); border-radius:5px; padding:12px; background:var(--bg-toolbar);">
           <div style="font-weight:600; margin-bottom:6px; color:var(--text-primary);">2. Login na Conta AnkiWeb (Adição Online via Servidor / Proxy)</div>
           <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px; line-height:1.45;">
-            Para adicionar cartões direto na sua conta <strong>ankiweb.net</strong> pelo celular ou navegador sem abrir o Anki no PC (funciona automaticamente quando hospedado na Vercel/Netlify através da rota integrada <code>/api/ankiweb</code>):
+            Para adicionar cartões direto na sua conta <strong>ankiweb.net</strong> pelo celular ou navegador sem abrir o Anki no PC (funciona automaticamente quando hospedado na Vercel através da rota integrada <code>/api/ankiweb</code>):
           </div>
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
             <div class="modal-field">
@@ -4375,7 +4498,7 @@
             </div>
           </div>
           <div class="modal-field" style="margin-bottom:8px;">
-            <label>Endpoint da API AnkiWeb (Padrão automático na Vercel/Netlify: <code>/api/ankiweb</code>)</label>
+            <label>Endpoint da API AnkiWeb (Padrão automático na Vercel: <code>/api/ankiweb</code>)</label>
             <input type="text" id="inputAnkiWebEndpoint" value="/api/ankiweb" />
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
@@ -4424,7 +4547,7 @@
   <div class="modal-backdrop" id="toolsModal">
     <div class="studio-modal-card">
       <div class="modal-header">
-        <span>Ferramentas — Conversor · Raio-X · Resumidor · Tradutor · Revisor · Citações · Metas</span>
+        <span>Ferramentas</span>
         <button class="tb-btn tb-btn-icon" id="btnCloseToolsModal">✕</button>
       </div>
       <div class="studio-layout">
@@ -4433,16 +4556,16 @@
           <div class="studio-brand">
             <span>Ferramentas</span>
           </div>
-          <button class="studio-nav-btn active" data-studio-pane="paneStudioConvert">Conversor de Formatos</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioNotebookLM">NotebookLM (IA &amp; Estudo)</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioXray">Raio-X (Personagens)</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioSummary">Resumidor & Quiz</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioTranslate">Tradutor de Texto</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioProofread">Revisor Gramatical</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioQuotes">Citações & Destaques</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioReviews">Notas & Resenhas</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioInsights">Hábito & Metas</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioKindle">Conta Kindle</button>
+          <button class="studio-nav-btn active" data-studio-pane="paneStudioConvert">Conversor</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioNotebookLM">NotebookLM</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioXray">Raio-X</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioSummary">Resumo e quiz</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioTranslate">Tradutor</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioProofread">Revisor</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioQuotes">Destaques</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioReviews">Resenha e citação</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioInsights">Metas</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioKindle">Kindle</button>
           <div style="height:1px; background:var(--border-color); margin:6px 4px;"></div>
           <button class="studio-nav-btn" id="btnStudioGoReader">Voltar ao Leitor</button>
         </aside>
@@ -4452,14 +4575,14 @@
           <!-- ABA 1: CONVERSOR DE EBOOKS -->
           <div class="studio-pane active" id="paneStudioConvert">
             <div>
-              <h2 style="margin:0 0 4px 0; font-size:17px;">Conversor de Formatos</h2>
+              <h2 style="margin:0 0 4px 0; font-size:17px;">Conversor</h2>
               <div style="font-size:12px; color:var(--text-muted);">Converta o livro aberto atualmente ou selecione outro arquivo do computador.</div>
             </div>
 
             <div class="studio-upload-box" id="convDropZone">
               <div style="font-size:13.5px; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Arraste um arquivo aqui ou clique para selecionar</div>
               <div id="convSelectedFileLabel" style="font-size:12px; color:var(--accent);">
-                Usando o livro aberto atualmente no leitor (ou clique aqui para escolher outro arquivo)
+                Nenhum livro aberto — clique aqui ou arraste um arquivo para converter
               </div>
               <input type="file" id="convUploadInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.fb2,.cbz,.md,.txt,.html,.htm" class="hidden" />
             </div>
@@ -4467,16 +4590,15 @@
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--bg-toolbar); padding:10px 12px; border:1px solid var(--border-color); border-radius:6px;">
               <span style="font-size:12px; color:var(--text-secondary);">Formato de destino:</span>
               <select id="selectConvertFormat" style="height:30px; border:1px solid var(--border-strong); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 10px; font-size:12px;">
-                <option value="azw3">AZW3 (Kindle .azw3)</option>
-                <option value="mobi">MOBI (Kindle .mobi)</option>
-                <option value="epub" selected>EPUB Padrão (.epub)</option>
-                <option value="pdf">PDF Paginado (.pdf)</option>
-                <option value="docx">Word (.doc)</option>
-                <option value="rtf">Rich Text (.rtf)</option>
-                <option value="odt">OpenDocument (.odt)</option>
-                <option value="html">HTML Página Única (.html)</option>
+                <option value="epub" selected>EPUB simples (.epub · só texto)</option>
+                <option value="mobi">MOBI Kindle antigo (.mobi · só texto)</option>
+                <option value="pdf">PDF (abre Imprimir → Salvar como PDF)</option>
+                <option value="docx">Word compatível (.doc em HTML)</option>
+                <option value="rtf">Rich Text (.rtf · só texto)</option>
+                <option value="odt">OpenDocument (.odt · só texto)</option>
+                <option value="html">HTML página única (.html)</option>
                 <option value="md">Markdown (.md)</option>
-                <option value="txt">Texto Puro (.txt)</option>
+                <option value="txt">Texto puro (.txt)</option>
               </select>
               <button class="studio-btn-primary" id="btnRunConvert">Converter e Baixar</button>
               <button class="tb-btn tb-btn-solid" id="btnConvClearFile" title="Voltar a usar o livro aberto no leitor">Usar Livro Aberto</button>
@@ -4485,21 +4607,19 @@
             <div>
               <div style="font-weight:600; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Atalhos Diretos de Conversão</div>
               <div class="conv-presets-grid">
-                <button class="conv-preset-btn" data-conv-target="pdf">EPUB para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="azw3">EPUB para AZW3</button>
-                <button class="conv-preset-btn" data-conv-target="mobi">EPUB para MOBI</button>
-                <button class="conv-preset-btn" data-conv-target="epub">PDF para EPUB</button>
-                <button class="conv-preset-btn" data-conv-target="azw3">PDF para AZW3</button>
-                <button class="conv-preset-btn" data-conv-target="docx">PDF para WORD</button>
-                <button class="conv-preset-btn" data-conv-target="txt">PDF para TXT</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">WORD para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="rtf">WORD para RTF</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">DOC para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">RTF para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="txt">RTF para TXT</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">ODT para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="docx">ODT para WORD</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">TXT para PDF</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">EPUB → PDF (impressão)</button>
+                <button class="conv-preset-btn" data-conv-target="mobi">EPUB → MOBI (só texto)</button>
+                <button class="conv-preset-btn" data-conv-target="epub">PDF → EPUB (só texto)</button>
+                <button class="conv-preset-btn" data-conv-target="docx">PDF → Word (.doc)</button>
+                <button class="conv-preset-btn" data-conv-target="txt">PDF → TXT</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">Word → PDF (impressão)</button>
+                <button class="conv-preset-btn" data-conv-target="rtf">Word → RTF</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">RTF / ODT → PDF (impressão)</button>
+                <button class="conv-preset-btn" data-conv-target="docx">ODT → Word (.doc)</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">TXT → PDF (impressão)</button>
+              </div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:6px; line-height:1.45;">
+                As conversões rodam no seu navegador e geram uma versão de <strong>texto</strong>: imagens, notas e formatação avançada não são preservadas (exceto em "PDF (impressão)" e "HTML"). Para converter com fidelidade total, use o Calibre no computador.
               </div>
             </div>
 
@@ -5175,7 +5295,7 @@
         <div style="border:1px solid var(--border-color); border-radius:4px; padding:10px 12px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:6px;">
           <div style="font-size:12px; font-weight:600; color:var(--text-primary);">Convidar Outra Pessoa para Ver ou Sugerir Livros</div>
           <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.45;">
-            Envie um link de convite seguro: seus convidados podem entrar/criar a própria conta de usuário, ler os livros do banco compartilhado com o próprio progresso/foto e <strong>sugerir</strong> ou <strong>subir livros direto</strong> (tudo registrado no histórico).
+            Sua estante é <strong>privada</strong>: só entra quem você liberar abaixo em <em>Gerenciar Membros</em>. O link de convite apenas leva a pessoa até a sua estante — ela precisa <strong>entrar com o mesmo e-mail</strong> que você cadastrou.
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
             <select id="selectInviteRole" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
@@ -5183,17 +5303,23 @@
               <option value="contributor">Ver + Sugerir livros p/ aprovação (+ Login Próprio)</option>
               <option value="member">Membro Completo: Ver + Subir livros direto (+ Login Próprio)</option>
             </select>
-            <input type="email" id="inputInviteNotifyEmail" placeholder="Seu e-mail p/ aviso opcional (via Conta Kindle/Resend)..." style="flex:1; min-width:160px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
+            <input type="email" id="inputInviteNotifyEmail" class="hidden" placeholder="" style="flex:1; min-width:160px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
             <button class="tb-btn tb-btn-solid" id="btnGenerateInviteLink" style="height:28px; border-color:var(--accent); color:var(--accent); font-weight:600;">Copiar Link de Convite</button>
           </div>
           <div id="ownerMembersManageBox" class="hidden" style="margin-top:6px; padding-top:8px; border-top:1px dashed var(--border-color); display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
-              <strong style="font-size:11.5px; color:var(--accent);">Gerenciar Membros com Acesso Total (Supabase)</strong>
+              <strong style="font-size:11.5px; color:var(--accent);">Gerenciar Membros (quem pode acessar a estante)</strong>
               <button class="tb-btn" id="btnRefreshOwnerMembers" style="height:24px; font-size:11px;">Atualizar Lista</button>
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <input type="email" id="inputOwnerAddMemberEmail" placeholder="E-mail do amigo para liberar acesso total..." style="flex:1; min-width:170px; height:26px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
-              <button class="tb-btn tb-btn-solid" id="btnOwnerAddMember" style="height:26px; font-size:11px;">Promover a Membro</button>
+              <input type="email" id="inputOwnerAddMemberEmail" placeholder="E-mail da pessoa..." style="flex:1; min-width:170px; height:26px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
+              <select id="selectOwnerAddMemberRole" style="height:26px; font-size:11px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary);">
+                <option value="viewer">Leitor (só lê)</option>
+                <option value="contributor">Colaborador (sugere)</option>
+                <option value="member">Membro (sobe/apaga)</option>
+                <option value="owner">Dono</option>
+              </select>
+              <button class="tb-btn tb-btn-solid" id="btnOwnerAddMember" style="height:26px; font-size:11px;">Liberar Acesso</button>
             </div>
             <div id="ownerMembersList" style="display:flex; flex-direction:column; gap:4px; font-size:11.5px; color:var(--text-secondary);"></div>
           </div>
@@ -5758,31 +5884,31 @@
         <div class="shelf-box" id="shelfBox">
           <div class="empty-header">
             <div>
-              <h1>Biblioteca & Estante de Livros</h1>
-              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
-                Salvo neste navegador · Livros sincronizados em outro dispositivo? Entre na Nuvem para continuar lendo.
+              <h1>Minha Estante</h1>
+              <div class="shelf-subtitle" style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                Seus livros ficam salvos neste aparelho. Entre na sua conta para ver os da nuvem.
               </div>
             </div>
-            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <div class="shelf-header-actions" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
               <span class="offline-pill" id="lblOfflineStatusBadge" title="Estado da conexão e cache offline">Online · Cache OK</span>
-              <button class="tb-btn tb-btn-solid hidden" id="btnInstallPwa" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Instalar App (Offline)</button>
+              <button class="tb-btn tb-btn-solid hidden" id="btnInstallPwa" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Instalar app</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnResumeLastBook" style="background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600;">▶ Continuar Lendo</button>
-              <button class="tb-btn tb-btn-solid" id="btnShelfCloud" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Entrar / Sincronizar Nuvem</button>
+              <button class="tb-btn tb-btn-solid" id="btnShelfCloud" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Entrar na nuvem</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnCloseBookShelf" title="Fechar o livro aberto e permanecer na Estante" style="border-color:#ef4444; color:#ef4444; font-weight:600; padding:0 10px;">Fechar Livro</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnCloseShelf" title="Voltar para o livro que está aberto (Esc)" style="background:var(--bg-control-active); color:#fff; border-color:var(--accent); font-weight:600; padding:0 10px;">← Voltar p/ Livro</button>
             </div>
           </div>
 
           <div class="drop-area" style="padding:18px 16px; margin-bottom:16px;">
-            <p style="margin-bottom:10px;">
-              Arraste e solte arquivos <strong>.epub</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.pdf</strong>, <strong>.fb2</strong>, <strong>.cbz</strong>, <strong>.md</strong> ou <strong>.txt</strong> aqui para adicionar à sua Estante:
+            <p class="drop-hint" style="margin-bottom:10px;">
+              Arraste um arquivo para cá (EPUB, MOBI, AZW3, PDF, CBZ, FB2, DOCX, TXT, MD) para adicionar à sua Estante:
             </p>
             <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;">
               <label class="tb-btn tb-btn-solid" for="fileInput" style="height:32px; padding:0 14px; font-size:12.5px; border-color:var(--accent); color:var(--accent); font-weight:600;">
-                + Adicionar Livro do Computador
+                + Adicionar Livro
               </label>
               <div style="display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:center;">
-                <input type="text" id="inputBookUrl" placeholder="Ou cole um link direto (https://.../livro.epub)" style="height:32px; width:250px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <input type="text" id="inputBookUrl" placeholder="Ou cole o link de um arquivo" style="height:32px; width:250px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
                 <button class="tb-btn tb-btn-solid" id="btnLoadUrl" style="height:32px;">Abrir Link</button>
                 <label style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;" title="Envia o livro baixado diretamente para o banco compartilhado no Supabase">
                   <input type="checkbox" id="chkSaveUrlToCloud" /> Salvar na Nuvem
@@ -5793,7 +5919,7 @@
 
           <!-- Busca Integrada em Catálogos OPDS Abertos & Acervos Públicos (Livros + Mangás PT-BR/EN) -->
           <details class="opds-panel" id="opdsCatalogDetails">
-            <summary>Explorar Acervos Públicos &amp; Web-Scrapers (Livros · Mangás · Quadrinhos · Cartoons — PT-BR &amp; EN)</summary>
+            <summary>Buscar livros e mangás gratuitos</summary>
             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:10px;">
               <select id="selectOpdsSource" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;">
                 <option value="mangadex">Mangás: MangaDex (PT-BR &amp; Inglês · Ler / Baixar .CBZ)</option>
@@ -5850,14 +5976,14 @@
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <span style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Minha Estante (Local + Nuvem)</span>
+              <span style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Meus livros</span>
               <span id="lblLocalShelfSpace" style="font-size:11px; color:var(--text-muted);"></span>
             </div>
-            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <div class="shelf-controls-row" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
               <button class="tb-btn tb-btn-solid hidden" id="btnQuickRenewGDrive" style="height:26px; font-size:11px; border-color:#f59e0b; color:#f59e0b; font-weight:600;" title="Sua sessão do Google Drive expirou (1h). Clique para renovar em 1 toque">Renovar Google Drive</button>
-              <button class="tb-btn tb-btn-solid" id="btnShelfBatchMode" style="height:26px; font-size:11px;" title="Selecionar vários livros de uma vez para enviar, agrupar ou remover em lote">Selecionar Vários</button>
-              <button class="tb-btn tb-btn-solid" id="btnToggleShelfGroup" style="height:26px; font-size:11px;" title="Agrupar séries automáticas e seus grupos/coleções personalizados em pastas">Agrupar Séries / Grupos</button>
-              <button class="tb-btn tb-btn-solid" id="btnExtractAllShelfCovers" style="height:26px; font-size:11px;" title="Extrair automaticamente a capa e metadados originais de todos os livros salvos">Extrair Capas &amp; Info</button>
+              <button class="tb-btn tb-btn-solid" id="btnShelfBatchMode" style="height:26px; font-size:11px;" title="Selecionar vários livros de uma vez para enviar, agrupar ou remover em lote">Selecionar</button>
+              <button class="tb-btn tb-btn-solid" id="btnToggleShelfGroup" style="height:26px; font-size:11px;" title="Agrupar séries automáticas e seus grupos/coleções personalizados em pastas">Agrupar séries</button>
+              <button class="tb-btn tb-btn-solid" id="btnExtractAllShelfCovers" style="height:26px; font-size:11px;" title="Extrair automaticamente a capa e metadados originais de todos os livros salvos">Buscar capas</button>
               <select id="selectShelfOrigin" title="Filtrar livros por origem: Local, Nuvem ou Nos Dois" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
                 <option value="all">Origem: Todos (Local + Nuvem)</option>
                 <option value="local-only">Origem: Só Local (Offline)</option>
@@ -6332,6 +6458,62 @@
      * - Paginação por colunas (1 ou 2 colunas) + Rolagem contínua
      **********************************************************************/
 
+    /* =====================================================================
+     * SEGURANÇA: sanitização do HTML vindo de livros (EPUB/MOBI/HTML/DOCX…)
+     * Todo HTML de livro é inserido via innerHTML; um arquivo malicioso poderia
+     * executar JS (onerror=, javascript:, <iframe srcdoc>…) e roubar a chave
+     * Gemini / sessão da nuvem. Esta função neutraliza esses vetores mantendo
+     * texto, estilos inline, imagens (blob:/data:image) e links internos.
+     * ===================================================================== */
+    const BOOK_HTML_SUSPICIOUS_RE = /\son[a-z]+\s*=|javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|srcdoc|<\s*(script|iframe|frame|frameset|object|embed|applet|base|meta|link|form|input|button|textarea|select|animate|set|portal|noscript|template)\b/i;
+    const BOOK_HTML_DROP_TAGS = 'script, iframe, frame, frameset, object, embed, applet, base, meta, link, form, input, button, textarea, select, portal, noscript, template, animate, set, animateMotion, animateTransform, foreignObject';
+    const BOOK_HTML_URL_ATTRS = ['href', 'src', 'xlink:href', 'action', 'formaction', 'poster', 'background', 'srcset', 'data', 'longdesc', 'cite'];
+
+    function isDangerousBookUrl(value) {
+      const v = String(value || '').replace(/[\u0000- \u007f-\u009f]+/g, '').toLowerCase();
+      return v.startsWith('javascript:') || v.startsWith('vbscript:') || v.startsWith('data:text/html') || v.startsWith('data:application') || v.startsWith('data:image/svg');
+    }
+
+    function sanitizeBookHtml(html) {
+      if (typeof html !== 'string' || !html) return html;
+      if (!BOOK_HTML_SUSPICIOUS_RE.test(html)) return html; // caminho rápido: livro comum
+      try {
+        const doc = new DOMParser().parseFromString(`<!DOCTYPE html><html><body>${html}</body></html>`, 'text/html');
+        doc.body.querySelectorAll(BOOK_HTML_DROP_TAGS).forEach(el => el.remove());
+        doc.body.querySelectorAll('*').forEach(el => {
+          for (const attr of Array.from(el.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (name.startsWith('on') || name === 'srcdoc' || name === 'formaction') {
+              el.removeAttribute(attr.name);
+            } else if (BOOK_HTML_URL_ATTRS.includes(name) && isDangerousBookUrl(attr.value)) {
+              el.removeAttribute(attr.name);
+            } else if (name === 'style' && /javascript\s*:|expression\s*\(/i.test(attr.value)) {
+              el.removeAttribute(attr.name);
+            }
+          }
+        });
+        return doc.body.innerHTML;
+      } catch {
+        return escapeHtml(html.replace(/<[^>]*>/g, ' '));
+      }
+    }
+
+    function sanitizeParsedBook(parsed) {
+      if (parsed && Array.isArray(parsed.sections)) {
+        for (const sec of parsed.sections) {
+          if (!sec) continue;
+          if (typeof sec.html === 'string') sec.html = sanitizeBookHtml(sec.html);
+          // EPUB/MOBI geram o HTML sob demanda (buildHtml(rawSlice)): sanitiza também essa saída
+          if (typeof sec.buildHtml === 'function' && !sec.buildHtml.__sanitized) {
+            const originalBuild = sec.buildHtml;
+            sec.buildHtml = function sanitizedBuildHtml(...args) { return sanitizeBookHtml(originalBuild.apply(this, args)); };
+            sec.buildHtml.__sanitized = true;
+          }
+        }
+      }
+      return parsed;
+    }
+
     const state = {
       bookKey: null,
       title: '',
@@ -6551,7 +6733,7 @@
         dom.btnMangaRtl.classList.toggle('active', state.mangaRtl);
         const lblDir = document.getElementById('lblMangaDir');
         if (lblDir) {
-          lblDir.textContent = state.mangaRtl ? 'Mangá Japonês (Direita ← Esquerda)' : 'HQ Ocidental (Esquerda → Direita)';
+          lblDir.textContent = state.mangaRtl ? 'Japonês ←' : 'Ocidental →';
         }
       }
       const btnStripEl = document.getElementById('btnMangaStrip');
@@ -8751,7 +8933,8 @@
     function applyBionicReadingToHtml(htmlStr) {
       if (!htmlStr || typeof htmlStr !== 'string') return htmlStr;
       return htmlStr.replace(/(<p\b[^>]*>)([\s\S]*?)(<\/p>)/gi, (match, openTag, innerText, closeTag) => {
-        const transformed = innerText.replace(/(<[^>]+>)|([A-Za-zÀ-ÿ0-9_]+)/g, (m, tag, word) => {
+        // Tags e entidades (&amp; &nbsp; &#8212;) passam intactas; só palavras recebem o negrito
+        const transformed = innerText.replace(/(<[^>]+>|&#?[A-Za-z0-9]+;)|([A-Za-zÀ-ÿ0-9_]+)/g, (m, tag, word) => {
           if (tag) return tag;
           if (!word || word.length < 2) return word;
           const half = Math.ceil(word.length * 0.45);
@@ -8811,6 +8994,13 @@
       const sentencesCount = Math.max(1, rawSentences.length);
       const words = cleanText.toLowerCase().match(/[a-zà-ÿ]{2,}/gi) || [];
       if (words.length < 30) return null;
+
+      // O classificador CEFR é calibrado para inglês: em português, mangás ou texto inválido não mostra nível
+      const EN_STOP = new Set(['the', 'and', 'of', 'to', 'in', 'is', 'that', 'it', 'was', 'he', 'for', 'you', 'with', 'his', 'she', 'her', 'they', 'had', 'but', 'not']);
+      const PT_STOP = new Set(['de', 'que', 'do', 'da', 'em', 'um', 'uma', 'não', 'para', 'com', 'os', 'as', 'no', 'na', 'se', 'por', 'mais', 'ele', 'ela', 'foi']);
+      let enHits = 0, ptHits = 0;
+      for (const w of words) { if (EN_STOP.has(w)) enHits++; else if (PT_STOP.has(w)) ptHits++; }
+      if (enHits / words.length < 0.08 || ptHits > enHits) return null;
 
       const wordCount = words.length;
       const totalChars = words.reduce((acc, w) => acc + w.length, 0);
@@ -8972,7 +9162,6 @@
           }
           dom.readerFlow.innerHTML = html;
           dom.sheetBookTitle.textContent = `${state.title} › ${sec.title}`;
-          dom.sheetChapterTitle.textContent = `${state.currentIndex + 1} / ${state.sections.length}`;
 
           applySettings();
 
@@ -9132,19 +9321,28 @@
       };
     }
 
+    // Métrica mestre de progresso: a MESMA % aparece no rodapé, na barra, no histórico e nos cards da estante.
+    // Livros de texto: proporção de palavras lidas; PDF/Mangá: página atual / total de páginas.
+    function getCurrentBookPercent() {
+      const total = state.sections.length;
+      if (!total) return 0;
+      const cur = state.currentIndex + 1;
+      const metrics = (state.format !== 'PDF' && state.format !== 'CBZ') ? computeKindleReadingMetrics() : null;
+      if (metrics && metrics.totalLoc > 0) {
+        return Math.min(100, Math.max(0, Math.round((metrics.currentLoc / metrics.totalLoc) * 100)));
+      }
+      return Math.min(100, Math.round((cur / Math.max(1, total)) * 100));
+    }
+
     function updateFooterLabels() {
       const total = state.sections.length;
       if (!total) return;
       const cur = state.currentIndex + 1;
       const metrics = computeKindleReadingMetrics();
-      // O percentual deve refletir o progresso real de leitura no livro (Posição/palavras),
-      // e não apenas o índice bruto de arquivos de capítulo (que causava 'Pos. 7538 (50%)' em vez de 84%)
-      const pct = (metrics && metrics.totalLoc > 0 && state.format !== 'PDF')
-        ? Math.min(100, Math.max(0, Math.round((metrics.currentLoc / metrics.totalLoc) * 100)))
-        : Math.round((cur / Math.max(1, total)) * 100);
+      const pct = getCurrentBookPercent();
 
       dom.inputSectionNum.value = String(cur);
-      dom.lblTotalSections.textContent = `/ ${total}`;
+      dom.lblTotalSections.textContent = `/ ${total} ${(state.format === 'PDF' || state.format === 'CBZ') ? 'pág.' : 'cap.'}`;
       if (state.format === 'PDF') {
         dom.inputSectionNum.title = `Página ${cur} de ${total} do PDF (digite o número e pressione Enter)`;
       } else {
@@ -9284,9 +9482,9 @@
 
         const secTitle = sec && sec.title ? `${sec.title} · ` : '';
         if (dom.viewport.classList.contains('paginated-mode')) {
-          dom.sheetChapterTitle.textContent = `${state.subPageIndex + 1} / ${state.subPageCount}`;
-          const screenDetail = state.subPageCount > 1 ? ` (Tela ${state.subPageIndex + 1}/${state.subPageCount})` : '';
-          const sheetPagePart = `${pageStr}${screenDetail}`;
+          // Um único indicador de progresso: a mesma % do rodapé, da barra e dos cards da estante
+          dom.sheetChapterTitle.textContent = `${pct}%`;
+          const sheetPagePart = pageStr;
           dom.sheetFooterInfo.textContent = `${secTitle}${sheetPagePart}${timeOrDetail ? ' · ' + timeOrDetail : ''}`;
         } else {
           dom.sheetFooterInfo.textContent = `${secTitle}${kindleSummary}`;
@@ -9298,6 +9496,7 @@
       }
       dom.sheetFooterInfo.style.cursor = 'pointer';
       dom.sheetFooterInfo.title = 'Clique para alternar o indicador de página/tempo estilo Kindle';
+      if (dom.sheetChapterTitle) dom.sheetChapterTitle.textContent = `${pct}%`;
     }
 
     function cycleKindleFooterMode() {
@@ -9387,6 +9586,20 @@
       }
     }
 
+    // Largura das zonas laterais de toque para virar página (maior em telas de celular)
+    function getTapZoneWidth() {
+      return window.innerWidth < 768 ? 0.28 : 0.18;
+    }
+
+    // Toque/clique duplo em qualquer imagem abre o visualizador com zoom (inclusive páginas de mangá)
+    dom.readerFlow.addEventListener('dblclick', (e) => {
+      const imgEl = e.target.closest('img');
+      if (!imgEl || !imgEl.src || typeof openImageLightbox !== 'function') return;
+      e.preventDefault();
+      try { const sel = window.getSelection(); if (sel) sel.removeAllRanges(); } catch {}
+      openImageLightbox(imgEl.src, imgEl.alt || 'Imagem do Livro');
+    });
+
     // Interceptar cliques em Personagens/Notas (X-Ray), destaques salvos e links internos / Notas de Rodapé
     dom.readerFlow.addEventListener('click', (e) => {
       const entitySpan = e.target.closest('.entity-note-ref');
@@ -9406,7 +9619,13 @@
       }
 
       const imgEl = e.target.closest('img');
-      if (imgEl && imgEl.src) {
+      // Mangá/HQ: toque simples vira página (zonas de toque); zoom só com toque duplo (ver dblclick abaixo).
+      // Livros: imagens nas laterais da tela também viram página em vez de abrir o zoom.
+      const isMangaView = state.readingType === 'manga' || state.format === 'CBZ';
+      const vpRect = dom.viewport.getBoundingClientRect();
+      const relX = vpRect.width ? (e.clientX - vpRect.left) / vpRect.width : 0.5;
+      const inSideZone = state.tapZones && (relX <= getTapZoneWidth() || relX >= 1 - getTapZoneWidth());
+      if (imgEl && imgEl.src && !isMangaView && !inSideZone) {
         e.preventDefault();
         e.stopPropagation();
         if (typeof openImageLightbox === 'function') {
@@ -10121,6 +10340,7 @@
           subPageIndex: state.subPageIndex,
           scrollRatio: +scrollRatio.toFixed(4),
           total: state.sections.length,
+          percent: getCurrentBookPercent(),
           updatedAt: Date.now()
         };
         localStorage.setItem('reader_history', JSON.stringify(hist));
@@ -10386,7 +10606,7 @@
         div.addEventListener('click', () => {
           dom.inputAnkiFront.value = card.front;
           dom.inputAnkiBack.value = card.back || '';
-          dom.inputAnkiContext.value = card.context || '';
+          dom.inputAnkiContext.value = ankiContextToField(card.context || '');
           dom.modalStatus.textContent = 'Editando cartão salvo';
           dom.lookupModal.classList.add('open');
         });
@@ -10571,6 +10791,11 @@
         if (res.ok) {
           const data = await res.json();
           const translated = Array.isArray(data[0]) ? data[0].map(part => (part && part[0]) ? part[0] : '').join('') : '';
+          const srcLang = typeof data[2] === 'string' ? data[2].toLowerCase().split('-')[0] : '';
+          if (srcLang && srcLang === String(targetLang).toLowerCase().split('-')[0]) {
+            dom.modalStatus.textContent = `O texto já está no idioma de destino. Escolha outro idioma em "Traduzir p/" ou use Dicio / Wiktionary abaixo.`;
+            return;
+          }
           let transliteration = '';
           if (Array.isArray(data[0])) {
             for (const part of data[0]) {
@@ -10600,6 +10825,10 @@
       dom.modalStatus.textContent = 'Sem conexão com a API — use os botões externos abaixo ou digite a nota manualmente.';
     }
 
+    // O campo de contexto mostra «palavra» (legível); o cartão salvo usa <b>palavra</b> (formatação do Anki)
+    function ankiContextToField(v) { return String(v || '').replace(/<b>([\s\S]*?)<\/b>/gi, '«$1»'); }
+    function ankiContextFromField(v) { return String(v || '').replace(/«([^»]+)»/g, '<b>$1</b>'); }
+
     function openLookupModal(mode) {
       dom.selectionToolbar.classList.remove('open');
       dom.inputAnkiFront.value = state.selectedText || '';
@@ -10611,7 +10840,7 @@
           ctx = ctx.replace(new RegExp(escaped, 'i'), `<b>${state.selectedText}</b>`);
         } catch {}
       }
-      dom.inputAnkiContext.value = ctx;
+      dom.inputAnkiContext.value = ankiContextToField(ctx);
       dom.lookupModal.classList.add('open');
       if (mode === 'dict' && state.selectedText) {
         fetchDictionaryDefinition(state.selectedText);
@@ -10626,12 +10855,19 @@
      * 8. PARSERS ADICIONAIS (FB2 E MARKDOWN) + CARREGAMENTO DE ARQUIVOS
      * ===================================================================== */
     async function parseFb2(arrayBuffer, fileName) {
-      const rawXml = new TextDecoder('utf-8').decode(arrayBuffer);
+      // Respeita a codificação declarada no XML (muitos FB2 antigos usam windows-1251)
+      const head = new TextDecoder('latin1').decode(new Uint8Array(arrayBuffer, 0, Math.min(200, arrayBuffer.byteLength)));
+      const encMatch = head.match(/encoding=["']([\w-]+)["']/i);
+      let rawXml;
+      try { rawXml = new TextDecoder(encMatch ? encMatch[1].toLowerCase() : 'utf-8').decode(arrayBuffer); }
+      catch { rawXml = new TextDecoder('utf-8').decode(arrayBuffer); }
       const doc = new DOMParser().parseFromString(rawXml, 'text/xml');
       const titleEl = doc.querySelector('title-info > book-title');
       const authorEl = doc.querySelector('title-info > author');
       const title = titleEl ? titleEl.textContent.trim() : fileName.replace(/\.[^.]+$/, '');
-      const author = authorEl ? authorEl.textContent.replace(/\s+/g, ' ').trim() : 'FictionBook';
+      const author = authorEl
+        ? (Array.from(authorEl.children).map(c => c.textContent.trim()).filter(Boolean).join(' ') || authorEl.textContent.trim())
+        : 'Autor desconhecido';
 
       const binMap = new Map();
       doc.querySelectorAll('binary').forEach(b => {
@@ -10651,6 +10887,7 @@
         const secTitle = tNode ? tNode.textContent.replace(/\s+/g, ' ').trim() : `Seção ${idx + 1}`;
         let html = `<div class="book-chapter"><h2>${escapeHtml(secTitle)}</h2>`;
         secNode.querySelectorAll('p, subtitle, epigraph, poem, v, image').forEach(el => {
+          if (el.closest('title') && el.closest('title').parentNode === secNode) return; // título já vai no <h2>
           const tag = el.tagName.toLowerCase();
           if (tag === 'image') {
             const href = el.getAttribute('l:href') || el.getAttribute('xlink:href') || el.getAttribute('href') || '';
@@ -10818,6 +11055,39 @@
       };
     }
 
+    // Títulos vindos de nome de arquivo ("Death_Note_Official__Cap_1_PT-BR", "Livro (z-library.sk, 1lib.sk)")
+    function looksLikeFileTitle(title, fileName = '') {
+      const t = String(title || '').trim();
+      if (!t) return true;
+      const base = String(fileName || '').replace(/\.[^.]+$/, '');
+      return t === base || (/_/.test(t) && !/\s/.test(t)) || /z-lib|1lib|libgen|\(z-library/i.test(t);
+    }
+
+    function prettifyBookTitle(title) {
+      return String(title || '')
+        .replace(/\.(epub|mobi|azw3?|pdf|cbz|cbr|zip|fb2|txt|md|docx?)$/i, '')
+        .replace(/[\s_]*[\(\[][^\)\]]*(z-lib|1lib|libgen|z-library)[^\)\]]*[\)\]]/gi, '')
+        .replace(/_+/g, ' ')
+        .replace(/\s*(z-library|z-lib|1lib|libgen)\.[a-z]{2,4}/gi, '')
+        .replace(/\s+-\s+/g, ' — ')
+        .replace(/\s{2,}/g, ' ')
+        .trim() || String(title || '');
+    }
+
+    const SUPPORTED_BOOK_EXTENSIONS = ['epub', 'pdf', 'cbz', 'zip', 'mobi', 'azw', 'azw3', 'prc', 'fb2', 'docx', 'odt', 'rtf', 'md', 'markdown', 'txt', 'html', 'htm', 'srt', 'vtt'];
+
+    // Detecta arquivos binários (imagens, executáveis, arquivos corrompidos) antes de tratá-los como texto
+    function looksLikeBinaryBuffer(buffer) {
+      const bytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 4096));
+      if (!bytes.length) return false;
+      let suspicious = 0;
+      for (const b of bytes) {
+        if (b === 0) return true;
+        if (b < 7 || (b > 13 && b < 32)) suspicious++;
+      }
+      return suspicious / bytes.length > 0.1;
+    }
+
     async function parseAnyBookBuffer(buffer, fileName) {
       const ext = (fileName || '').split('.').pop().toLowerCase();
       if (ext === 'epub') return await parseEpub(buffer, fileName);
@@ -10830,7 +11100,14 @@
       if (ext === 'rtf') return parseRtf(buffer, fileName);
       if (ext === 'md' || ext === 'markdown') return parseMarkdown(buffer, fileName);
       if (ext === 'srt' || ext === 'vtt') return parseSubtitleText(buffer, fileName);
-      const rawTxt = new TextDecoder('utf-8').decode(buffer);
+      if (looksLikeBinaryBuffer(buffer)) {
+        throw new Error(`"${fileName}" não é um livro em formato suportado (parece imagem ou arquivo binário).`);
+      }
+      // TXT/HTML: tenta UTF-8 e, se houver bytes inválidos, usa Windows-1252 (arquivos antigos em ISO-8859-1)
+      let rawTxt;
+      try { rawTxt = new TextDecoder('utf-8', { fatal: true }).decode(buffer); }
+      catch { rawTxt = new TextDecoder('windows-1252').decode(buffer); }
+      rawTxt = rawTxt.replace(/^﻿/, '');
       const html = ext.startsWith('htm')
         ? rawTxt
         : rawTxt.split(/\r?\n\r?\n+/).map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
@@ -10842,6 +11119,23 @@
         toc: [{ label: 'Início', sectionIndex: 0, depth: 0 }]
       };
     }
+
+    // Segurança: todo parser que gera HTML passa pelo sanitizador central (ver sanitizeBookHtml).
+    (function wrapBookParsersWithSanitizer() {
+      const wrap = (fn) => function sanitizedParser(...args) {
+        const out = fn.apply(this, args);
+        return (out && typeof out.then === 'function') ? out.then(sanitizeParsedBook) : sanitizeParsedBook(out);
+      };
+      parseEpub = wrap(parseEpub);
+      parseMobi = wrap(parseMobi);
+      parseFb2 = wrap(parseFb2);
+      parseDocx = wrap(parseDocx);
+      parseOdt = wrap(parseOdt);
+      parseRtf = wrap(parseRtf);
+      parseMarkdown = wrap(parseMarkdown);
+      parseSubtitleText = wrap(parseSubtitleText);
+      parseAnyBookBuffer = wrap(parseAnyBookBuffer);
+    })();
 
     async function loadFile(file, options = {}) {
       if (!file) return;
@@ -10865,9 +11159,20 @@
           state.mangaRtl = true;
         }
 
-        if (ext !== 'cbz' && ext !== 'zip' && !state.readingType) {
+        // Abrir um livro de texto logo depois de um mangá não pode herdar o modo mangá (texto RTL / botões de mangá)
+        if (ext !== 'cbz' && ext !== 'zip' && (!state.readingType || state.readingType === 'manga')) {
           state.readingType = 'book';
           state.mangaRtl = false;
+        }
+
+        if (looksLikeFileTitle(parsed.title, file.name)) {
+          let catTitle = '';
+          try {
+            const cat = getCloudCatalogMap();
+            const catMeta = cat[safeCloudFileName(file.name)] || Object.values(cat).find(m => m && m.originalFileName === file.name);
+            if (catMeta && catMeta.title && !looksLikeFileTitle(catMeta.title, file.name)) catTitle = catMeta.title;
+          } catch {}
+          parsed.title = catTitle || prettifyBookTitle(parsed.title || file.name);
         }
 
         const byteSize = buffer.byteLength || file.size || 0;
@@ -10877,6 +11182,8 @@
         state.format = parsed.format;
         state.sections = parsed.sections;
         state.toc = parsed.toc;
+        // Painéis mostram só as opções que fazem sentido para o tipo de arquivo aberto
+        document.body.dataset.bookKind = parsed.format === 'PDF' ? 'pdf' : ((parsed.format === 'CBZ' || state.readingType === 'manga') ? 'manga' : 'text');
         state._cachedCefr = null;
         state._extractingPdfCefr = false;
 
@@ -10888,8 +11195,17 @@
         if (btnCloseBookShelfEl) btnCloseBookShelfEl.classList.remove('hidden');
 
         const hist = JSON.parse(localStorage.getItem('reader_history') || '{}');
-        const saved = hist[state.bookKey];
+        let saved = hist[state.bookKey] || (options.historyKey ? hist[options.historyKey] : null);
+        if (!saved && parsed.title) {
+          // O mesmo livro pode ter sido lido com outro nome de arquivo (ex.: cópia baixada da nuvem):
+          // recupera o progresso mais recente pelo título, igual ao card da estante.
+          const t = String(parsed.title).toLowerCase();
+          saved = Object.values(hist)
+            .filter(x => x && x.title && String(x.title).toLowerCase() === t && x.total === parsed.sections.length)
+            .sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0))[0];
+        }
         let restoreOpts = {};
+        let showResumeRibbon = false;
         if (saved && saved.currentIndex < parsed.sections.length) {
           state.currentIndex = saved.currentIndex;
           restoreOpts = {
@@ -10897,7 +11213,7 @@
             restoreScrollRatio: saved.scrollRatio || 0
           };
           if (saved.currentIndex > 0 || saved.subPageIndex > 0 || saved.scrollRatio > 0.05) {
-            showToast(`Retomando leitura de onde você parou (Seção ${saved.currentIndex + 1})`);
+            showResumeRibbon = state.format !== 'CBZ';
           }
         } else {
           state.currentIndex = 0;
@@ -10917,6 +11233,9 @@
         renderToc();
         populateParallelSectionSelect();
         await renderSection(restoreOpts);
+        if (showResumeRibbon && typeof window.showReadingReturnRibbon === 'function') {
+          setTimeout(() => window.showReadingReturnRibbon(), 250);
+        }
         if (typeof updateNextSeriesButtonUi === 'function') updateNextSeriesButtonUi();
 
         // Deferir gravação em IndexedDB e captura de capa para não competir com a 1ª página
@@ -10940,7 +11259,7 @@
           }
         }, 120);
       } catch (err) {
-        alert('Erro ao abrir o livro: ' + err.message);
+        showToast('Erro ao abrir o livro: ' + err.message, true);
         dom.statusLeft.textContent = 'Falha ao abrir arquivo';
         console.error(err);
       }
@@ -11016,7 +11335,7 @@
         }
         applySettings();
         if (state.sections.length) renderSection({ forceRebuildContinuous: true, restoreSubPage: 0 });
-        showToast(state.webtoonStrip ? 'Modo Tira Vertical (Webtoon) ativado — imagens coladas em sequência!' : 'Modo Tira Vertical desativado.');
+        showToast(state.webtoonStrip ? 'Modo Tira Vertical (Webtoon) ativado — imagens coladas em sequência' : 'Modo Tira Vertical desativado.');
       });
     }
 
@@ -11040,9 +11359,10 @@
         const rect = dom.viewport.getBoundingClientRect();
         if (!rect.width) return;
         const relX = (e.clientX - rect.left) / rect.width;
-        if (relX <= 0.18) {
+        const zone = getTapZoneWidth();
+        if (relX <= zone) {
           if (state.mangaRtl) stepForward(); else stepBackward();
-        } else if (relX >= 0.82) {
+        } else if (relX >= 1 - zone) {
           if (state.mangaRtl) stepBackward(); else stepForward();
         }
       });
@@ -11120,6 +11440,7 @@
       btnModeBookEl.addEventListener('click', () => {
         state.readingType = 'book';
         state.mangaRtl = false;
+        if (state.sections.length) document.body.dataset.bookKind = state.format === 'PDF' ? 'pdf' : 'text';
         applySettings();
         if (state.sections.length) renderSection({ restoreSubPage: state.subPageIndex });
         showToast('Modo Livro selecionado');
@@ -11127,6 +11448,7 @@
       btnModeMangaEl.addEventListener('click', () => {
         state.readingType = 'manga';
         state.mangaRtl = true;
+        if (state.sections.length) document.body.dataset.bookKind = 'manga';
         state.pdfTint = false;
         if (typeof syncPdfTintUi === 'function') syncPdfTintUi();
         applySettings();
@@ -11142,6 +11464,12 @@
       btnToolsMenuToggleEl.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = toolsDropdownEl.classList.toggle('open');
+        const aiKeyLbl = document.getElementById('lblMenuAiKeyState');
+        if (aiKeyLbl) {
+          const hasKey = Boolean(state.geminiApiKey && state.geminiApiKey.trim());
+          aiKeyLbl.textContent = hasKey ? 'Conectada ✓' : 'Sem chave · modo básico';
+          aiKeyLbl.style.color = hasKey ? 'var(--accent)' : '';
+        }
         dom.typoPopover.classList.remove('open');
         const userDd = document.getElementById('userProfileDropdown');
         if (userDd) userDd.classList.remove('open');
@@ -11241,13 +11569,13 @@
         id: 'vc_' + Date.now(),
         front,
         back: dom.inputAnkiBack.value.trim(),
-        context: dom.inputAnkiContext.value.trim(),
+        context: ankiContextFromField(dom.inputAnkiContext.value.trim()),
         book: state.title ? `${state.title}${secTitle ? ' · ' + secTitle : ''}` : 'Leitor Portátil',
         date: new Date().toLocaleDateString('pt-BR')
       });
       saveVocabList(list);
       dom.lookupModal.classList.remove('open');
-      showToast('Salvo no Vocabulário Anki!');
+      showToast('Salvo no Vocabulário Anki');
     });
 
     document.getElementById('btnExportAnkiTsv').addEventListener('click', exportVocabForAnkiTsv);
@@ -11880,12 +12208,9 @@
     window.addEventListener('dragleave', () => {
       dom.emptyState.classList.remove('dragover');
     });
-    window.addEventListener('drop', (e) => {
-      e.preventDefault();
+    window.addEventListener('drop', () => {
+      // O carregamento do arquivo é feito no handler único "Arrastar e Soltar Global" (mais abaixo)
       dom.emptyState.classList.remove('dragover');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        loadFile(e.dataTransfer.files[0]);
-      }
     });
 
     // Atalhos de Teclado
@@ -12160,7 +12485,7 @@
       stSel.onchange = () => {
         setBookStatusValue(bookObj, stSel.value);
         renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-        showToast('Status de leitura atualizado!');
+        showToast('Status de leitura atualizado');
       };
 
       // Estrelas dentro da Ficha do Livro
@@ -12181,7 +12506,7 @@
             saveBookReviewsMap(revMap);
             renderInfoStars(s);
             renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-            showToast(`Nota ${s}/5 salva!`);
+            showToast(`Nota ${s}/5 salva`);
           };
           starRow.appendChild(sb);
         }
@@ -12225,7 +12550,7 @@
           if (typeof pushCloudSyncSilent === 'function') pushCloudSyncSilent();
           document.getElementById('lblBookInfoStatus').textContent = val ? `Adicionado ao grupo "${val}"!` : 'Grupo removido.';
           renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-          showToast(val ? `Livro salvo no grupo "${val}"!` : 'Livro removido do grupo.');
+          showToast(val ? `Livro salvo no grupo "${val}"` : 'Livro removido do grupo.');
         };
       }
       const btnClearGrp = document.getElementById('btnClearInfoCustomGroup');
@@ -12271,7 +12596,7 @@
       saveBookReviewsMap(revMap);
       document.getElementById('lblBookInfoStatus').textContent = 'Resenha salva!';
       if (typeof pushPublicClubProfile === 'function') pushPublicClubProfile().catch(() => {});
-      showToast('Resenha salva no livro!');
+      showToast('Resenha salva no livro');
     });
 
     function buildBookStudyDossierMarkdown(bookObj, highlights = [], notes = [], review = {}) {
@@ -12351,7 +12676,7 @@
         a.download = `Dossie_${safe}.md`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-        showToast('Dossiê de Estudo (.md) exportado!');
+        showToast('Dossiê de Estudo (.md) exportado');
       });
     }
 
@@ -12395,7 +12720,7 @@
       if (typeof pushCloudSyncSilent === 'function') pushCloudSyncSilent();
       await openBookInfoModal(activeBookInfoTarget);
       document.getElementById('lblBookInfoStatus').textContent = 'Informações e sinopse atualizadas!';
-      showToast('Metadados do livro extraídos!');
+      showToast('Metadados do livro extraídos');
     });
 
     async function getUnifiedShelfBooks() {
@@ -12673,7 +12998,7 @@
         }
         const total = (h && h.total) || b.totalSections || 1;
         const cur = h ? (h.currentIndex + 1) : 1;
-        const pct = h ? Math.round((cur / Math.max(1, total)) * 100) : 0;
+        const pct = h ? (typeof h.percent === 'number' ? h.percent : Math.round((cur / Math.max(1, total)) * 100)) : 0;
         const sizeLabel = b.size ? (b.size > 1048576 ? (b.size / 1048576).toFixed(2) + ' MB' : Math.round(b.size / 1024) + ' KB') : 'Nuvem';
         const cloudLabel = (b.cloudProviders && b.cloudProviders.length) ? b.cloudProviders.join(' + ') : 'NUVEM';
         const syncTag = b.isLocal && b.inCloud ? `${cloudLabel} + OFFLINE` : (b.isLocal ? 'LOCAL (OFFLINE)' : cloudLabel);
@@ -12701,7 +13026,7 @@
                 ${coverDataUrl ? `<img src="${coverDataUrl}" alt="Capa" loading="lazy" decoding="async" />` : `<span>${escapeHtml((b.format || 'LIVRO').slice(0, 5))}</span>`}
               </div>
               <div style="flex:1; min-width:0;">
-                <div class="book-card-title clickable-title" title="Clique para ver detalhes, sinopse e resenha">${escapeHtml(b.title)}</div>
+                <div class="book-card-title clickable-title" title="Clique para ver detalhes, sinopse e resenha">${escapeHtml(looksLikeFileTitle(b.title) ? prettifyBookTitle(b.title) : b.title)}</div>
                 <div class="book-card-author">${escapeHtml(b.author || 'Autor desconhecido')}</div>
                 ${(() => { const g = getEffectiveBookGroupName(b, metaMap); return g.isCustom ? `<div style="font-size:10.5px; color:var(--accent); font-weight:600; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Grupo: ${escapeHtml(g.name)}</div>` : ''; })()}
                 <div class="book-card-rating" style="font-size:11px; color:#eab308; margin-top:4px; min-height:14px;">${rev && rev.rating ? ('★'.repeat(rev.rating) + '☆'.repeat(5 - rev.rating)) : ''}</div>
@@ -12733,7 +13058,7 @@
               ${showCopyCloudBtn ? '<button class="btn btn-copy-cloud" title="Copiar/espelhar este livro para outro banco na nuvem">⇄ Nuvem</button>' : ''}
               ${b.isLocal && b.inCloud ? '<button class="btn btn-evict-local" title="Liberar espaço deste dispositivo mantendo o livro salvo na Nuvem">Só Nuvem</button>' : ''}
               ${b.isLocal ? '<button class="btn btn-dl-book" title="Baixar arquivo original">↓</button>' : ''}
-              <button class="btn btn-del-book" title="Remover">${b.isLocal ? '✕' : '✕ Nuvem'}</button>
+              ${(b.isLocal || canWriteCloud(getCloudConfig())) ? `<button class="btn btn-del-book" title="${b.isLocal ? 'Remover deste aparelho' : 'Apagar da Nuvem'}">${b.isLocal ? '✕' : '✕ Nuvem'}</button>` : ''}
             </div>
           </div>
         `;
@@ -12772,7 +13097,7 @@
           const nextSt = curSt === 'finished' ? 'reading' : 'finished';
           setBookStatusValue(b, nextSt);
           renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-          showToast(nextSt === 'finished' ? 'Marcado como Lido!' : 'Movido para Lendo Agora');
+          showToast(nextSt === 'finished' ? 'Marcado como Lido' : 'Movido para Lendo Agora');
         });
 
         card.querySelector('.btn-read-book').addEventListener('click', openBookAction);
@@ -12824,12 +13149,12 @@
             if (confirm(`Liberar "${b.title}" da memória local do dispositivo (ele continua salvo na Nuvem com seu progresso)?`)) {
               await idbDeleteBook(b.bookKey);
               renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-              showToast('Espaço local liberado — livro mantido na Nuvem!');
+              showToast('Espaço local liberado — livro mantido na Nuvem');
             }
           });
         }
 
-        card.querySelector('.btn-del-book').addEventListener('click', async (e) => {
+        if (card.querySelector('.btn-del-book')) card.querySelector('.btn-del-book').addEventListener('click', async (e) => {
           e.stopPropagation();
           const inviteState = getActiveInviteState();
           if (inviteState && inviteState.role !== 'member' && !b.isLocal) {
@@ -12961,6 +13286,7 @@
       if (dom.statusPercent) dom.statusPercent.textContent = '0%';
       if (dom.progressFill) dom.progressFill.style.width = '0%';
       document.body.classList.add('is-shelf-home');
+      delete document.body.dataset.bookKind;
       applySettings();
       state.seriesQueue = null;
       if (typeof updateNextSeriesButtonUi === 'function') updateNextSeriesButtonUi();
@@ -13144,7 +13470,7 @@
         window.__selectedShelfKeys.clear();
         updateShelfBatchBarUi();
         await listCloudBooks();
-        showToast(`${okCount}/${picked.length} livro(s) enviado(s) em lote!`);
+        showToast(`${okCount}/${picked.length} livro(s) enviado(s) em lote`);
       });
     }
     const btnBatchGrpEl = document.getElementById('btnBatchMoveGroup');
@@ -13161,7 +13487,7 @@
         window.__selectedShelfKeys.clear();
         updateShelfBatchBarUi();
         renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-        showToast(clean ? `${picked.length} livros movidos para "${clean}"!` : 'Grupo removido dos livros selecionados.');
+        showToast(clean ? `${picked.length} livros movidos para "${clean}"` : 'Grupo removido dos livros selecionados.');
       });
     }
     const btnBatchEvictEl = document.getElementById('btnBatchEvictLocal');
@@ -13174,7 +13500,7 @@
         window.__selectedShelfKeys.clear();
         updateShelfBatchBarUi();
         renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-        showToast(`Espaço local liberado para ${picked.length} livro(s)!`);
+        showToast(`Espaço local liberado para ${picked.length} livro(s)`);
       });
     }
     const btnBatchDelEl = document.getElementById('btnBatchDelete');
@@ -13244,7 +13570,7 @@
           a.download = `${baseName}_Vol_${sorted.length}_caps.cbz`;
           a.click();
           setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-          showToast(`Volume .CBZ compilado com ${zipEntries.length} páginas!`);
+          showToast(`Volume .CBZ compilado com ${zipEntries.length} páginas`);
         } catch (err) {
           showToast('Erro ao compilar .CBZ: ' + err.message, true);
         } finally {
@@ -13621,6 +13947,26 @@
         }
       });
 
+      // Zoom com pinça (dois dedos) no celular
+      let pinchStartDist = 0, pinchStartZoom = 1;
+      const touchDist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      lbStage.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length === 2) {
+          pinchStartDist = touchDist(e.touches);
+          pinchStartZoom = lbZoom;
+        }
+      }, { passive: true });
+      lbStage.addEventListener('touchmove', (e) => {
+        if (!e.touches || e.touches.length !== 2 || !pinchStartDist) return;
+        e.preventDefault();
+        lbZoom = Math.max(0.5, Math.min(5.0, Number((pinchStartZoom * (touchDist(e.touches) / pinchStartDist)).toFixed(2))));
+        if (lbZoom <= 1.0) { lbPanX = 0; lbPanY = 0; }
+        applyLbTransform();
+      }, { passive: false });
+      lbStage.addEventListener('touchend', (e) => {
+        if (!e.touches || e.touches.length < 2) pinchStartDist = 0;
+      }, { passive: true });
+
       // Arrastar no Celular (Touch Drag)
       let touchStartX = 0, touchStartY = 0;
       lbStage.addEventListener('touchstart', (e) => {
@@ -13663,7 +14009,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
           }, 1000);
-          showToast(`Imagem "${fileName}" baixada com sucesso!`);
+          showToast(`Imagem "${fileName}" baixada com sucesso`);
         } catch (err) {
           const a = document.createElement('a');
           a.href = lbImg.src;
@@ -13672,7 +14018,7 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          showToast('Download da imagem iniciado!');
+          showToast('Download da imagem iniciado');
         }
       });
     }
@@ -13696,7 +14042,7 @@
                 await navigator.clipboard.write([
                   new ClipboardItem({ 'image/png': pngBlob })
                 ]);
-                showToast('Imagem copiada para a área de transferência!');
+                showToast('Imagem copiada para a área de transferência');
               } catch {
                 showToast('Acesso à área de transferência negado pelo navegador.');
               }
@@ -13784,6 +14130,10 @@
 
       if (state.sections && state.sections.length) {
         state.sections.forEach((sec, sIdx) => {
+          // EPUB/MOBI montam o HTML só quando o capítulo é aberto; a galeria precisa dele para achar as imagens
+          if (sec.html === null && typeof sec.buildHtml === 'function') {
+            try { sec.html = sec.buildHtml(sec.rawSlice); } catch {}
+          }
           if (sec.images && sec.images.length) {
             sec.images.forEach((imgSrc, iIdx) => {
               addImg(imgSrc, `Cap. ${sIdx + 1} · Imagem ${iIdx + 1}`, sIdx + 1);
@@ -13831,102 +14181,12 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          showToast('Download da ilustração iniciado!');
+          showToast('Download da ilustração iniciado');
         });
         grid.appendChild(card);
       });
     };
 
-    // =====================================================================
-    // 10E. CONVERSOR DE CAPÍTULO PARA ÁUDIO MP3 OFFLINE
-    // =====================================================================
-    async function exportCurrentChapterAudioMp3() {
-      if (!state.sections.length || state.currentIndex < 0) {
-        showToast('Abra um livro para exportar o áudio do capítulo.');
-        return;
-      }
-      const sec = state.sections[state.currentIndex];
-      const rawHtml = sec.html || '';
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = rawHtml;
-      tempDiv.querySelectorAll('script, style, noscript, nav').forEach(el => el.remove());
-      const text = (tempDiv.innerText || tempDiv.textContent || '').trim();
-      if (!text || text.length < 15) {
-        showToast('Este capítulo não possui texto suficiente para narrar.');
-        return;
-      }
-
-      const isEnglish = (state.lang || '').toLowerCase().startsWith('en') || /[a-z]/i.test(text.slice(0, 50)) && !/[ãõéáíóúç]/i.test(text.slice(0, 100));
-      const lang = isEnglish ? 'en' : 'pt-BR';
-      showToast('Sintetizando áudio MP3 narrado do capítulo... Aguarde alguns instantes.');
-
-      const chunks = [];
-      const sentences = text.match(/[^.!?\n]+[.!?\n]+/g) || [text];
-      let curChunk = '';
-      for (const s of sentences) {
-        const cleanS = s.trim();
-        if (!cleanS) continue;
-        if ((curChunk + ' ' + cleanS).length <= 160) {
-          curChunk = curChunk ? (curChunk + ' ' + cleanS) : cleanS;
-        } else {
-          if (curChunk) chunks.push(curChunk);
-          if (cleanS.length <= 160) {
-            curChunk = cleanS;
-          } else {
-            const words = cleanS.split(' ');
-            let sub = '';
-            for (const w of words) {
-              if ((sub + ' ' + w).length <= 160) sub = sub ? (sub + ' ' + w) : w;
-              else { chunks.push(sub); sub = w; }
-            }
-            if (sub) chunks.push(sub);
-            curChunk = '';
-          }
-        }
-      }
-      if (curChunk) chunks.push(curChunk);
-
-      const toProcess = chunks.slice(0, 50);
-      const audioBlobs = [];
-
-      try {
-        for (let i = 0; i < toProcess.length; i++) {
-          const q = encodeURIComponent(toProcess[i]);
-          const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${lang}&q=${q}`;
-          const res = await fetch(ttsUrl);
-          if (!res.ok) throw new Error('Falha no streaming de voz');
-          const ab = await res.arrayBuffer();
-          audioBlobs.push(ab);
-          if (i % 6 === 0) {
-            showToast(`Gerando áudio MP3: ${Math.round(((i + 1) / toProcess.length) * 100)}% concluído...`);
-          }
-        }
-
-        const finalBlob = new Blob(audioBlobs, { type: 'audio/mp3' });
-        const bookSlug = (state.title || 'livro').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 25);
-        const audioFileName = `${bookSlug}_Cap_${state.currentIndex + 1}_Audio.mp3`;
-        const downloadUrl = URL.createObjectURL(finalBlob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = audioFileName;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(downloadUrl);
-        }, 2000);
-        showToast(`Áudio MP3 "${audioFileName}" baixado com sucesso!`);
-      } catch (err) {
-        showToast('Não foi possível gerar arquivo MP3 externo. Iniciando narração por voz local...');
-        const btnPlay = document.getElementById('btnTtsPlayPause');
-        if (btnPlay) btnPlay.click();
-      }
-    }
-
-    const btnExportChapterAudioEl = document.getElementById('btnExportChapterAudio');
-    if (btnExportChapterAudioEl) {
-      btnExportChapterAudioEl.addEventListener('click', exportCurrentChapterAudioMp3);
-    }
 
     /* =====================================================================
      * 11. NARRAÇÃO POR VOZ (TTS / READ-ALONG COM DESTAQUE DE PARÁGRAFO)
@@ -14216,7 +14476,7 @@
           const safe = safeCloudFileName(state.currentFileName || state.title || 'livro');
           saveBookCoverDataUrl(bk, safe, dataUrl);
           if (typeof renderBookshelf === 'function') renderBookshelf();
-          showToast('Página atual definida como capa do livro!');
+          showToast('Página atual definida como capa do livro');
         } catch (err) {
           showToast('Não foi possível capturar a página (CORS ou canvas protegido).', true);
         }
@@ -14710,9 +14970,14 @@
       if (typeof defaultPane === 'string' && defaultPane.startsWith('paneStudio')) {
         switchStudioPane(defaultPane);
       }
-      if (!standaloneConvertBook && state.title) {
-        document.getElementById('convSelectedFileLabel').textContent = `Livro ativo pronto p/ converter: "${state.title}" (${state.format}) — ou clique aqui para enviar outro arquivo`;
+      const hasOpenBook = Boolean(state.sections && state.sections.length && state.title);
+      if (!standaloneConvertBook) {
+        document.getElementById('convSelectedFileLabel').textContent = hasOpenBook
+          ? `Livro ativo pronto p/ converter: "${state.title}" (${state.format}) — ou clique aqui para enviar outro arquivo`
+          : 'Nenhum livro aberto — clique aqui ou arraste um arquivo para converter';
       }
+      const goReaderBtn = document.getElementById('btnStudioGoReader');
+      if (goReaderBtn) goReaderBtn.textContent = hasOpenBook ? 'Voltar ao Leitor' : 'Fechar';
     };
 
     document.querySelectorAll('[data-studio-pane]').forEach(btn => {
@@ -14770,7 +15035,7 @@
         }
         standaloneConvertBook = { ...parsed, buffer, fileName: file.name };
         document.getElementById('convSelectedFileLabel').textContent = `Arquivo selecionado: "${file.name}" (${parsed.format}, ${parsed.sections.length} seções) — escolha o formato abaixo e clique em Converter!`;
-        showToast(`Arquivo "${file.name}" pronto para converter!`);
+        showToast(`Arquivo "${file.name}" pronto para converter`);
       } catch (err) {
         alert('Erro ao ler arquivo para conversão: ' + err.message);
       }
@@ -14853,7 +15118,7 @@
           a.click();
           setTimeout(() => URL.revokeObjectURL(u), 3000);
           if (statusEl) statusEl.textContent = `EPUB corrigido com sucesso para ${dir.toUpperCase()} e baixado!`;
-          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado!`);
+          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado`);
         } else {
           const zip = await openZipBuffer(fileBuf);
           const imgEntries = [];
@@ -14914,12 +15179,12 @@
           a.click();
           setTimeout(() => URL.revokeObjectURL(u), 3000);
           if (statusEl) statusEl.textContent = `EPUB Mangá Fixed-Layout gerado com ${imgEntries.length} páginas!`;
-          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado!`);
+          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado`);
         }
 
         if (sendToAmazon) {
           window.open('https://www.amazon.com/sendtokindle', '_blank', 'noopener');
-          showToast('Abrindo Send to Kindle oficial da Amazon!');
+          showToast('Abrindo Send to Kindle oficial da Amazon');
         }
       } catch (err) {
         if (statusEl) statusEl.textContent = 'Erro ao converter mangá: ' + err.message;
@@ -14981,7 +15246,7 @@
         state.geminiApiKey = inpGemini.value.trim();
         localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
         if (typeof updateAiKeyBadges === 'function') updateAiKeyBadges();
-        showToast(state.geminiApiKey ? 'Chave Gemini API salva com sucesso!' : 'Chave removida. Usando modo offline.');
+        showToast(state.geminiApiKey ? 'Chave Gemini API salva com sucesso' : 'Chave removida. Usando modo offline.');
       });
     }
 
@@ -15070,7 +15335,7 @@
           podcastUtterances.push({ host, text: speech });
         });
       }
-      showToast('Roteiro do podcast gerado!');
+      showToast('Roteiro do podcast gerado');
     }
 
     function playPodcast() {
@@ -15181,13 +15446,13 @@
         const res = await callGeminiOrLocal(prompt, context);
         if (res && res.success) {
           if (content) content.innerText = res.text;
-          showToast('Guia de Estudo gerado com sucesso!');
+          showToast('Guia de Estudo gerado com sucesso');
         } else if (res && res.error) {
           if (content) content.innerHTML = `<span style="color:var(--danger,#ef4444);">Erro na API: ${escapeHtml(res.message)}. Verifique sua chave Gemini.</span>`;
         } else {
           const capTitle = curSec ? (curSec.title || 'Capítulo Atual') : 'Início';
           if (content) content.innerText = `GUIA DE ESTUDO (MODO ESTRUTURADO LOCAL)\n\nObra: ${state.title}\nCapítulo: ${capTitle}\n\n1. RESUMO GERAL\nO capítulo desenvolve a narrativa a partir das premissas estabelecidas na obra, aprofundando o arco dos personagens e o ritmo da trama.\n\n2. MODO IA AVANÇADO\nPara gerar perguntas frequentes automatizadas, sínteses aprofundadas e análise conceitual via Google Gemini AI, insira sua chave gratuita no topo da janela.`;
-          showToast('Guia básico gerado em modo offline!');
+          showToast('Guia básico gerado em modo offline');
         }
       });
     }
@@ -15209,7 +15474,7 @@
         a.download = `${(state.title || 'livro').replace(/[^a-zA-Z0-9_-]/g, '_')}_NotebookLM.md`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(u), 2000);
-        showToast('Guia exportado para Markdown / Obsidian!');
+        showToast('Guia exportado para Markdown / Obsidian');
       });
     }
 
@@ -15220,8 +15485,8 @@
       chkBionicEl.addEventListener('change', () => {
         state.bionicReading = chkBionicEl.checked;
         applySettings();
-        if (state.sections.length && !dom.viewport.classList.contains('continuous-mode')) {
-          renderSection();
+        if (state.sections.length) {
+          renderSection({ restoreSubPage: state.subPageIndex });
         }
         showToast(state.bionicReading ? 'Leitura Biônica ativada' : 'Leitura Biônica desativada');
       });
@@ -15272,23 +15537,56 @@
       btnCopyQr.addEventListener('click', () => {
         const txt = document.getElementById('qrCodeLinkText');
         if (txt && txt.textContent) {
-          navigator.clipboard.writeText(txt.textContent).then(() => showToast('Link de leitura copiado!'));
+          navigator.clipboard.writeText(txt.textContent).then(() => showToast('Link de leitura copiado'));
         }
       });
     }
 
     // Arrastar e Soltar Global (Drag and Drop)
+    // Barra flutuante de seleção: some (e a seleção é limpa) sempre que um modal, menu ou painel abrir
+    (function autoHideSelectionToolbarOnOverlays() {
+      if (!dom.selectionToolbar || typeof MutationObserver === 'undefined') return;
+      const overlays = document.querySelectorAll('.modal-backdrop, [id$="Modal"], [id$="Popover"], [id$="Dropdown"], [id$="Panel"]');
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          const el = m.target;
+          if (el === dom.lookupModal) continue; // o modal do dicionário usa a seleção atual
+          if (el.classList.contains('open') && !(m.oldValue || '').split(/\s+/).includes('open')) {
+            dom.selectionToolbar.classList.remove('open');
+            try { const sel = window.getSelection(); if (sel) sel.removeAllRanges(); } catch {}
+            break;
+          }
+        }
+      });
+      overlays.forEach(el => obs.observe(el, { attributes: true, attributeFilter: ['class'], attributeOldValue: true }));
+      // Clique fora da barra e fora do texto do livro também fecha
+      document.addEventListener('mousedown', (e) => {
+        if (!dom.selectionToolbar.classList.contains('open')) return;
+        if (dom.selectionToolbar.contains(e.target)) return;
+        if (dom.readerFlow && dom.readerFlow.contains(e.target)) return;
+        if (dom.pdfContainer && dom.pdfContainer.contains(e.target)) return;
+        dom.selectionToolbar.classList.remove('open');
+      });
+    })();
+
+    // Arrastes que começam dentro da própria página (imagem do mangá, texto selecionado) nunca viram "importar arquivo"
+    let __internalDragActive = false;
+    document.addEventListener('dragstart', () => { __internalDragActive = true; });
+    document.addEventListener('dragend', () => { __internalDragActive = false; });
     window.addEventListener('dragover', (e) => { e.preventDefault(); });
     window.addEventListener('drop', async (e) => {
       if (e.target && e.target.closest('#convDropZone')) return;
       e.preventDefault();
+      if (__internalDragActive) { __internalDragActive = false; return; }
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
         const file = e.dataTransfer.files[0];
         const ext = (file.name.split('.').pop() || '').toLowerCase();
-        if (['epub', 'pdf', 'cbz', 'zip', 'mobi', 'azw', 'azw3', 'prc', 'txt', 'html'].includes(ext)) {
+        if (SUPPORTED_BOOK_EXTENSIONS.includes(ext)) {
           showToast(`Carregando "${file.name}"...`);
           const buf = await file.arrayBuffer();
           await loadFile({ name: file.name, size: file.size, buffer: buf });
+        } else {
+          showToast(`Formato ".${ext}" não suportado. Use: ${SUPPORTED_BOOK_EXTENSIONS.join(', ')}.`, true);
         }
       }
     });
@@ -15366,7 +15664,7 @@
         const buf = new TextEncoder().encode(cleanHtml).buffer;
         document.getElementById('toolsModal').classList.remove('open');
         await loadFile({ name: `${title.replace(/[<>:"/\\|?*]+/g, '_').slice(0, 50)}.html`, size: buf.byteLength, buffer: buf });
-        showToast('Página Web importada para a Estante e aberta no leitor!');
+        showToast('Página Web importada para a Estante e aberta no leitor');
       } catch (err) {
         statusEl.textContent = 'Erro ao capturar página: ' + err.message;
       }
@@ -15434,7 +15732,7 @@
       saveAnkiConfigObj(cfg);
       loadAnkiConfigIntoUi();
       document.getElementById('ankiModalStatus').textContent = 'Configurações do Anki salvas!';
-      showToast('Configurações do Anki salvas!');
+      showToast('Configurações do Anki salvas');
     });
 
     async function ankiConnectInvoke(action, params = {}) {
@@ -15463,6 +15761,7 @@
 
         const cfg = getAnkiConfig();
         cfg.cachedModels = models;
+        cfg.ankiConnectEnabled = true; // só tentaremos conectar automaticamente depois de um sucesso
         saveAnkiConfigObj(cfg);
 
         const deckSelect = document.getElementById('selectAnkiDeckModal');
@@ -15480,7 +15779,7 @@
         }
         if (!silent) {
           statusEl.textContent = `AnkiConnect conectado com sucesso! Baralhos encontrados: ${decks.slice(0, 6).join(', ')}`;
-          showToast('Conectado ao Anki Desktop via AnkiConnect!');
+          showToast('Conectado ao Anki Desktop via AnkiConnect');
         }
         return true;
       } catch (err) {
@@ -15538,10 +15837,10 @@
           found.syncedToAnki = true;
           saveVocabList(list);
         }
-        showToast(`Cartão adicionado direto ao baralho "${deckName}" no Anki!`);
+        showToast(`Cartão adicionado direto ao baralho "${deckName}" no Anki`);
         return { ok: true, method: 'AnkiConnect' };
       } catch (ankiConnectErr) {
-        // 2. Fallback: Se o usuário configurou Login AnkiWeb (Online API /api/ankiweb na Vercel/Netlify)
+        // 2. Fallback: Se o usuário configurou Login AnkiWeb (Online API /api/ankiweb na Vercel)
         if (cfg.ankiWebUser && cfg.ankiWebPass) {
           try {
             const res = await fetch(cfg.ankiWebEndpoint || '/api/ankiweb', {
@@ -15564,12 +15863,12 @@
                 found.syncedToAnki = true;
                 saveVocabList(list);
               }
-              showToast(`Cartão adicionado na sua conta AnkiWeb (baralho "${deckName}")!`);
+              showToast(`Cartão adicionado na sua conta AnkiWeb (baralho "${deckName}")`);
               return { ok: true, method: 'AnkiWeb' };
             }
             throw new Error(data.error || `HTTP ${res.status}`);
           } catch (webErr) {
-            showToast(`Salvo na lista local (abra o Anki ou publique na Vercel/Netlify para envio direto).`);
+            showToast(`Salvo na lista local (abra o Anki ou publique na Vercel para envio direto).`);
             return { ok: false, error: webErr.message };
           }
         } else {
@@ -15591,7 +15890,7 @@
         id: 'vc_' + Date.now(),
         front,
         back: dom.inputAnkiBack.value.trim(),
-        context: dom.inputAnkiContext.value.trim(),
+        context: ankiContextFromField(dom.inputAnkiContext.value.trim()),
         book: state.title ? `${state.title}${secTitle ? ' · ' + secTitle : ''}` : 'Leitor Online',
         date: new Date().toLocaleDateString('pt-BR'),
         syncedToAnki: false
@@ -15610,7 +15909,7 @@
       const statusEl = document.getElementById('ankiModalStatus');
       if (!pending.length) {
         statusEl.textContent = 'Todos os cartões da lista já foram enviados ao Anki!';
-        showToast('Todos os cartões já estão no Anki!');
+        showToast('Todos os cartões já estão no Anki');
         return;
       }
       statusEl.textContent = `Enviando ${pending.length} cartão(ões) para o Anki...`;
@@ -15649,12 +15948,12 @@
         const data = await res.json();
         if (res.ok && data.ok) {
           statusEl.textContent = 'Login no AnkiWeb validado com sucesso! Seus cartões serão enviados direto para sua conta.';
-          showToast('Conta AnkiWeb conectada com sucesso!');
+          showToast('Conta AnkiWeb conectada com sucesso');
         } else {
-          statusEl.textContent = 'Aviso: ' + (data.error || 'Para usar o login direto AnkiWeb sem o Anki Desktop aberto, hospede a pasta na Vercel/Netlify (função /api/ankiweb incluída).');
+          statusEl.textContent = 'Aviso: ' + (data.error || 'Para usar o login direto AnkiWeb sem o Anki Desktop aberto, hospede a pasta na Vercel (função /api/ankiweb incluída).');
         }
       } catch {
-        statusEl.textContent = 'Endpoint /api/ankiweb disponível quando hospedado online (Vercel / Netlify). No computador local, você pode usar o AnkiConnect (127.0.0.1:8765) ou exportar .TSV.';
+        statusEl.textContent = 'Endpoint /api/ankiweb disponível quando hospedado online (Vercel). No computador local, você pode usar o AnkiConnect (127.0.0.1:8765) ou exportar .TSV.';
       }
     });
 
@@ -15713,7 +16012,7 @@
         });
         html += '</div>';
         parallelBody.innerHTML = html;
-        showToast('Tradução aberta lado a lado no Painel Paralelo!');
+        showToast('Tradução aberta lado a lado no Painel Paralelo');
       } else {
         paras.forEach((p, idx) => {
           const tr = translatedMap.get(idx);
@@ -15724,7 +16023,7 @@
             p.insertAdjacentElement('afterend', sub);
           }
         });
-        showToast('Tradução inserida abaixo de cada parágrafo!');
+        showToast('Tradução inserida abaixo de cada parágrafo');
       }
     }
 
@@ -15776,7 +16075,7 @@
         const fullTxt = parsed.sections.map(s => s.text || '').join('\n\n').slice(0, 90000);
         document.getElementById('inputSumSource').value = fullTxt;
         generateSummaryAndStats(f.name);
-        showToast(`Documento "${f.name}" carregado e resumido!`);
+        showToast(`Documento "${f.name}" carregado e resumido`);
       } catch (err) {
         alert('Erro ao ler documento: ' + err.message);
       }
@@ -15908,7 +16207,7 @@
                 });
                 if (opt === q.answer) {
                   btn.classList.add('correct');
-                  showToast('Resposta correta!');
+                  showToast('Resposta correta');
                 } else {
                   btn.classList.add('wrong');
                   showToast(`Resposta correta: ${q.answer}`);
@@ -15934,7 +16233,7 @@
               await sendSingleCardToAnki(newCard);
             }
             saveVocabList(list);
-            showToast(`${lastGeneratedQuizItems.length} questões do Quiz adicionadas ao Anki!`);
+            showToast(`${lastGeneratedQuizItems.length} questões do Quiz adicionadas ao Anki`);
           });
         } else {
           quizBox.classList.add('hidden');
@@ -15983,7 +16282,7 @@
         a.download = `${safeName}.txt`;
         a.click();
       }
-      showToast(`Resumo exportado em .${fmt.toUpperCase()}!`);
+      showToast(`Resumo exportado em .${fmt.toUpperCase()}`);
     });
 
     /* =====================================================================
@@ -16046,7 +16345,7 @@
           const translated = Array.isArray(data[0]) ? data[0].map(part => part[0]).join('') : '';
           outputStudioTrans.value = translated || 'Não foi possível traduzir.';
           document.getElementById('lblTransOutCount').textContent = `${outputStudioTrans.value.length} / 5000`;
-          showToast('Tradução concluída!');
+          showToast('Tradução concluída');
         }
       } catch (err) {
         outputStudioTrans.value = 'Erro ao traduzir: ' + err.message;
@@ -16055,11 +16354,11 @@
 
     document.getElementById('btnCopyTransSrc').addEventListener('click', () => {
       navigator.clipboard.writeText(inputStudioTransSrc.value || '');
-      showToast('Texto original copiado!');
+      showToast('Texto original copiado');
     });
     document.getElementById('btnCopyTransOut').addEventListener('click', () => {
       navigator.clipboard.writeText(outputStudioTrans.value || '');
-      showToast('Tradução copiada!');
+      showToast('Tradução copiada');
     });
     document.getElementById('btnSpeakTransSrc').addEventListener('click', () => {
       if ('speechSynthesis' in window && inputStudioTransSrc.value.trim()) {
@@ -16128,7 +16427,7 @@
     });
     document.getElementById('btnCopyProofText').addEventListener('click', () => {
       navigator.clipboard.writeText(inputProofText.value || '');
-      showToast('Texto copiado!');
+      showToast('Texto copiado');
     });
 
     document.getElementById('btnRunProofread').addEventListener('click', async () => {
@@ -16209,12 +16508,12 @@
       if (lastCorrectedProofText) {
         inputProofText.value = lastCorrectedProofText;
         document.getElementById('lblProofCharCount').textContent = `${inputProofText.value.length} / 5000`;
-        showToast('Todas as correções foram aplicadas ao seu texto!');
+        showToast('Todas as correções foram aplicadas ao seu texto');
       }
     });
     document.getElementById('btnCopyCorrectedText').addEventListener('click', () => {
       navigator.clipboard.writeText(lastCorrectedProofText || inputProofText.value || '');
-      showToast('Versão corrigida copiada para a área de transferência!');
+      showToast('Versão corrigida copiada para a área de transferência');
     });
 
     /* =====================================================================
@@ -16321,7 +16620,7 @@
         }
         card.querySelector('.btn-q-copy').addEventListener('click', () => {
           navigator.clipboard.writeText(`"${item.text}" — ${item.bookTitle} (${item.chapterTitle || ''})`);
-          showToast('Citação copiada!');
+          showToast('Citação copiada');
         });
         card.querySelector('.btn-q-anki').addEventListener('click', async () => {
           const newCard = {
@@ -16378,7 +16677,7 @@
         w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Citações e Destaques</title><style>body{font-family:Georgia,serif;max-width:700px;margin:30px auto;color:#111;}blockquote{border-left:3px solid #2f5e4e;padding-left:12px;margin:16px 0;}</style></head><body><h1>Minhas Citações & Destaques</h1>${allQuotes.map(q => `<blockquote><p>"${escapeHtml(q.text)}"</p><small><b>${escapeHtml(q.bookTitle)}</b> — ${escapeHtml(q.chapterTitle || '')}</small></blockquote>`).join('')}<script>window.onload=function(){window.print();};<\/script></body></html>`);
         w.document.close();
       }
-      showToast('Citações exportadas!');
+      showToast('Citações exportadas');
     }
 
     document.getElementById('btnExportQuotesMd').addEventListener('click', () => exportAllQuotes('md'));
@@ -16681,7 +16980,7 @@
         canvas.toBlob(async (blob) => {
           try {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            showToast('Card copiado como imagem para a Área de Transferência!');
+            showToast('Card copiado como imagem para a Área de Transferência');
           } catch (e) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -16689,7 +16988,7 @@
             a.download = `Quote_Card.png`;
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
-            showToast('Card baixado como PNG!');
+            showToast('Card baixado como PNG');
           }
         });
       });
@@ -16706,7 +17005,7 @@
         const safe = (activeQuoteCardData.bookTitle || 'card').replace(/[^a-z0-9_-]/gi, '_').slice(0, 30);
         a.download = `Card_${safe}.png`;
         a.click();
-        showToast('Card visual baixado com sucesso!');
+        showToast('Card visual baixado com sucesso');
       });
     }
 
@@ -17048,8 +17347,8 @@
       }
 
       const lines = [
-        `MODO LOCAL (OFFLINE): "${state.title || 'Livro'}"`,
-        `Capítulos lidos: ${pastStorySections.length} · Posição atual: ${curTitle}`,
+        `MODO BÁSICO (sem IA) — "${state.title || 'Livro'}": abaixo estão trechos reais do livro até onde você parou, não um resumo. Para um resumo de verdade, clique em "Configurar Chave Gemini" (gratuita).`,
+        `Trechos narrativos anteriores analisados: ${pastStorySections.length} · Posição atual: ${curTitle}`,
         '',
         'Nota: Como a IA online não foi acionada (chave não configurada ou inválida), o modo local exibe os marcos reais extraídos dos capítulos anteriores:',
         '',
@@ -17430,7 +17729,7 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
       const c = document.getElementById('aiRecapContent');
       if (c && c.textContent) {
         navigator.clipboard.writeText(c.textContent);
-        showToast('Resumo copiado com sucesso!');
+        showToast('Resumo copiado com sucesso');
       }
     });
 
@@ -17441,7 +17740,7 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
         state.geminiApiKey = inputAiRecapKey.value.trim();
         localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
         updateAiKeyBadges();
-        showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso!' : 'Chave removida.');
+        showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso' : 'Chave removida.');
         const resBox = document.getElementById('aiRecapKeyTestResult');
         if (resBox) {
           resBox.style.display = 'block';
@@ -17676,7 +17975,7 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
           state.geminiApiKey = k ? k.value.trim() : '';
           localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
           updateAiKeyBadges();
-          showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso!' : 'Chave removida.');
+          showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso' : 'Chave removida.');
           const resBox = document.getElementById('aiTutorKeyTestResult');
           if (resBox) {
             resBox.style.display = 'block';
@@ -17881,7 +18180,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       const ans = document.getElementById('aiTutorAnswer');
       if (ans && ans.textContent) {
         navigator.clipboard.writeText(ans.textContent);
-        showToast('Resposta copiada!');
+        showToast('Resposta copiada');
       }
     });
 
@@ -18028,7 +18327,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       a.download = `${safeName}_Obsidian.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-      showToast('Exportado para Obsidian (.md)!');
+      showToast('Exportado para Obsidian (.md)');
     }
 
     function exportQuotesToObsidianMarkdown() {
@@ -18069,7 +18368,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       a.download = `Citacoes_Obsidian.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-      showToast('Citações exportadas para Obsidian (.md)!');
+      showToast('Citações exportadas para Obsidian (.md)');
     }
 
 
@@ -18095,7 +18394,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         subYoutubeFrameEl.src = `https://www.youtube.com/embed/${m[1]}`;
         subYoutubeFrameEl.classList.remove('hidden');
         if (lblSubMediaStatusEl) lblSubMediaStatusEl.textContent = 'YouTube embeddado! Selecione qualquer palavra da legenda abaixo para traduzir.';
-        showToast('Vídeo do YouTube carregado na barra!');
+        showToast('Vídeo do YouTube carregado na barra');
       });
     }
     if (subMediaInputEl && subMediaPlayerEl) {
@@ -18107,7 +18406,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         subMediaPlayerEl.src = url;
         subMediaPlayerEl.classList.remove('hidden');
         if (lblSubMediaStatusEl) lblSubMediaStatusEl.textContent = `Sincronizado: ${f.name}`;
-        showToast('Mídia local vinculada à legenda!');
+        showToast('Mídia local vinculada à legenda');
       });
       subMediaPlayerEl.addEventListener('timeupdate', () => {
         const t = subMediaPlayerEl.currentTime || 0;
@@ -18293,7 +18592,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         __clozeQueue = generateClozeQuizItems(hls, nts);
         __clozeScore = 0;
         if (!__clozeQueue.length) {
-          showToast('Destaque trechos (>= 18 caracteres) no livro para gerar o Quiz de Lacunas!', true);
+          showToast('Destaque trechos (>= 18 caracteres) no livro para gerar o Quiz de Lacunas', true);
           return;
         }
         renderClozeQuizStep();
@@ -18332,7 +18631,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         try { await navigator.clipboard.writeText(cit); } catch {}
         const statusEl = document.getElementById('lblBookInfoStatus');
         if (statusEl) statusEl.textContent = `Citação ${selCitStyleEl.value} copiada!`;
-        showToast(`Citação ${selCitStyleEl.value} copiada para a área de transferência!`);
+        showToast(`Citação ${selCitStyleEl.value} copiada para a área de transferência`);
       });
     }
 
@@ -18390,7 +18689,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           a.download = `Cornell_${(state.title || 'notas').replace(/[^a-z0-9_-]/gi, '_')}.md`;
           a.click();
           setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-          showToast('Notas Cornell (.md) exportadas!');
+          showToast('Notas Cornell (.md) exportadas');
         });
       }
     }
@@ -18516,6 +18815,18 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         return Boolean(cfg.accessToken || cfg.refreshToken || cfg.clientId);
       }
       return Boolean(cfg.url && cfg.apiKey);
+    }
+
+    // Gravações na nuvem exigem usuário logado de verdade no Supabase (JWT de usuário, não a chave pública).
+    // Visitantes sem login mantêm progresso/notas só no aparelho (localStorage/IndexedDB), sem gerar erros 400/401.
+    function isSupabaseUserSession(cfg) {
+      return Boolean(cfg && cfg.userEmail && cfg.accessToken && /^eyJ/.test(cfg.accessToken) && cfg.accessToken !== cfg.apiKey);
+    }
+
+    function canWriteCloud(cfg) {
+      if (!isCloudProfileAuthenticated(cfg)) return false;
+      if (cfg.provider === 'firebase' || isOAuthCloudProvider(cfg.provider)) return true;
+      return isSupabaseUserSession(cfg);
     }
 
     function isCloudProfileAuthenticated(cfg) {
@@ -18874,7 +19185,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       renderOAuthProviderSetupUi(nextProv);
       updateAuthBadgeUi();
       document.getElementById('cloudStatusMsg').textContent = 'Configuração salva no banco ativo!';
-      showToast('Configuração de Nuvem salva!');
+      showToast('Configuração de Nuvem salva');
     });
 
     async function activateOrAddPersonalCloudProvider(provider) {
@@ -18943,7 +19254,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       btnCopyRedirectEl.addEventListener('click', () => {
         const u = getOAuthRedirectUri();
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(u).then(() => showToast('URL de redirecionamento copiada!')).catch(() => prompt('Copie a URL:', u));
+          navigator.clipboard.writeText(u).then(() => showToast('URL de redirecionamento copiada')).catch(() => prompt('Copie a URL:', u));
         } else {
           prompt('Copie a URL:', u);
         }
@@ -19021,7 +19332,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
               document.getElementById('cloudDriveBrowserModal').classList.remove('open');
               document.getElementById('cloudModal').classList.remove('open');
               await loadFile({ name: item.name, size: buf.byteLength, buffer: buf });
-              showToast(`"${item.name}" aberto e salvo offline na Estante!`);
+              showToast(`"${item.name}" aberto e salvo offline na Estante`);
             } catch (err) {
               if (stEl) stEl.textContent = 'Erro ao baixar: ' + err.message;
               alert('Erro ao abrir arquivo do Drive: ' + err.message);
@@ -19172,7 +19483,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           }
           if (statusEl) statusEl.textContent = `${okCount} livro(s) importado(s) com sucesso!`;
           if (typeof renderBookshelf === 'function') renderBookshelf();
-          showToast(`${okCount} arquivo(s) importado(s) para sua Estante!`);
+          showToast(`${okCount} arquivo(s) importado(s) para sua Estante`);
         } catch (err) {
           if (statusEl) statusEl.textContent = 'Erro na importação em lote: ' + err.message;
           showToast('Erro ao importar pasta: ' + err.message, true);
@@ -19252,7 +19563,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           __oauthGuideManualToggle = true;
           renderOAuthProviderSetupUi(prov);
           if (statusEl) statusEl.textContent = 'Cole o Client ID primeiro — o passo a passo com o link direto está aberto acima.';
-          showToast('Siga os 4 passos acima para obter seu Client ID!');
+          showToast('Siga os 4 passos acima para obter seu Client ID');
           return;
         }
         // Salva clientId + syncKey no perfil ativo
@@ -19304,7 +19615,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
             __oauthGuideManualToggle = false;
             loadCloudConfigIntoUi();
             if (statusEl) statusEl.textContent = `${getCloudProviderLabel(prov)} conectado (${authed.userEmail || 'pronto'})! Sincronizando estante...`;
-            showToast(`${getCloudProviderLabel(prov)} conectado com sucesso!`);
+            showToast(`${getCloudProviderLabel(prov)} conectado com sucesso`);
             await syncCloudStateSilentPull();
             await listCloudBooks();
           } catch (err) {
@@ -19371,7 +19682,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       cachedCloudFilesList = [];
       loadCloudConfigIntoUi();
       document.getElementById('cloudStatusMsg').textContent = `Novo banco "${newProf.name}" adicionado e ativado! Consultando bancos...`;
-      showToast(`Banco "${newProf.name}" conectado!`);
+      showToast(`Banco "${newProf.name}" conectado`);
       listCloudBooks().catch(() => {});
     });
 
@@ -19534,7 +19845,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           refreshCoverPreviewBox();
           if (typeof renderBookshelf === 'function') renderBookshelf();
           if (status) status.textContent = 'Capa da web aplicada com sucesso!';
-          showToast('Capa da internet aplicada!');
+          showToast('Capa da internet aplicada');
           inpCoverUrlEl.value = '';
         } catch (err) {
           if (status) status.textContent = 'Erro ao carregar imagem: ' + err.message;
@@ -19585,7 +19896,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         saveBookCoverDataUrl(activeCoverModalBook.bookKey, activeCoverModalBook.safeName, res.thumb);
         refreshCoverPreviewBox();
         status.textContent = 'Capa original extraída e aplicada com sucesso!';
-        showToast('Capa original aplicada!');
+        showToast('Capa original aplicada');
       } catch (err) {
         status.textContent = 'Erro ao extrair capa: ' + err.message;
       }
@@ -19602,7 +19913,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       a.href = url;
       a.download = `${(activeCoverModalBook.title || 'capa').replace(/[<>:"/\\|?*]+/g, '_')}_capa.jpg`;
       a.click();
-      showToast('Imagem da capa baixada!');
+      showToast('Imagem da capa baixada');
     });
 
     document.getElementById('inputCustomCoverFile').addEventListener('change', async (e) => {
@@ -19614,7 +19925,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         saveBookCoverDataUrl(activeCoverModalBook.bookKey, activeCoverModalBook.safeName, thumb);
         refreshCoverPreviewBox();
         document.getElementById('lblCoverModalStatus').textContent = 'Capa personalizada salva!';
-        showToast('Capa personalizada aplicada!');
+        showToast('Capa personalizada aplicada');
       };
       reader.readAsDataURL(f);
     });
@@ -19685,7 +19996,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           saveBookCoverDataUrl(activeCoverModalBook.bookKey, activeCoverModalBook.safeName, thumb || c.url);
           refreshCoverPreviewBox();
           status.textContent = 'Capa aplicada ao livro!';
-          showToast('Capa online aplicada com sucesso!');
+          showToast('Capa online aplicada com sucesso');
         });
         grid.appendChild(card);
       });
@@ -19712,7 +20023,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           }
         } catch {}
       }
-      showToast(extracted > 0 ? `${extracted} capa(s) extraída(s) dos arquivos!` : 'Todas as capas disponíveis já estão salvas!');
+      showToast(extracted > 0 ? `${extracted} capa(s) extraída(s) dos arquivos` : 'Todas as capas disponíveis já estão salvas');
     });
 
     // Cabeçalhos compatíveis com chaves novas (sb_publishable_...) e chaves JWT legadas (eyJ...)
@@ -20020,7 +20331,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
             const gbLim = j.quota && j.quota.total ? (Number(j.quota.total) / 1073741824).toFixed(1) : '5';
             statusEl.textContent = `Microsoft OneDrive conectado (${gbLim} GB disponíveis)!`;
           }
-          showToast(`${getCloudProviderLabel(cfg.provider)} OK!`);
+          showToast(`${getCloudProviderLabel(cfg.provider)} OK`);
         } catch (err) {
           statusEl.textContent = `Erro ao testar ${getCloudProviderLabel(cfg.provider)}: ${err.message}`;
         }
@@ -20054,10 +20365,10 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         const dbOk = dbRes && dbRes.ok;
         if (stOk && dbOk) {
           statusEl.textContent = `Conexão perfeita! Bucket "${cfg.bucket}" + Banco Postgres prontos (sem precisar de login ou com login).`;
-          showToast('Supabase conectado: Bucket + Banco OK!');
+          showToast('Supabase conectado: Bucket + Banco OK');
         } else if (stOk) {
           statusEl.textContent = `Bucket "${cfg.bucket}" conectado! Já pode sincronizar livros e progresso. (Tabela reader_profiles opcional ainda não criada).`;
-          showToast('Bucket do Supabase conectado!');
+          showToast('Bucket do Supabase conectado');
         } else {
           const errTxt = await stRes.text().catch(() => '');
           statusEl.textContent = `Erro no Storage (HTTP ${stRes.status}): ${errTxt || 'Verifique o nome do bucket e as políticas do SUPABASE_SETUP.sql'}`;
@@ -20138,7 +20449,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         updateAuthBadgeUi();
         syncInviteBannerUi();
         statusEl.textContent = `Autenticado como ${email} na estante "${cfg.syncKey}". Sincronizando...`;
-        showToast(`Bem-vindo, ${email}!`);
+        showToast(`Bem-vindo, ${email}`);
         await document.getElementById('btnSyncProgressCloud').click();
         listCloudBooks();
         refreshGuestInboxPanel();
@@ -20176,7 +20487,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
             throw new Error(msg);
           }
           if (statusEl) statusEl.textContent = `E-mail de redefinição enviado para ${email}! Verifique sua caixa de entrada/spam.`;
-          showToast('Link de redefinição de senha enviado!');
+          showToast('Link de redefinição de senha enviado');
         } catch (err) {
           if (statusEl) statusEl.textContent = 'Erro ao enviar recuperação: ' + err.message;
         }
@@ -20351,7 +20662,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       const inv = getActiveInviteState();
       // Visitante anônimo sem login nunca sobrescreve o progresso raiz; usuário autenticado salva na própria pasta _users/
       if (inv && !cfg.userEmail) return;
-      if (!isCloudProfileAuthenticated(cfg)) return;
+      if (!canWriteCloud(cfg)) return;
       const paths = getSyncStateStoragePaths(cfg);
       const payload = buildSyncPayload();
       try {
@@ -20408,7 +20719,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           if (remoteData) mergeSyncPayload(remoteData);
           await cloudWriteJsonByPath(cfg, '_reader_sync_state.json', buildSyncPayload());
           statusEl.textContent = `Perfil, progresso, marcadores e Anki sincronizados com sucesso no ${getCloudProviderLabel(cfg.provider)}!`;
-          showToast(`Sincronizado com o ${getCloudProviderLabel(cfg.provider)}!`);
+          showToast(`Sincronizado com o ${getCloudProviderLabel(cfg.provider)}`);
         } else if (cfg.provider === 'firebase') {
           const fbUrl = `${cfg.url}/reader_sync/${encodeURIComponent(paths.postgresKey)}.json${cfg.apiKey ? `?auth=${encodeURIComponent(cfg.apiKey)}` : ''}`;
           const getRes = await fetch(fbUrl);
@@ -20423,7 +20734,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           });
           if (!putRes.ok) throw new Error(`HTTP ${putRes.status}`);
           statusEl.textContent = 'Sincronizado com sucesso via Firebase Realtime Database!';
-          showToast('Progresso sincronizado com a nuvem!');
+          showToast('Progresso sincronizado com a nuvem');
         } else {
           const headers = getSupabaseHeaders(cfg);
           const bust = Date.now();
@@ -20473,7 +20784,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
             throw new Error(`Supabase HTTP ${putRes.status} (${errMsg || 'verifique bucket e policies'})`);
           }
           statusEl.textContent = 'Perfil, progresso, marcadores e Anki sincronizados com sucesso no Supabase!';
-          showToast('Sincronizado com o Supabase!');
+          showToast('Sincronizado com o Supabase');
         }
       } catch (err) {
         statusEl.textContent = 'Erro na sincronização: ' + err.message;
@@ -20723,7 +21034,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         );
         if (match && match.buffer) {
           if (navigator.onLine) syncCloudStateSilentPull().catch(() => {});
-          showToast(`Abrindo "${match.title || originalName || safeName}" do cache offline!`);
+          showToast(`Abrindo "${match.title || originalName || safeName}" do cache offline`);
           document.getElementById('cloudModal').classList.remove('open');
           await loadFile({ name: match.fileName, size: match.size, buffer: match.buffer }, { skipIdbSave: true });
           return;
@@ -20774,7 +21085,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         const meta = cat[safeName] || {};
         const fileToLoadName = (meta.originalFileName) || originalName || safeName;
         document.getElementById('cloudModal').classList.remove('open');
-        await loadFile({ name: fileToLoadName, size: buf.byteLength, buffer: buf });
+        await loadFile({ name: fileToLoadName, size: buf.byteLength, buffer: buf }, { historyKey: meta.bookKey || (bookObj && bookObj.bookKey) || '' });
       } catch (err) {
         if (statusEl) statusEl.textContent = 'Erro ao baixar livro: ' + err.message;
         alert('Erro ao baixar livro da nuvem: ' + err.message);
@@ -20847,8 +21158,8 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         }];
       }
       const profiles = getCloudProfilesList();
-      const writable = profiles.filter(p => p && p.provider !== 'firebase' && isCloudProfileAuthenticated(p));
-      if (!writable.length && cfg && cfg.provider !== 'firebase' && isCloudProfileAuthenticated(cfg)) {
+      const writable = profiles.filter(p => p && p.provider !== 'firebase' && canWriteCloud(p));
+      if (!writable.length && cfg && cfg.provider !== 'firebase' && canWriteCloud(cfg)) {
         return [{ ...cfg, id: cfg.profileId || 'active_db', name: cfg.name || getCloudProviderLabel(cfg.provider) }];
       }
       return writable;
@@ -21216,7 +21527,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
                 size: buf.byteLength || 0
               });
               await recordSharedActivity({ type: 'approve', bookTitle: f.name, fileName: f.name, fileSize: buf.byteLength || 0 });
-              showToast(`"${f.name}" aprovado e movido para sua Estante!`);
+              showToast(`"${f.name}" aprovado e movido para sua Estante`);
               await refreshGuestInboxPanel();
               await listCloudBooks();
             }
@@ -21325,24 +21636,20 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           await listCloudBooks();
         }
         // Notifica o dono no e-mail configurado no servidor (OWNER_NOTIFY_EMAIL) ou via convite quando houver sugestão
-        if (!isDirectMember || inv.notifyEmail) {
-          const kCfg = getKindleConfig();
+        if (!isDirectMember) {
+          // Segurança: o servidor só notifica o OWNER_NOTIFY_EMAIL configurado na Vercel; nenhuma credencial do usuário é enviada.
           fetch('/api/send-kindle', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               notifyOwnerSuggestion: true,
-              provider: (kCfg && kCfg.provider) || undefined,
-              apiKey: (kCfg && kCfg.apiKey) || '',
-              fromEmail: (kCfg && kCfg.senderEmail) || '',
-              kindleEmail: inv.notifyEmail || '',
               senderEmail: (getCloudConfig().userEmail) || 'convidado',
               syncKey: inv.syncKey || 'minha-estante',
               bookTitle: f.name
             })
           }).catch(() => {});
         }
-        showToast(isDirectMember ? `"${f.name}" publicado na Estante Compartilhada!` : `"${f.name}" enviado para aprovação! Aparecerá na Estante quando o dono aprovar.`);
+        showToast(isDirectMember ? `"${f.name}" publicado na Estante Compartilhada` : `"${f.name}" enviado para aprovação! Aparecerá na Estante quando o dono aprovar.`);
       } catch (err) {
         alert('Não foi possível enviar o livro: ' + err.message);
       }
@@ -21371,7 +21678,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(link).then(() => {
           document.getElementById('cloudStatusMsg').textContent = `Link de convite (${role === 'contributor' ? 'Colaborador c/ Aprovação' : 'Somente Leitura'}) copiado!`;
-          showToast('Link de convite copiado!');
+          showToast('Link de convite copiado');
         }).catch(() => prompt('Copie o link de convite:', link));
       } else {
         prompt('Copie o link de convite:', link);
@@ -21398,7 +21705,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         if (pending && (!parsed.state || parsed.state === pending.state)) {
           await completeOAuthTokenResult(pending.provider, pending.profileId, parsed, pending.codeVerifier, pending.redirectUri);
           localStorage.removeItem('reader_oauth_pending');
-          showToast(`${getCloudProviderLabel(pending.provider)} conectado com sucesso!`);
+          showToast(`${getCloudProviderLabel(pending.provider)} conectado com sucesso`);
         }
       } catch (err) {
         alert('Erro ao concluir login OAuth: ' + err.message);
@@ -21456,12 +21763,12 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
             const cur = getCloudConfig();
             localStorage.setItem('reader_cloud_config', JSON.stringify({ ...cur, ...parsed }));
             history.replaceState(null, '', location.pathname + location.search);
-            showToast(`Estante "${parsed.syncKey}" conectada automaticamente!`);
+            showToast(`Estante "${parsed.syncKey}" conectada automaticamente`);
           }
         }
       } catch {}
 
-      // 2. Verificar se o servidor Vercel/Netlify expõe Env Vars (/api/cloud-config)
+      // 2. Verificar se o servidor Vercel expõe Env Vars (/api/cloud-config)
       try {
         const res = await fetch('/api/cloud-config').catch(() => null);
         if (res && res.ok) {
@@ -21504,7 +21811,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         await syncCloudStateSilentPull();
         await listCloudBooks();
         refreshToolbarUserMenu();
-        showToast('Conectado à pasta compartilhada padrão (minha-estante)!');
+        showToast('Conectado à pasta compartilhada padrão (minha-estante)');
       });
     }
 
@@ -21526,7 +21833,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
           document.getElementById('cloudStatusMsg').textContent = 'Link direto copiado! Envie para seu WhatsApp/Telegram e abra no celular para conectar em 1 toque.';
-          showToast('Link de acesso rápido copiado!');
+          showToast('Link de acesso rápido copiado');
         }).catch(() => prompt('Copie o link abaixo e abra no celular:', shareUrl));
       } else {
         prompt('Copie o link abaixo e abra no celular:', shareUrl);
@@ -21545,7 +21852,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       a.download = `backup_leitor_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Backup completo (.JSON) exportado!');
+      showToast('Backup completo (.JSON) exportado');
     });
 
     document.getElementById('importBackupInput').addEventListener('change', async (e) => {
@@ -21555,7 +21862,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         const txt = await f.text();
         const data = JSON.parse(txt);
         mergeSyncPayload(data);
-        showToast('Backup restaurado com sucesso!');
+        showToast('Backup restaurado com sucesso');
         document.getElementById('cloudStatusMsg').textContent = 'Backup .JSON importado e mesclado com sucesso!';
       } catch (err) {
         alert('Arquivo de backup inválido: ' + err.message);
@@ -21922,7 +22229,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           localStorage.setItem('reader_entity_notes', JSON.stringify(map));
           await renderSection({ restoreSubPage: state.subPageIndex });
           runAutoXRayScan();
-          showToast(`Ficha X-Ray de "${cand.name}" ativada em todo o livro!`);
+          showToast(`Ficha X-Ray de "${cand.name}" ativada em todo o livro`);
         });
 
         card.querySelectorAll('.xray-freq-bar').forEach(bar => {
@@ -22297,7 +22604,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       saveBookReviewsMap(revMap);
       renderReviewsStudioPane();
       renderBookshelf();
-      showToast('Nota e resenha salvas!');
+      showToast('Nota e resenha salvas');
     });
 
     document.getElementById('btnDeleteReview').addEventListener('click', () => {
@@ -22332,7 +22639,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       a.download = `resenhas_livros_${new Date().toISOString().slice(0, 10)}.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Resenhas exportadas em Markdown (.MD)!');
+      showToast('Resenhas exportadas em Markdown (.MD)');
     });
 
     // Conta Kindle & Send to Kindle
@@ -22424,7 +22731,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
     document.getElementById('btnSaveKindleConfig').addEventListener('click', () => {
       saveKindleConfigFromUi();
       document.getElementById('lblKindleStatus').textContent = 'Conta Kindle salva com sucesso!';
-      showToast('Conta Kindle salva!');
+      showToast('Conta Kindle salva');
     });
 
     function updateKindleProviderGuideUi() {
@@ -22492,10 +22799,10 @@ ${r.reviewText || '_Sem resenha escrita._'}
         try { data = JSON.parse(rawResTxt); } catch {}
         if (!res.ok || !data.ok) {
           if (location.protocol === 'file:') {
-            throw new Error('Você abriu o arquivo local (file://). Para envio direto em 1 clique, abra pela URL da sua Vercel/Netlify ou use a Opção 1 acima!');
+            throw new Error('Você abriu o arquivo local (file://). Para envio direto em 1 clique, abra pela URL da sua Vercel ou use a Opção 1 acima!');
           }
           if (res.status === 404) {
-            throw new Error('Função /api/send-kindle não encontrada neste servidor (404). Suba a pasta "api/" na Vercel ou "netlify/" no Netlify, ou use a Opção 1 acima!');
+            throw new Error('Função /api/send-kindle não encontrada neste servidor (404). Confira se a pasta "api/" está no repositório da Vercel, ou use a Opção 1 acima!');
           }
           if (res.status === 413) {
             throw new Error('Livro muito grande para o limite do servidor. Use a Opção 1 (Amazon Send to Kindle) acima que aceita até 200 MB!');
@@ -22505,7 +22812,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         recordKindleSendHistory(state.title, cfg.kindleEmail, cfg.provider === 'gmail' ? 'Gmail Direto' : 'E-mail Direto');
         recordSharedActivity({ type: 'kindle', bookTitle: state.title || state.currentFileName, targetEmail: cfg.kindleEmail, channel: cfg.provider === 'gmail' ? 'Gmail Direto' : 'E-mail Direto' });
         statusEl.textContent = `Enviado com sucesso para ${cfg.kindleEmail}! Em alguns minutos aparecerá no seu Kindle.`;
-        showToast('Livro enviado para o seu Kindle!');
+        showToast('Livro enviado para o seu Kindle');
       } catch (err) {
         statusEl.textContent = 'Erro ao enviar: ' + err.message;
       }
@@ -22526,7 +22833,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         recordSharedActivity({ type: 'kindle', bookTitle: state.title || state.currentFileName, targetEmail: cfg.kindleEmail || 'Amazon Web', channel: 'Amazon Web' });
         window.open(portalUrl, '_blank', 'noopener');
         statusEl.textContent = `"${fileObj.filename}" baixado! Na aba da Amazon que abriu, clique em "Selecionar arquivos" e escolha esse arquivo que acabou de baixar.`;
-        showToast('EPUB baixado e Amazon Send to Kindle aberto!');
+        showToast('EPUB baixado e Amazon Send to Kindle aberto');
       } catch (err) {
         statusEl.textContent = err.message;
       }
@@ -22559,7 +22866,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
           const bodyTxt = encodeURIComponent(`Anexe o arquivo "${fileObj.filename}" que acabou de ser baixado e clique em Enviar.`);
           window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bodyTxt}`, '_blank', 'noopener');
           statusEl.textContent = `"${fileObj.filename}" baixado e Gmail aberto! Só arrastar o arquivo baixado para o e-mail e clicar em Enviar.`;
-          showToast('EPUB baixado e Gmail aberto!');
+          showToast('EPUB baixado e Gmail aberto');
         }
       } catch (err) {
         statusEl.textContent = 'Envio cancelado ou indisponível: ' + err.message;
@@ -22572,7 +22879,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       data.dailyGoal = val;
       saveReadingInsights(data);
       renderReadingInsightsPane();
-      showToast(`Meta diária atualizada para ${val} minutos!`);
+      showToast(`Meta diária atualizada para ${val} minutos`);
     });
 
     document.getElementById('btnMarkBookFinished').addEventListener('click', () => {
@@ -22590,7 +22897,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         saveReadingInsights(data);
       }
       renderReadingInsightsPane();
-      showToast(`Livro "${state.title}" adicionado aos Livros Concluídos!`);
+      showToast(`Livro "${state.title}" adicionado aos Livros Concluídos`);
     });
 
     /* =====================================================================
@@ -22690,6 +22997,13 @@ ${r.reviewText || '_Sem resenha escrita._'}
     // =========================================================
     // PAINEL DE MEMBROS (OWNER) & CLUBE DE LEITURA (PERFIS / RESENHAS / CHAT)
     // =========================================================
+    const LIBRARY_ROLE_OPTIONS = [
+      ['viewer', 'Leitor (só lê)'],
+      ['contributor', 'Colaborador (sugere)'],
+      ['member', 'Membro (sobe/apaga)'],
+      ['owner', 'Dono']
+    ];
+
     async function refreshOwnerMembersPanel() {
       const box = document.getElementById('ownerMembersManageBox');
       const listEl = document.getElementById('ownerMembersList');
@@ -22717,15 +23031,17 @@ ${r.reviewText || '_Sem resenha escrita._'}
           rowDiv.innerHTML = `
             <div style="min-width:0; flex:1;">
               <div style="font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(r.email || '')}</div>
-              <div style="font-size:10.5px; color:var(--text-muted);">Papel: ${escapeHtml(r.role || 'member')} · Status: ${escapeHtml(r.status || 'active')}</div>
+              <div style="font-size:10.5px; color:var(--text-muted);">Papel: ${escapeHtml((LIBRARY_ROLE_OPTIONS.find(o => o[0] === r.role) || [0, r.role || 'member'])[1])} · Status: ${escapeHtml(r.status || 'active')}</div>
             </div>
             <div style="display:flex; gap:4px;">
-              <button class="tb-btn btn-toggle-member-role" style="height:22px; font-size:10.5px; padding:0 6px;">${r.role === 'owner' ? 'Tornar Membro' : 'Tornar Owner'}</button>
+              <select class="sel-member-role" style="height:22px; font-size:10.5px;" title="Papel deste membro">
+                ${LIBRARY_ROLE_OPTIONS.map(([v, l]) => `<option value="${v}" ${r.role === v ? 'selected' : ''}>${l}</option>`).join('')}
+              </select>
               <button class="tb-btn btn-remove-member" style="height:22px; font-size:10.5px; padding:0 6px; color:#f87171;">Remover</button>
             </div>
           `;
-          rowDiv.querySelector('.btn-toggle-member-role').addEventListener('click', async () => {
-            const nextRole = r.role === 'owner' ? 'member' : 'owner';
+          rowDiv.querySelector('.sel-member-role').addEventListener('change', async (ev) => {
+            const nextRole = ev.target.value;
             await fetch(`${cfg.url}/rest/v1/library_members?email=eq.${encodeURIComponent(r.email)}`, {
               method: 'PATCH',
               headers: getSupabaseHeaders(cfg, { 'Content-Type': 'application/json' }),
@@ -22761,11 +23077,11 @@ ${r.reviewText || '_Sem resenha escrita._'}
           const res = await fetch(`${cfg.url}/rest/v1/library_members`, {
             method: 'POST',
             headers: getSupabaseHeaders(cfg, { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }),
-            body: JSON.stringify({ email, role: 'member', status: 'active' })
+            body: JSON.stringify({ email, role: (document.getElementById('selectOwnerAddMemberRole') || {}).value || 'viewer', status: 'active' })
           });
           if (!res.ok) throw new Error('Falha ao adicionar membro (verifique RLS owner).');
           if (inp) inp.value = '';
-          showToast(`Membro ${email} adicionado!`);
+          showToast(`Acesso liberado para ${email}`);
           refreshOwnerMembersPanel();
         } catch (err) {
           showToast(err.message, true);
@@ -22838,7 +23154,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       const map = getLocalClubProfiles();
       map[slug] = myPublic;
       saveLocalClubProfiles(map);
-      if (isCloudProfileAuthenticated(cfg) && cfg.provider !== 'firebase') {
+      if (canWriteCloud(cfg) && cfg.provider !== 'firebase') {
         try {
           if (isOAuthCloudProvider(cfg.provider)) {
             await cloudWriteJsonByPath(cfg, '_shared_profiles.json', map).catch(() => {});
@@ -23089,7 +23405,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       let list = [...getLocalClubChat(), msg].slice(-120);
       saveLocalClubChat(list);
       renderClubChatList(list);
-      if (isCloudProfileAuthenticated(cfg) && cfg.provider !== 'firebase') {
+      if (canWriteCloud(cfg) && cfg.provider !== 'firebase') {
         try {
           const remote = await pullClubChatMessages();
           const seen = new Set();
@@ -23259,7 +23575,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
 
     async function pushSharedCatalogMeta(safeFile, entry, overrideCfg = null) {
       const cfg = overrideCfg || getCloudConfig();
-      if (!isCloudProfileAuthenticated(cfg) || cfg.provider === 'firebase' || !safeFile) return;
+      if (!canWriteCloud(cfg) || cfg.provider === 'firebase' || !safeFile) return;
       try {
         await pullSharedCatalogFromCloud(cfg);
         const cat = getCloudCatalogMap();
@@ -23319,7 +23635,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       let list = mergeSharedActivityLists([fullEntry], getSharedActivityLog());
       saveSharedActivityLog(list);
 
-      if (isCloudProfileAuthenticated(cfg) && cfg.provider !== 'firebase') {
+      if (canWriteCloud(cfg) && cfg.provider !== 'firebase') {
         try {
           const existing = await pullSharedActivityFromCloud();
           list = mergeSharedActivityLists([fullEntry], existing);
@@ -23659,7 +23975,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         saveUserProfile({ avatarDataUrl: dataUrl });
         await renderProfileModal();
         pushCloudSyncSilent();
-        showToast('Foto de perfil atualizada!');
+        showToast('Foto de perfil atualizada');
       }
     });
     document.getElementById('btnProfileAvatarRemove').addEventListener('click', async () => {
@@ -23678,14 +23994,14 @@ ${r.reviewText || '_Sem resenha escrita._'}
       await renderProfileModal();
       await pushCloudSyncSilent();
       document.getElementById('lblProfileStatus').textContent = 'Perfil salvo e sincronizado!';
-      showToast('Perfil salvo com sucesso!');
+      showToast('Perfil salvo com sucesso');
     });
     document.getElementById('btnSaveProfileGoal').addEventListener('click', async () => {
       const g = Math.max(1, parseInt(document.getElementById('inputProfileAnnualGoal').value || '12', 10) || 12);
       saveUserProfile({ annualGoalBooks: g });
       await renderProfileModal();
       await pushCloudSyncSilent();
-      showToast(`Meta anual definida: ${g} livros!`);
+      showToast(`Meta anual definida: ${g} livros`);
     });
 
     /* =====================================================================
@@ -23704,7 +24020,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         }
         return await proxied.text();
       }
-      throw new Error('Servidor bloqueou acesso direto (CORS). Abra pela versão hospedada (Vercel/Netlify) para usar o proxy OPDS.');
+      throw new Error('Servidor bloqueou acesso direto (CORS). Abra pela versão hospedada (Vercel) para usar o proxy OPDS.');
     }
 
     let activeDownloadAbortCtrl = null;
@@ -23795,7 +24111,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
           throw new Error('Download bloqueado por CORS em arquivo local (file://).');
         }
 
-        // Blocos de 1.5 MB: evita timeout de 10s na Vercel Hobby e limites de payload (4.5 MB Vercel / 6 MB Netlify)
+        // Blocos de 1.5 MB: evita timeout de 10s na Vercel Hobby e limites de payload (4.5 MB na Vercel)
         const CHUNK_BYTES = 1536 * 1024;
         const MAX_BROWSER_BYTES = 250 * 1024 * 1024;
         let firstRes;
@@ -24476,7 +24792,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
               showToast('Série removida do Radar.');
             } else {
               list.push({ key: seriesKey, title: spec.title || 'Série', source: spec.source || '', url: spec.url || '', lastKnownCount: 0, checkedAt: Date.now() });
-              showToast('Série adicionada ao Radar de Atualizações!');
+              showToast('Série adicionada ao Radar de Atualizações');
             }
             saveFollowedSeriesList(list);
             updateFollowBtn();
@@ -24544,7 +24860,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       try {
         if (srcType === 'mangadex') {
           if (!location.protocol.startsWith('http')) {
-            throw new Error('O catálogo MangaDex exige rodar pela URL hospedada (Vercel/Netlify) por causa do proxy CORS.');
+            throw new Error('O catálogo MangaDex exige rodar pela URL hospedada (Vercel) por causa do proxy CORS.');
           }
           const langParams = langs.map(l => `availableTranslatedLanguage[]=${encodeURIComponent(l)}`).join('&');
           const titleParam = query ? `&title=${encodeURIComponent(query)}` : '&order[followedCount]=desc';
@@ -24680,7 +24996,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
                         a.download = fileName;
                         a.click();
                         setTimeout(() => URL.revokeObjectURL(url), 2500);
-                        showToast(`.CBZ "${fileName}" baixado!`);
+                        showToast(`.CBZ "${fileName}" baixado`);
                         return;
                       }
                       await loadFile({ name: fileName, size: cbzBuf.byteLength, buffer: cbzBuf });
@@ -24900,7 +25216,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
                               const a = document.createElement('a'); a.href = u; a.download = fn; a.click();
                               setTimeout(() => URL.revokeObjectURL(u), 2500);
                             }
-                            showToast(`Lote concluído: ${picked.length} capítulo(s) .CBZ baixado(s)!`);
+                            showToast(`Lote concluído: ${picked.length} capítulo(s) .CBZ baixado(s)`);
                           } catch (e) {
                             if (e && e.name !== 'AbortError') alert('Erro no download em lote: ' + e.message);
                           } finally {
@@ -24935,7 +25251,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
 
         if (srcType === 'webtoon-scrape') {
           if (!location.protocol.startsWith('http')) {
-            throw new Error('O web-scraper WEBTOON precisa rodar pela URL hospedada (Vercel/Netlify) por causa do proxy CORS/Referer.');
+            throw new Error('O web-scraper WEBTOON precisa rodar pela URL hospedada (Vercel) por causa do proxy CORS/Referer.');
           }
           const wtSearchUrl = query
             ? `https://www.webtoons.com/en/search?keyword=${encodeURIComponent(query)}`
@@ -24989,7 +25305,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
                             const a = document.createElement('a'); a.href = u; a.download = fn; a.click();
                             setTimeout(() => URL.revokeObjectURL(u), 2500);
                           }
-                          showToast(`Lote WEBTOON concluído: ${picked.length} episódio(s)!`);
+                          showToast(`Lote WEBTOON concluído: ${picked.length} episódio(s)`);
                         } catch (e) { alert('Erro no lote WEBTOON: ' + e.message); }
                         finally { hideFloatingDownloadProgress(); }
                       }
@@ -25192,7 +25508,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
 
         if (srcType === 'tapas-comics') {
           if (!location.protocol.startsWith('http')) {
-            throw new Error('O web-scraper Tapas precisa rodar pela URL hospedada (Vercel/Netlify) por causa do proxy CORS.');
+            throw new Error('O web-scraper Tapas precisa rodar pela URL hospedada (Vercel) por causa do proxy CORS.');
           }
           const onlyPt = langs.length === 1 && langs[0].startsWith('pt');
           const searchTerm = query || (onlyPt ? 'quadrinhos' : 'comic');
@@ -25244,7 +25560,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
                             const a = document.createElement('a'); a.href = u; a.download = fn; a.click();
                             setTimeout(() => URL.revokeObjectURL(u), 2500);
                           }
-                          showToast(`Lote Tapas concluído: ${picked.length} episódio(s)!`);
+                          showToast(`Lote Tapas concluído: ${picked.length} episódio(s)`);
                         } catch (e) { alert('Erro no lote Tapas: ' + e.message); }
                         finally { hideFloatingDownloadProgress(); }
                       }
@@ -25457,7 +25773,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
                         a.download = f.name;
                         a.click();
                         setTimeout(() => URL.revokeObjectURL(url), 2500);
-                        showToast(`"${f.name}" baixado!`);
+                        showToast(`"${f.name}" baixado`);
                         return;
                       }
                       await loadFile({ name: f.name, size: buf.byteLength, buffer: buf });
@@ -25546,7 +25862,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
                           if (mode === 'dl') {
                             const u = URL.createObjectURL(new Blob([buf])); const a = document.createElement('a'); a.href = u; a.download = f.name; a.click();
                             setTimeout(() => URL.revokeObjectURL(u), 2500);
-                            showToast(`"${f.name}" baixado!`);
+                            showToast(`"${f.name}" baixado`);
                             return;
                           }
                           closeCatDetail();
@@ -25845,7 +26161,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         const lbl = document.getElementById('lblFollowedSeriesCount');
         if (!list.length) {
           if (lbl) lbl.textContent = '0 série(s) seguida(s)';
-          showToast('Siga um mangá ou webtoon nos catálogos primeiro!', true);
+          showToast('Siga um mangá ou webtoon nos catálogos primeiro', true);
           return;
         }
         btnCheckRadarEl.disabled = true;
@@ -25867,7 +26183,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         saveFollowedSeriesList(list);
         btnCheckRadarEl.disabled = false;
         if (lbl) lbl.textContent = updatedCount > 0 ? `${updatedCount} série(s) com novos capítulos!` : `${list.length} série(s) verificada(s) (em dia)`;
-        showToast(updatedCount > 0 ? `${updatedCount} série(s) atualizada(s)!` : 'Radar verificado!');
+        showToast(updatedCount > 0 ? `${updatedCount} série(s) atualizada(s)` : 'Radar verificado');
       });
     }
 
@@ -25896,7 +26212,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         deferredPwaPrompt = null;
         if (choice && choice.outcome === 'accepted') {
           btnInstallPwaEl.classList.add('hidden');
-          showToast('Aplicativo instalado para leitura offline!');
+          showToast('Aplicativo instalado para leitura offline');
         }
       });
     }
@@ -25918,7 +26234,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
     });
     window.addEventListener('offline', () => {
       updateOfflineBadgeUi();
-      showToast('Sem internet: seus livros locais/abertos seguem disponíveis offline!');
+      showToast('Sem internet: seus livros locais/abertos seguem disponíveis offline');
     });
     updateOfflineBadgeUi();
 
@@ -25936,7 +26252,8 @@ ${r.reviewText || '_Sem resenha escrita._'}
     renderBookshelf();
     initCloudAutoConnect();
     renderVocabList();
-    testAnkiConnectDecks(true);
+    // Só sonda o AnkiConnect (127.0.0.1:8765) se o usuário já conectou o Anki Desktop antes
+    if (getAnkiConfig().ankiConnectEnabled) testAnkiConnectDecks(true);
   </script>
 </body>
 </html>

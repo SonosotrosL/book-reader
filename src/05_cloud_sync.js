@@ -44,6 +44,18 @@
       return Boolean(cfg.url && cfg.apiKey);
     }
 
+    // Gravações na nuvem exigem usuário logado de verdade no Supabase (JWT de usuário, não a chave pública).
+    // Visitantes sem login mantêm progresso/notas só no aparelho (localStorage/IndexedDB), sem gerar erros 400/401.
+    function isSupabaseUserSession(cfg) {
+      return Boolean(cfg && cfg.userEmail && cfg.accessToken && /^eyJ/.test(cfg.accessToken) && cfg.accessToken !== cfg.apiKey);
+    }
+
+    function canWriteCloud(cfg) {
+      if (!isCloudProfileAuthenticated(cfg)) return false;
+      if (cfg.provider === 'firebase' || isOAuthCloudProvider(cfg.provider)) return true;
+      return isSupabaseUserSession(cfg);
+    }
+
     function isCloudProfileAuthenticated(cfg) {
       if (!cfg) return false;
       if (cfg.provider === 'firebase') return Boolean(cfg.url);
@@ -400,7 +412,7 @@
       renderOAuthProviderSetupUi(nextProv);
       updateAuthBadgeUi();
       document.getElementById('cloudStatusMsg').textContent = 'Configuração salva no banco ativo!';
-      showToast('Configuração de Nuvem salva!');
+      showToast('Configuração de Nuvem salva');
     });
 
     async function activateOrAddPersonalCloudProvider(provider) {
@@ -469,7 +481,7 @@
       btnCopyRedirectEl.addEventListener('click', () => {
         const u = getOAuthRedirectUri();
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(u).then(() => showToast('URL de redirecionamento copiada!')).catch(() => prompt('Copie a URL:', u));
+          navigator.clipboard.writeText(u).then(() => showToast('URL de redirecionamento copiada')).catch(() => prompt('Copie a URL:', u));
         } else {
           prompt('Copie a URL:', u);
         }
@@ -547,7 +559,7 @@
               document.getElementById('cloudDriveBrowserModal').classList.remove('open');
               document.getElementById('cloudModal').classList.remove('open');
               await loadFile({ name: item.name, size: buf.byteLength, buffer: buf });
-              showToast(`"${item.name}" aberto e salvo offline na Estante!`);
+              showToast(`"${item.name}" aberto e salvo offline na Estante`);
             } catch (err) {
               if (stEl) stEl.textContent = 'Erro ao baixar: ' + err.message;
               alert('Erro ao abrir arquivo do Drive: ' + err.message);
@@ -698,7 +710,7 @@
           }
           if (statusEl) statusEl.textContent = `${okCount} livro(s) importado(s) com sucesso!`;
           if (typeof renderBookshelf === 'function') renderBookshelf();
-          showToast(`${okCount} arquivo(s) importado(s) para sua Estante!`);
+          showToast(`${okCount} arquivo(s) importado(s) para sua Estante`);
         } catch (err) {
           if (statusEl) statusEl.textContent = 'Erro na importação em lote: ' + err.message;
           showToast('Erro ao importar pasta: ' + err.message, true);
@@ -778,7 +790,7 @@
           __oauthGuideManualToggle = true;
           renderOAuthProviderSetupUi(prov);
           if (statusEl) statusEl.textContent = 'Cole o Client ID primeiro — o passo a passo com o link direto está aberto acima.';
-          showToast('Siga os 4 passos acima para obter seu Client ID!');
+          showToast('Siga os 4 passos acima para obter seu Client ID');
           return;
         }
         // Salva clientId + syncKey no perfil ativo
@@ -830,7 +842,7 @@
             __oauthGuideManualToggle = false;
             loadCloudConfigIntoUi();
             if (statusEl) statusEl.textContent = `${getCloudProviderLabel(prov)} conectado (${authed.userEmail || 'pronto'})! Sincronizando estante...`;
-            showToast(`${getCloudProviderLabel(prov)} conectado com sucesso!`);
+            showToast(`${getCloudProviderLabel(prov)} conectado com sucesso`);
             await syncCloudStateSilentPull();
             await listCloudBooks();
           } catch (err) {
@@ -897,7 +909,7 @@
       cachedCloudFilesList = [];
       loadCloudConfigIntoUi();
       document.getElementById('cloudStatusMsg').textContent = `Novo banco "${newProf.name}" adicionado e ativado! Consultando bancos...`;
-      showToast(`Banco "${newProf.name}" conectado!`);
+      showToast(`Banco "${newProf.name}" conectado`);
       listCloudBooks().catch(() => {});
     });
 
@@ -1060,7 +1072,7 @@
           refreshCoverPreviewBox();
           if (typeof renderBookshelf === 'function') renderBookshelf();
           if (status) status.textContent = 'Capa da web aplicada com sucesso!';
-          showToast('Capa da internet aplicada!');
+          showToast('Capa da internet aplicada');
           inpCoverUrlEl.value = '';
         } catch (err) {
           if (status) status.textContent = 'Erro ao carregar imagem: ' + err.message;
@@ -1111,7 +1123,7 @@
         saveBookCoverDataUrl(activeCoverModalBook.bookKey, activeCoverModalBook.safeName, res.thumb);
         refreshCoverPreviewBox();
         status.textContent = 'Capa original extraída e aplicada com sucesso!';
-        showToast('Capa original aplicada!');
+        showToast('Capa original aplicada');
       } catch (err) {
         status.textContent = 'Erro ao extrair capa: ' + err.message;
       }
@@ -1128,7 +1140,7 @@
       a.href = url;
       a.download = `${(activeCoverModalBook.title || 'capa').replace(/[<>:"/\\|?*]+/g, '_')}_capa.jpg`;
       a.click();
-      showToast('Imagem da capa baixada!');
+      showToast('Imagem da capa baixada');
     });
 
     document.getElementById('inputCustomCoverFile').addEventListener('change', async (e) => {
@@ -1140,7 +1152,7 @@
         saveBookCoverDataUrl(activeCoverModalBook.bookKey, activeCoverModalBook.safeName, thumb);
         refreshCoverPreviewBox();
         document.getElementById('lblCoverModalStatus').textContent = 'Capa personalizada salva!';
-        showToast('Capa personalizada aplicada!');
+        showToast('Capa personalizada aplicada');
       };
       reader.readAsDataURL(f);
     });
@@ -1211,7 +1223,7 @@
           saveBookCoverDataUrl(activeCoverModalBook.bookKey, activeCoverModalBook.safeName, thumb || c.url);
           refreshCoverPreviewBox();
           status.textContent = 'Capa aplicada ao livro!';
-          showToast('Capa online aplicada com sucesso!');
+          showToast('Capa online aplicada com sucesso');
         });
         grid.appendChild(card);
       });
@@ -1238,7 +1250,7 @@
           }
         } catch {}
       }
-      showToast(extracted > 0 ? `${extracted} capa(s) extraída(s) dos arquivos!` : 'Todas as capas disponíveis já estão salvas!');
+      showToast(extracted > 0 ? `${extracted} capa(s) extraída(s) dos arquivos` : 'Todas as capas disponíveis já estão salvas');
     });
 
     // Cabeçalhos compatíveis com chaves novas (sb_publishable_...) e chaves JWT legadas (eyJ...)
@@ -1546,7 +1558,7 @@
             const gbLim = j.quota && j.quota.total ? (Number(j.quota.total) / 1073741824).toFixed(1) : '5';
             statusEl.textContent = `Microsoft OneDrive conectado (${gbLim} GB disponíveis)!`;
           }
-          showToast(`${getCloudProviderLabel(cfg.provider)} OK!`);
+          showToast(`${getCloudProviderLabel(cfg.provider)} OK`);
         } catch (err) {
           statusEl.textContent = `Erro ao testar ${getCloudProviderLabel(cfg.provider)}: ${err.message}`;
         }
@@ -1580,10 +1592,10 @@
         const dbOk = dbRes && dbRes.ok;
         if (stOk && dbOk) {
           statusEl.textContent = `Conexão perfeita! Bucket "${cfg.bucket}" + Banco Postgres prontos (sem precisar de login ou com login).`;
-          showToast('Supabase conectado: Bucket + Banco OK!');
+          showToast('Supabase conectado: Bucket + Banco OK');
         } else if (stOk) {
           statusEl.textContent = `Bucket "${cfg.bucket}" conectado! Já pode sincronizar livros e progresso. (Tabela reader_profiles opcional ainda não criada).`;
-          showToast('Bucket do Supabase conectado!');
+          showToast('Bucket do Supabase conectado');
         } else {
           const errTxt = await stRes.text().catch(() => '');
           statusEl.textContent = `Erro no Storage (HTTP ${stRes.status}): ${errTxt || 'Verifique o nome do bucket e as políticas do SUPABASE_SETUP.sql'}`;
@@ -1664,7 +1676,7 @@
         updateAuthBadgeUi();
         syncInviteBannerUi();
         statusEl.textContent = `Autenticado como ${email} na estante "${cfg.syncKey}". Sincronizando...`;
-        showToast(`Bem-vindo, ${email}!`);
+        showToast(`Bem-vindo, ${email}`);
         await document.getElementById('btnSyncProgressCloud').click();
         listCloudBooks();
         refreshGuestInboxPanel();
@@ -1702,7 +1714,7 @@
             throw new Error(msg);
           }
           if (statusEl) statusEl.textContent = `E-mail de redefinição enviado para ${email}! Verifique sua caixa de entrada/spam.`;
-          showToast('Link de redefinição de senha enviado!');
+          showToast('Link de redefinição de senha enviado');
         } catch (err) {
           if (statusEl) statusEl.textContent = 'Erro ao enviar recuperação: ' + err.message;
         }
@@ -1877,7 +1889,7 @@
       const inv = getActiveInviteState();
       // Visitante anônimo sem login nunca sobrescreve o progresso raiz; usuário autenticado salva na própria pasta _users/
       if (inv && !cfg.userEmail) return;
-      if (!isCloudProfileAuthenticated(cfg)) return;
+      if (!canWriteCloud(cfg)) return;
       const paths = getSyncStateStoragePaths(cfg);
       const payload = buildSyncPayload();
       try {
@@ -1934,7 +1946,7 @@
           if (remoteData) mergeSyncPayload(remoteData);
           await cloudWriteJsonByPath(cfg, '_reader_sync_state.json', buildSyncPayload());
           statusEl.textContent = `Perfil, progresso, marcadores e Anki sincronizados com sucesso no ${getCloudProviderLabel(cfg.provider)}!`;
-          showToast(`Sincronizado com o ${getCloudProviderLabel(cfg.provider)}!`);
+          showToast(`Sincronizado com o ${getCloudProviderLabel(cfg.provider)}`);
         } else if (cfg.provider === 'firebase') {
           const fbUrl = `${cfg.url}/reader_sync/${encodeURIComponent(paths.postgresKey)}.json${cfg.apiKey ? `?auth=${encodeURIComponent(cfg.apiKey)}` : ''}`;
           const getRes = await fetch(fbUrl);
@@ -1949,7 +1961,7 @@
           });
           if (!putRes.ok) throw new Error(`HTTP ${putRes.status}`);
           statusEl.textContent = 'Sincronizado com sucesso via Firebase Realtime Database!';
-          showToast('Progresso sincronizado com a nuvem!');
+          showToast('Progresso sincronizado com a nuvem');
         } else {
           const headers = getSupabaseHeaders(cfg);
           const bust = Date.now();
@@ -1999,7 +2011,7 @@
             throw new Error(`Supabase HTTP ${putRes.status} (${errMsg || 'verifique bucket e policies'})`);
           }
           statusEl.textContent = 'Perfil, progresso, marcadores e Anki sincronizados com sucesso no Supabase!';
-          showToast('Sincronizado com o Supabase!');
+          showToast('Sincronizado com o Supabase');
         }
       } catch (err) {
         statusEl.textContent = 'Erro na sincronização: ' + err.message;
@@ -2249,7 +2261,7 @@
         );
         if (match && match.buffer) {
           if (navigator.onLine) syncCloudStateSilentPull().catch(() => {});
-          showToast(`Abrindo "${match.title || originalName || safeName}" do cache offline!`);
+          showToast(`Abrindo "${match.title || originalName || safeName}" do cache offline`);
           document.getElementById('cloudModal').classList.remove('open');
           await loadFile({ name: match.fileName, size: match.size, buffer: match.buffer }, { skipIdbSave: true });
           return;
@@ -2300,7 +2312,7 @@
         const meta = cat[safeName] || {};
         const fileToLoadName = (meta.originalFileName) || originalName || safeName;
         document.getElementById('cloudModal').classList.remove('open');
-        await loadFile({ name: fileToLoadName, size: buf.byteLength, buffer: buf });
+        await loadFile({ name: fileToLoadName, size: buf.byteLength, buffer: buf }, { historyKey: meta.bookKey || (bookObj && bookObj.bookKey) || '' });
       } catch (err) {
         if (statusEl) statusEl.textContent = 'Erro ao baixar livro: ' + err.message;
         alert('Erro ao baixar livro da nuvem: ' + err.message);
@@ -2373,8 +2385,8 @@
         }];
       }
       const profiles = getCloudProfilesList();
-      const writable = profiles.filter(p => p && p.provider !== 'firebase' && isCloudProfileAuthenticated(p));
-      if (!writable.length && cfg && cfg.provider !== 'firebase' && isCloudProfileAuthenticated(cfg)) {
+      const writable = profiles.filter(p => p && p.provider !== 'firebase' && canWriteCloud(p));
+      if (!writable.length && cfg && cfg.provider !== 'firebase' && canWriteCloud(cfg)) {
         return [{ ...cfg, id: cfg.profileId || 'active_db', name: cfg.name || getCloudProviderLabel(cfg.provider) }];
       }
       return writable;
@@ -2742,7 +2754,7 @@
                 size: buf.byteLength || 0
               });
               await recordSharedActivity({ type: 'approve', bookTitle: f.name, fileName: f.name, fileSize: buf.byteLength || 0 });
-              showToast(`"${f.name}" aprovado e movido para sua Estante!`);
+              showToast(`"${f.name}" aprovado e movido para sua Estante`);
               await refreshGuestInboxPanel();
               await listCloudBooks();
             }
@@ -2851,24 +2863,20 @@
           await listCloudBooks();
         }
         // Notifica o dono no e-mail configurado no servidor (OWNER_NOTIFY_EMAIL) ou via convite quando houver sugestão
-        if (!isDirectMember || inv.notifyEmail) {
-          const kCfg = getKindleConfig();
+        if (!isDirectMember) {
+          // Segurança: o servidor só notifica o OWNER_NOTIFY_EMAIL configurado na Vercel; nenhuma credencial do usuário é enviada.
           fetch('/api/send-kindle', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               notifyOwnerSuggestion: true,
-              provider: (kCfg && kCfg.provider) || undefined,
-              apiKey: (kCfg && kCfg.apiKey) || '',
-              fromEmail: (kCfg && kCfg.senderEmail) || '',
-              kindleEmail: inv.notifyEmail || '',
               senderEmail: (getCloudConfig().userEmail) || 'convidado',
               syncKey: inv.syncKey || 'minha-estante',
               bookTitle: f.name
             })
           }).catch(() => {});
         }
-        showToast(isDirectMember ? `"${f.name}" publicado na Estante Compartilhada!` : `"${f.name}" enviado para aprovação! Aparecerá na Estante quando o dono aprovar.`);
+        showToast(isDirectMember ? `"${f.name}" publicado na Estante Compartilhada` : `"${f.name}" enviado para aprovação! Aparecerá na Estante quando o dono aprovar.`);
       } catch (err) {
         alert('Não foi possível enviar o livro: ' + err.message);
       }
@@ -2897,7 +2905,7 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(link).then(() => {
           document.getElementById('cloudStatusMsg').textContent = `Link de convite (${role === 'contributor' ? 'Colaborador c/ Aprovação' : 'Somente Leitura'}) copiado!`;
-          showToast('Link de convite copiado!');
+          showToast('Link de convite copiado');
         }).catch(() => prompt('Copie o link de convite:', link));
       } else {
         prompt('Copie o link de convite:', link);
@@ -2924,7 +2932,7 @@
         if (pending && (!parsed.state || parsed.state === pending.state)) {
           await completeOAuthTokenResult(pending.provider, pending.profileId, parsed, pending.codeVerifier, pending.redirectUri);
           localStorage.removeItem('reader_oauth_pending');
-          showToast(`${getCloudProviderLabel(pending.provider)} conectado com sucesso!`);
+          showToast(`${getCloudProviderLabel(pending.provider)} conectado com sucesso`);
         }
       } catch (err) {
         alert('Erro ao concluir login OAuth: ' + err.message);
@@ -2982,12 +2990,12 @@
             const cur = getCloudConfig();
             localStorage.setItem('reader_cloud_config', JSON.stringify({ ...cur, ...parsed }));
             history.replaceState(null, '', location.pathname + location.search);
-            showToast(`Estante "${parsed.syncKey}" conectada automaticamente!`);
+            showToast(`Estante "${parsed.syncKey}" conectada automaticamente`);
           }
         }
       } catch {}
 
-      // 2. Verificar se o servidor Vercel/Netlify expõe Env Vars (/api/cloud-config)
+      // 2. Verificar se o servidor Vercel expõe Env Vars (/api/cloud-config)
       try {
         const res = await fetch('/api/cloud-config').catch(() => null);
         if (res && res.ok) {
@@ -3030,7 +3038,7 @@
         await syncCloudStateSilentPull();
         await listCloudBooks();
         refreshToolbarUserMenu();
-        showToast('Conectado à pasta compartilhada padrão (minha-estante)!');
+        showToast('Conectado à pasta compartilhada padrão (minha-estante)');
       });
     }
 
@@ -3052,7 +3060,7 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(shareUrl).then(() => {
           document.getElementById('cloudStatusMsg').textContent = 'Link direto copiado! Envie para seu WhatsApp/Telegram e abra no celular para conectar em 1 toque.';
-          showToast('Link de acesso rápido copiado!');
+          showToast('Link de acesso rápido copiado');
         }).catch(() => prompt('Copie o link abaixo e abra no celular:', shareUrl));
       } else {
         prompt('Copie o link abaixo e abra no celular:', shareUrl);
@@ -3071,7 +3079,7 @@
       a.download = `backup_leitor_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Backup completo (.JSON) exportado!');
+      showToast('Backup completo (.JSON) exportado');
     });
 
     document.getElementById('importBackupInput').addEventListener('change', async (e) => {
@@ -3081,7 +3089,7 @@
         const txt = await f.text();
         const data = JSON.parse(txt);
         mergeSyncPayload(data);
-        showToast('Backup restaurado com sucesso!');
+        showToast('Backup restaurado com sucesso');
         document.getElementById('cloudStatusMsg').textContent = 'Backup .JSON importado e mesclado com sucesso!';
       } catch (err) {
         alert('Arquivo de backup inválido: ' + err.message);
@@ -3448,7 +3456,7 @@
           localStorage.setItem('reader_entity_notes', JSON.stringify(map));
           await renderSection({ restoreSubPage: state.subPageIndex });
           runAutoXRayScan();
-          showToast(`Ficha X-Ray de "${cand.name}" ativada em todo o livro!`);
+          showToast(`Ficha X-Ray de "${cand.name}" ativada em todo o livro`);
         });
 
         card.querySelectorAll('.xray-freq-bar').forEach(bar => {
@@ -3823,7 +3831,7 @@
       saveBookReviewsMap(revMap);
       renderReviewsStudioPane();
       renderBookshelf();
-      showToast('Nota e resenha salvas!');
+      showToast('Nota e resenha salvas');
     });
 
     document.getElementById('btnDeleteReview').addEventListener('click', () => {
@@ -3858,7 +3866,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       a.download = `resenhas_livros_${new Date().toISOString().slice(0, 10)}.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showToast('Resenhas exportadas em Markdown (.MD)!');
+      showToast('Resenhas exportadas em Markdown (.MD)');
     });
 
     // Conta Kindle & Send to Kindle
@@ -3950,7 +3958,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
     document.getElementById('btnSaveKindleConfig').addEventListener('click', () => {
       saveKindleConfigFromUi();
       document.getElementById('lblKindleStatus').textContent = 'Conta Kindle salva com sucesso!';
-      showToast('Conta Kindle salva!');
+      showToast('Conta Kindle salva');
     });
 
     function updateKindleProviderGuideUi() {
@@ -4018,10 +4026,10 @@ ${r.reviewText || '_Sem resenha escrita._'}
         try { data = JSON.parse(rawResTxt); } catch {}
         if (!res.ok || !data.ok) {
           if (location.protocol === 'file:') {
-            throw new Error('Você abriu o arquivo local (file://). Para envio direto em 1 clique, abra pela URL da sua Vercel/Netlify ou use a Opção 1 acima!');
+            throw new Error('Você abriu o arquivo local (file://). Para envio direto em 1 clique, abra pela URL da sua Vercel ou use a Opção 1 acima!');
           }
           if (res.status === 404) {
-            throw new Error('Função /api/send-kindle não encontrada neste servidor (404). Suba a pasta "api/" na Vercel ou "netlify/" no Netlify, ou use a Opção 1 acima!');
+            throw new Error('Função /api/send-kindle não encontrada neste servidor (404). Confira se a pasta "api/" está no repositório da Vercel, ou use a Opção 1 acima!');
           }
           if (res.status === 413) {
             throw new Error('Livro muito grande para o limite do servidor. Use a Opção 1 (Amazon Send to Kindle) acima que aceita até 200 MB!');
@@ -4031,7 +4039,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         recordKindleSendHistory(state.title, cfg.kindleEmail, cfg.provider === 'gmail' ? 'Gmail Direto' : 'E-mail Direto');
         recordSharedActivity({ type: 'kindle', bookTitle: state.title || state.currentFileName, targetEmail: cfg.kindleEmail, channel: cfg.provider === 'gmail' ? 'Gmail Direto' : 'E-mail Direto' });
         statusEl.textContent = `Enviado com sucesso para ${cfg.kindleEmail}! Em alguns minutos aparecerá no seu Kindle.`;
-        showToast('Livro enviado para o seu Kindle!');
+        showToast('Livro enviado para o seu Kindle');
       } catch (err) {
         statusEl.textContent = 'Erro ao enviar: ' + err.message;
       }
@@ -4052,7 +4060,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         recordSharedActivity({ type: 'kindle', bookTitle: state.title || state.currentFileName, targetEmail: cfg.kindleEmail || 'Amazon Web', channel: 'Amazon Web' });
         window.open(portalUrl, '_blank', 'noopener');
         statusEl.textContent = `"${fileObj.filename}" baixado! Na aba da Amazon que abriu, clique em "Selecionar arquivos" e escolha esse arquivo que acabou de baixar.`;
-        showToast('EPUB baixado e Amazon Send to Kindle aberto!');
+        showToast('EPUB baixado e Amazon Send to Kindle aberto');
       } catch (err) {
         statusEl.textContent = err.message;
       }
@@ -4085,7 +4093,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
           const bodyTxt = encodeURIComponent(`Anexe o arquivo "${fileObj.filename}" que acabou de ser baixado e clique em Enviar.`);
           window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bodyTxt}`, '_blank', 'noopener');
           statusEl.textContent = `"${fileObj.filename}" baixado e Gmail aberto! Só arrastar o arquivo baixado para o e-mail e clicar em Enviar.`;
-          showToast('EPUB baixado e Gmail aberto!');
+          showToast('EPUB baixado e Gmail aberto');
         }
       } catch (err) {
         statusEl.textContent = 'Envio cancelado ou indisponível: ' + err.message;
@@ -4098,7 +4106,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       data.dailyGoal = val;
       saveReadingInsights(data);
       renderReadingInsightsPane();
-      showToast(`Meta diária atualizada para ${val} minutos!`);
+      showToast(`Meta diária atualizada para ${val} minutos`);
     });
 
     document.getElementById('btnMarkBookFinished').addEventListener('click', () => {
@@ -4116,7 +4124,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
         saveReadingInsights(data);
       }
       renderReadingInsightsPane();
-      showToast(`Livro "${state.title}" adicionado aos Livros Concluídos!`);
+      showToast(`Livro "${state.title}" adicionado aos Livros Concluídos`);
     });
 
     /* =====================================================================
@@ -4216,6 +4224,13 @@ ${r.reviewText || '_Sem resenha escrita._'}
     // =========================================================
     // PAINEL DE MEMBROS (OWNER) & CLUBE DE LEITURA (PERFIS / RESENHAS / CHAT)
     // =========================================================
+    const LIBRARY_ROLE_OPTIONS = [
+      ['viewer', 'Leitor (só lê)'],
+      ['contributor', 'Colaborador (sugere)'],
+      ['member', 'Membro (sobe/apaga)'],
+      ['owner', 'Dono']
+    ];
+
     async function refreshOwnerMembersPanel() {
       const box = document.getElementById('ownerMembersManageBox');
       const listEl = document.getElementById('ownerMembersList');
@@ -4243,15 +4258,17 @@ ${r.reviewText || '_Sem resenha escrita._'}
           rowDiv.innerHTML = `
             <div style="min-width:0; flex:1;">
               <div style="font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(r.email || '')}</div>
-              <div style="font-size:10.5px; color:var(--text-muted);">Papel: ${escapeHtml(r.role || 'member')} · Status: ${escapeHtml(r.status || 'active')}</div>
+              <div style="font-size:10.5px; color:var(--text-muted);">Papel: ${escapeHtml((LIBRARY_ROLE_OPTIONS.find(o => o[0] === r.role) || [0, r.role || 'member'])[1])} · Status: ${escapeHtml(r.status || 'active')}</div>
             </div>
             <div style="display:flex; gap:4px;">
-              <button class="tb-btn btn-toggle-member-role" style="height:22px; font-size:10.5px; padding:0 6px;">${r.role === 'owner' ? 'Tornar Membro' : 'Tornar Owner'}</button>
+              <select class="sel-member-role" style="height:22px; font-size:10.5px;" title="Papel deste membro">
+                ${LIBRARY_ROLE_OPTIONS.map(([v, l]) => `<option value="${v}" ${r.role === v ? 'selected' : ''}>${l}</option>`).join('')}
+              </select>
               <button class="tb-btn btn-remove-member" style="height:22px; font-size:10.5px; padding:0 6px; color:#f87171;">Remover</button>
             </div>
           `;
-          rowDiv.querySelector('.btn-toggle-member-role').addEventListener('click', async () => {
-            const nextRole = r.role === 'owner' ? 'member' : 'owner';
+          rowDiv.querySelector('.sel-member-role').addEventListener('change', async (ev) => {
+            const nextRole = ev.target.value;
             await fetch(`${cfg.url}/rest/v1/library_members?email=eq.${encodeURIComponent(r.email)}`, {
               method: 'PATCH',
               headers: getSupabaseHeaders(cfg, { 'Content-Type': 'application/json' }),
@@ -4287,11 +4304,11 @@ ${r.reviewText || '_Sem resenha escrita._'}
           const res = await fetch(`${cfg.url}/rest/v1/library_members`, {
             method: 'POST',
             headers: getSupabaseHeaders(cfg, { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }),
-            body: JSON.stringify({ email, role: 'member', status: 'active' })
+            body: JSON.stringify({ email, role: (document.getElementById('selectOwnerAddMemberRole') || {}).value || 'viewer', status: 'active' })
           });
           if (!res.ok) throw new Error('Falha ao adicionar membro (verifique RLS owner).');
           if (inp) inp.value = '';
-          showToast(`Membro ${email} adicionado!`);
+          showToast(`Acesso liberado para ${email}`);
           refreshOwnerMembersPanel();
         } catch (err) {
           showToast(err.message, true);
@@ -4364,7 +4381,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       const map = getLocalClubProfiles();
       map[slug] = myPublic;
       saveLocalClubProfiles(map);
-      if (isCloudProfileAuthenticated(cfg) && cfg.provider !== 'firebase') {
+      if (canWriteCloud(cfg) && cfg.provider !== 'firebase') {
         try {
           if (isOAuthCloudProvider(cfg.provider)) {
             await cloudWriteJsonByPath(cfg, '_shared_profiles.json', map).catch(() => {});
@@ -4615,7 +4632,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
       let list = [...getLocalClubChat(), msg].slice(-120);
       saveLocalClubChat(list);
       renderClubChatList(list);
-      if (isCloudProfileAuthenticated(cfg) && cfg.provider !== 'firebase') {
+      if (canWriteCloud(cfg) && cfg.provider !== 'firebase') {
         try {
           const remote = await pullClubChatMessages();
           const seen = new Set();

@@ -2,12 +2,19 @@
      * 8. PARSERS ADICIONAIS (FB2 E MARKDOWN) + CARREGAMENTO DE ARQUIVOS
      * ===================================================================== */
     async function parseFb2(arrayBuffer, fileName) {
-      const rawXml = new TextDecoder('utf-8').decode(arrayBuffer);
+      // Respeita a codificação declarada no XML (muitos FB2 antigos usam windows-1251)
+      const head = new TextDecoder('latin1').decode(new Uint8Array(arrayBuffer, 0, Math.min(200, arrayBuffer.byteLength)));
+      const encMatch = head.match(/encoding=["']([\w-]+)["']/i);
+      let rawXml;
+      try { rawXml = new TextDecoder(encMatch ? encMatch[1].toLowerCase() : 'utf-8').decode(arrayBuffer); }
+      catch { rawXml = new TextDecoder('utf-8').decode(arrayBuffer); }
       const doc = new DOMParser().parseFromString(rawXml, 'text/xml');
       const titleEl = doc.querySelector('title-info > book-title');
       const authorEl = doc.querySelector('title-info > author');
       const title = titleEl ? titleEl.textContent.trim() : fileName.replace(/\.[^.]+$/, '');
-      const author = authorEl ? authorEl.textContent.replace(/\s+/g, ' ').trim() : 'FictionBook';
+      const author = authorEl
+        ? (Array.from(authorEl.children).map(c => c.textContent.trim()).filter(Boolean).join(' ') || authorEl.textContent.trim())
+        : 'Autor desconhecido';
 
       const binMap = new Map();
       doc.querySelectorAll('binary').forEach(b => {
@@ -27,6 +34,7 @@
         const secTitle = tNode ? tNode.textContent.replace(/\s+/g, ' ').trim() : `Seção ${idx + 1}`;
         let html = `<div class="book-chapter"><h2>${escapeHtml(secTitle)}</h2>`;
         secNode.querySelectorAll('p, subtitle, epigraph, poem, v, image').forEach(el => {
+          if (el.closest('title') && el.closest('title').parentNode === secNode) return; // título já vai no <h2>
           const tag = el.tagName.toLowerCase();
           if (tag === 'image') {
             const href = el.getAttribute('l:href') || el.getAttribute('xlink:href') || el.getAttribute('href') || '';
@@ -194,6 +202,39 @@
       };
     }
 
+    // Títulos vindos de nome de arquivo ("Death_Note_Official__Cap_1_PT-BR", "Livro (z-library.sk, 1lib.sk)")
+    function looksLikeFileTitle(title, fileName = '') {
+      const t = String(title || '').trim();
+      if (!t) return true;
+      const base = String(fileName || '').replace(/\.[^.]+$/, '');
+      return t === base || (/_/.test(t) && !/\s/.test(t)) || /z-lib|1lib|libgen|\(z-library/i.test(t);
+    }
+
+    function prettifyBookTitle(title) {
+      return String(title || '')
+        .replace(/\.(epub|mobi|azw3?|pdf|cbz|cbr|zip|fb2|txt|md|docx?)$/i, '')
+        .replace(/[\s_]*[\(\[][^\)\]]*(z-lib|1lib|libgen|z-library)[^\)\]]*[\)\]]/gi, '')
+        .replace(/_+/g, ' ')
+        .replace(/\s*(z-library|z-lib|1lib|libgen)\.[a-z]{2,4}/gi, '')
+        .replace(/\s+-\s+/g, ' — ')
+        .replace(/\s{2,}/g, ' ')
+        .trim() || String(title || '');
+    }
+
+    const SUPPORTED_BOOK_EXTENSIONS = ['epub', 'pdf', 'cbz', 'zip', 'mobi', 'azw', 'azw3', 'prc', 'fb2', 'docx', 'odt', 'rtf', 'md', 'markdown', 'txt', 'html', 'htm', 'srt', 'vtt'];
+
+    // Detecta arquivos binários (imagens, executáveis, arquivos corrompidos) antes de tratá-los como texto
+    function looksLikeBinaryBuffer(buffer) {
+      const bytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 4096));
+      if (!bytes.length) return false;
+      let suspicious = 0;
+      for (const b of bytes) {
+        if (b === 0) return true;
+        if (b < 7 || (b > 13 && b < 32)) suspicious++;
+      }
+      return suspicious / bytes.length > 0.1;
+    }
+
     async function parseAnyBookBuffer(buffer, fileName) {
       const ext = (fileName || '').split('.').pop().toLowerCase();
       if (ext === 'epub') return await parseEpub(buffer, fileName);
@@ -206,7 +247,14 @@
       if (ext === 'rtf') return parseRtf(buffer, fileName);
       if (ext === 'md' || ext === 'markdown') return parseMarkdown(buffer, fileName);
       if (ext === 'srt' || ext === 'vtt') return parseSubtitleText(buffer, fileName);
-      const rawTxt = new TextDecoder('utf-8').decode(buffer);
+      if (looksLikeBinaryBuffer(buffer)) {
+        throw new Error(`"${fileName}" não é um livro em formato suportado (parece imagem ou arquivo binário).`);
+      }
+      // TXT/HTML: tenta UTF-8 e, se houver bytes inválidos, usa Windows-1252 (arquivos antigos em ISO-8859-1)
+      let rawTxt;
+      try { rawTxt = new TextDecoder('utf-8', { fatal: true }).decode(buffer); }
+      catch { rawTxt = new TextDecoder('windows-1252').decode(buffer); }
+      rawTxt = rawTxt.replace(/^﻿/, '');
       const html = ext.startsWith('htm')
         ? rawTxt
         : rawTxt.split(/\r?\n\r?\n+/).map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
@@ -218,6 +266,23 @@
         toc: [{ label: 'Início', sectionIndex: 0, depth: 0 }]
       };
     }
+
+    // Segurança: todo parser que gera HTML passa pelo sanitizador central (ver sanitizeBookHtml).
+    (function wrapBookParsersWithSanitizer() {
+      const wrap = (fn) => function sanitizedParser(...args) {
+        const out = fn.apply(this, args);
+        return (out && typeof out.then === 'function') ? out.then(sanitizeParsedBook) : sanitizeParsedBook(out);
+      };
+      parseEpub = wrap(parseEpub);
+      parseMobi = wrap(parseMobi);
+      parseFb2 = wrap(parseFb2);
+      parseDocx = wrap(parseDocx);
+      parseOdt = wrap(parseOdt);
+      parseRtf = wrap(parseRtf);
+      parseMarkdown = wrap(parseMarkdown);
+      parseSubtitleText = wrap(parseSubtitleText);
+      parseAnyBookBuffer = wrap(parseAnyBookBuffer);
+    })();
 
     async function loadFile(file, options = {}) {
       if (!file) return;
@@ -241,9 +306,20 @@
           state.mangaRtl = true;
         }
 
-        if (ext !== 'cbz' && ext !== 'zip' && !state.readingType) {
+        // Abrir um livro de texto logo depois de um mangá não pode herdar o modo mangá (texto RTL / botões de mangá)
+        if (ext !== 'cbz' && ext !== 'zip' && (!state.readingType || state.readingType === 'manga')) {
           state.readingType = 'book';
           state.mangaRtl = false;
+        }
+
+        if (looksLikeFileTitle(parsed.title, file.name)) {
+          let catTitle = '';
+          try {
+            const cat = getCloudCatalogMap();
+            const catMeta = cat[safeCloudFileName(file.name)] || Object.values(cat).find(m => m && m.originalFileName === file.name);
+            if (catMeta && catMeta.title && !looksLikeFileTitle(catMeta.title, file.name)) catTitle = catMeta.title;
+          } catch {}
+          parsed.title = catTitle || prettifyBookTitle(parsed.title || file.name);
         }
 
         const byteSize = buffer.byteLength || file.size || 0;
@@ -253,6 +329,8 @@
         state.format = parsed.format;
         state.sections = parsed.sections;
         state.toc = parsed.toc;
+        // Painéis mostram só as opções que fazem sentido para o tipo de arquivo aberto
+        document.body.dataset.bookKind = parsed.format === 'PDF' ? 'pdf' : ((parsed.format === 'CBZ' || state.readingType === 'manga') ? 'manga' : 'text');
         state._cachedCefr = null;
         state._extractingPdfCefr = false;
 
@@ -264,8 +342,17 @@
         if (btnCloseBookShelfEl) btnCloseBookShelfEl.classList.remove('hidden');
 
         const hist = JSON.parse(localStorage.getItem('reader_history') || '{}');
-        const saved = hist[state.bookKey];
+        let saved = hist[state.bookKey] || (options.historyKey ? hist[options.historyKey] : null);
+        if (!saved && parsed.title) {
+          // O mesmo livro pode ter sido lido com outro nome de arquivo (ex.: cópia baixada da nuvem):
+          // recupera o progresso mais recente pelo título, igual ao card da estante.
+          const t = String(parsed.title).toLowerCase();
+          saved = Object.values(hist)
+            .filter(x => x && x.title && String(x.title).toLowerCase() === t && x.total === parsed.sections.length)
+            .sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0))[0];
+        }
         let restoreOpts = {};
+        let showResumeRibbon = false;
         if (saved && saved.currentIndex < parsed.sections.length) {
           state.currentIndex = saved.currentIndex;
           restoreOpts = {
@@ -273,7 +360,7 @@
             restoreScrollRatio: saved.scrollRatio || 0
           };
           if (saved.currentIndex > 0 || saved.subPageIndex > 0 || saved.scrollRatio > 0.05) {
-            showToast(`Retomando leitura de onde você parou (Seção ${saved.currentIndex + 1})`);
+            showResumeRibbon = state.format !== 'CBZ';
           }
         } else {
           state.currentIndex = 0;
@@ -293,6 +380,9 @@
         renderToc();
         populateParallelSectionSelect();
         await renderSection(restoreOpts);
+        if (showResumeRibbon && typeof window.showReadingReturnRibbon === 'function') {
+          setTimeout(() => window.showReadingReturnRibbon(), 250);
+        }
         if (typeof updateNextSeriesButtonUi === 'function') updateNextSeriesButtonUi();
 
         // Deferir gravação em IndexedDB e captura de capa para não competir com a 1ª página
@@ -316,7 +406,7 @@
           }
         }, 120);
       } catch (err) {
-        alert('Erro ao abrir o livro: ' + err.message);
+        showToast('Erro ao abrir o livro: ' + err.message, true);
         dom.statusLeft.textContent = 'Falha ao abrir arquivo';
         console.error(err);
       }
@@ -392,7 +482,7 @@
         }
         applySettings();
         if (state.sections.length) renderSection({ forceRebuildContinuous: true, restoreSubPage: 0 });
-        showToast(state.webtoonStrip ? 'Modo Tira Vertical (Webtoon) ativado — imagens coladas em sequência!' : 'Modo Tira Vertical desativado.');
+        showToast(state.webtoonStrip ? 'Modo Tira Vertical (Webtoon) ativado — imagens coladas em sequência' : 'Modo Tira Vertical desativado.');
       });
     }
 
@@ -416,9 +506,10 @@
         const rect = dom.viewport.getBoundingClientRect();
         if (!rect.width) return;
         const relX = (e.clientX - rect.left) / rect.width;
-        if (relX <= 0.18) {
+        const zone = getTapZoneWidth();
+        if (relX <= zone) {
           if (state.mangaRtl) stepForward(); else stepBackward();
-        } else if (relX >= 0.82) {
+        } else if (relX >= 1 - zone) {
           if (state.mangaRtl) stepBackward(); else stepForward();
         }
       });
@@ -496,6 +587,7 @@
       btnModeBookEl.addEventListener('click', () => {
         state.readingType = 'book';
         state.mangaRtl = false;
+        if (state.sections.length) document.body.dataset.bookKind = state.format === 'PDF' ? 'pdf' : 'text';
         applySettings();
         if (state.sections.length) renderSection({ restoreSubPage: state.subPageIndex });
         showToast('Modo Livro selecionado');
@@ -503,6 +595,7 @@
       btnModeMangaEl.addEventListener('click', () => {
         state.readingType = 'manga';
         state.mangaRtl = true;
+        if (state.sections.length) document.body.dataset.bookKind = 'manga';
         state.pdfTint = false;
         if (typeof syncPdfTintUi === 'function') syncPdfTintUi();
         applySettings();
@@ -518,6 +611,12 @@
       btnToolsMenuToggleEl.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = toolsDropdownEl.classList.toggle('open');
+        const aiKeyLbl = document.getElementById('lblMenuAiKeyState');
+        if (aiKeyLbl) {
+          const hasKey = Boolean(state.geminiApiKey && state.geminiApiKey.trim());
+          aiKeyLbl.textContent = hasKey ? 'Conectada ✓' : 'Sem chave · modo básico';
+          aiKeyLbl.style.color = hasKey ? 'var(--accent)' : '';
+        }
         dom.typoPopover.classList.remove('open');
         const userDd = document.getElementById('userProfileDropdown');
         if (userDd) userDd.classList.remove('open');
@@ -617,13 +716,13 @@
         id: 'vc_' + Date.now(),
         front,
         back: dom.inputAnkiBack.value.trim(),
-        context: dom.inputAnkiContext.value.trim(),
+        context: ankiContextFromField(dom.inputAnkiContext.value.trim()),
         book: state.title ? `${state.title}${secTitle ? ' · ' + secTitle : ''}` : 'Leitor Portátil',
         date: new Date().toLocaleDateString('pt-BR')
       });
       saveVocabList(list);
       dom.lookupModal.classList.remove('open');
-      showToast('Salvo no Vocabulário Anki!');
+      showToast('Salvo no Vocabulário Anki');
     });
 
     document.getElementById('btnExportAnkiTsv').addEventListener('click', exportVocabForAnkiTsv);
@@ -1256,12 +1355,9 @@
     window.addEventListener('dragleave', () => {
       dom.emptyState.classList.remove('dragover');
     });
-    window.addEventListener('drop', (e) => {
-      e.preventDefault();
+    window.addEventListener('drop', () => {
+      // O carregamento do arquivo é feito no handler único "Arrastar e Soltar Global" (mais abaixo)
       dom.emptyState.classList.remove('dragover');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        loadFile(e.dataTransfer.files[0]);
-      }
     });
 
     // Atalhos de Teclado
@@ -1536,7 +1632,7 @@
       stSel.onchange = () => {
         setBookStatusValue(bookObj, stSel.value);
         renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-        showToast('Status de leitura atualizado!');
+        showToast('Status de leitura atualizado');
       };
 
       // Estrelas dentro da Ficha do Livro
@@ -1557,7 +1653,7 @@
             saveBookReviewsMap(revMap);
             renderInfoStars(s);
             renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-            showToast(`Nota ${s}/5 salva!`);
+            showToast(`Nota ${s}/5 salva`);
           };
           starRow.appendChild(sb);
         }
@@ -1601,7 +1697,7 @@
           if (typeof pushCloudSyncSilent === 'function') pushCloudSyncSilent();
           document.getElementById('lblBookInfoStatus').textContent = val ? `Adicionado ao grupo "${val}"!` : 'Grupo removido.';
           renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-          showToast(val ? `Livro salvo no grupo "${val}"!` : 'Livro removido do grupo.');
+          showToast(val ? `Livro salvo no grupo "${val}"` : 'Livro removido do grupo.');
         };
       }
       const btnClearGrp = document.getElementById('btnClearInfoCustomGroup');
@@ -1647,7 +1743,7 @@
       saveBookReviewsMap(revMap);
       document.getElementById('lblBookInfoStatus').textContent = 'Resenha salva!';
       if (typeof pushPublicClubProfile === 'function') pushPublicClubProfile().catch(() => {});
-      showToast('Resenha salva no livro!');
+      showToast('Resenha salva no livro');
     });
 
     function buildBookStudyDossierMarkdown(bookObj, highlights = [], notes = [], review = {}) {
@@ -1727,7 +1823,7 @@
         a.download = `Dossie_${safe}.md`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-        showToast('Dossiê de Estudo (.md) exportado!');
+        showToast('Dossiê de Estudo (.md) exportado');
       });
     }
 
@@ -1771,7 +1867,7 @@
       if (typeof pushCloudSyncSilent === 'function') pushCloudSyncSilent();
       await openBookInfoModal(activeBookInfoTarget);
       document.getElementById('lblBookInfoStatus').textContent = 'Informações e sinopse atualizadas!';
-      showToast('Metadados do livro extraídos!');
+      showToast('Metadados do livro extraídos');
     });
 
     async function getUnifiedShelfBooks() {
@@ -2049,7 +2145,7 @@
         }
         const total = (h && h.total) || b.totalSections || 1;
         const cur = h ? (h.currentIndex + 1) : 1;
-        const pct = h ? Math.round((cur / Math.max(1, total)) * 100) : 0;
+        const pct = h ? (typeof h.percent === 'number' ? h.percent : Math.round((cur / Math.max(1, total)) * 100)) : 0;
         const sizeLabel = b.size ? (b.size > 1048576 ? (b.size / 1048576).toFixed(2) + ' MB' : Math.round(b.size / 1024) + ' KB') : 'Nuvem';
         const cloudLabel = (b.cloudProviders && b.cloudProviders.length) ? b.cloudProviders.join(' + ') : 'NUVEM';
         const syncTag = b.isLocal && b.inCloud ? `${cloudLabel} + OFFLINE` : (b.isLocal ? 'LOCAL (OFFLINE)' : cloudLabel);
@@ -2077,7 +2173,7 @@
                 ${coverDataUrl ? `<img src="${coverDataUrl}" alt="Capa" loading="lazy" decoding="async" />` : `<span>${escapeHtml((b.format || 'LIVRO').slice(0, 5))}</span>`}
               </div>
               <div style="flex:1; min-width:0;">
-                <div class="book-card-title clickable-title" title="Clique para ver detalhes, sinopse e resenha">${escapeHtml(b.title)}</div>
+                <div class="book-card-title clickable-title" title="Clique para ver detalhes, sinopse e resenha">${escapeHtml(looksLikeFileTitle(b.title) ? prettifyBookTitle(b.title) : b.title)}</div>
                 <div class="book-card-author">${escapeHtml(b.author || 'Autor desconhecido')}</div>
                 ${(() => { const g = getEffectiveBookGroupName(b, metaMap); return g.isCustom ? `<div style="font-size:10.5px; color:var(--accent); font-weight:600; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Grupo: ${escapeHtml(g.name)}</div>` : ''; })()}
                 <div class="book-card-rating" style="font-size:11px; color:#eab308; margin-top:4px; min-height:14px;">${rev && rev.rating ? ('★'.repeat(rev.rating) + '☆'.repeat(5 - rev.rating)) : ''}</div>
@@ -2109,7 +2205,7 @@
               ${showCopyCloudBtn ? '<button class="btn btn-copy-cloud" title="Copiar/espelhar este livro para outro banco na nuvem">⇄ Nuvem</button>' : ''}
               ${b.isLocal && b.inCloud ? '<button class="btn btn-evict-local" title="Liberar espaço deste dispositivo mantendo o livro salvo na Nuvem">Só Nuvem</button>' : ''}
               ${b.isLocal ? '<button class="btn btn-dl-book" title="Baixar arquivo original">↓</button>' : ''}
-              <button class="btn btn-del-book" title="Remover">${b.isLocal ? '✕' : '✕ Nuvem'}</button>
+              ${(b.isLocal || canWriteCloud(getCloudConfig())) ? `<button class="btn btn-del-book" title="${b.isLocal ? 'Remover deste aparelho' : 'Apagar da Nuvem'}">${b.isLocal ? '✕' : '✕ Nuvem'}</button>` : ''}
             </div>
           </div>
         `;
@@ -2148,7 +2244,7 @@
           const nextSt = curSt === 'finished' ? 'reading' : 'finished';
           setBookStatusValue(b, nextSt);
           renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-          showToast(nextSt === 'finished' ? 'Marcado como Lido!' : 'Movido para Lendo Agora');
+          showToast(nextSt === 'finished' ? 'Marcado como Lido' : 'Movido para Lendo Agora');
         });
 
         card.querySelector('.btn-read-book').addEventListener('click', openBookAction);
@@ -2200,12 +2296,12 @@
             if (confirm(`Liberar "${b.title}" da memória local do dispositivo (ele continua salvo na Nuvem com seu progresso)?`)) {
               await idbDeleteBook(b.bookKey);
               renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-              showToast('Espaço local liberado — livro mantido na Nuvem!');
+              showToast('Espaço local liberado — livro mantido na Nuvem');
             }
           });
         }
 
-        card.querySelector('.btn-del-book').addEventListener('click', async (e) => {
+        if (card.querySelector('.btn-del-book')) card.querySelector('.btn-del-book').addEventListener('click', async (e) => {
           e.stopPropagation();
           const inviteState = getActiveInviteState();
           if (inviteState && inviteState.role !== 'member' && !b.isLocal) {
@@ -2337,6 +2433,7 @@
       if (dom.statusPercent) dom.statusPercent.textContent = '0%';
       if (dom.progressFill) dom.progressFill.style.width = '0%';
       document.body.classList.add('is-shelf-home');
+      delete document.body.dataset.bookKind;
       applySettings();
       state.seriesQueue = null;
       if (typeof updateNextSeriesButtonUi === 'function') updateNextSeriesButtonUi();
@@ -2520,7 +2617,7 @@
         window.__selectedShelfKeys.clear();
         updateShelfBatchBarUi();
         await listCloudBooks();
-        showToast(`${okCount}/${picked.length} livro(s) enviado(s) em lote!`);
+        showToast(`${okCount}/${picked.length} livro(s) enviado(s) em lote`);
       });
     }
     const btnBatchGrpEl = document.getElementById('btnBatchMoveGroup');
@@ -2537,7 +2634,7 @@
         window.__selectedShelfKeys.clear();
         updateShelfBatchBarUi();
         renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-        showToast(clean ? `${picked.length} livros movidos para "${clean}"!` : 'Grupo removido dos livros selecionados.');
+        showToast(clean ? `${picked.length} livros movidos para "${clean}"` : 'Grupo removido dos livros selecionados.');
       });
     }
     const btnBatchEvictEl = document.getElementById('btnBatchEvictLocal');
@@ -2550,7 +2647,7 @@
         window.__selectedShelfKeys.clear();
         updateShelfBatchBarUi();
         renderBookshelf(document.getElementById('inputFilterShelf') ? document.getElementById('inputFilterShelf').value : '');
-        showToast(`Espaço local liberado para ${picked.length} livro(s)!`);
+        showToast(`Espaço local liberado para ${picked.length} livro(s)`);
       });
     }
     const btnBatchDelEl = document.getElementById('btnBatchDelete');
@@ -2620,7 +2717,7 @@
           a.download = `${baseName}_Vol_${sorted.length}_caps.cbz`;
           a.click();
           setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-          showToast(`Volume .CBZ compilado com ${zipEntries.length} páginas!`);
+          showToast(`Volume .CBZ compilado com ${zipEntries.length} páginas`);
         } catch (err) {
           showToast('Erro ao compilar .CBZ: ' + err.message, true);
         } finally {
@@ -2997,6 +3094,26 @@
         }
       });
 
+      // Zoom com pinça (dois dedos) no celular
+      let pinchStartDist = 0, pinchStartZoom = 1;
+      const touchDist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      lbStage.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length === 2) {
+          pinchStartDist = touchDist(e.touches);
+          pinchStartZoom = lbZoom;
+        }
+      }, { passive: true });
+      lbStage.addEventListener('touchmove', (e) => {
+        if (!e.touches || e.touches.length !== 2 || !pinchStartDist) return;
+        e.preventDefault();
+        lbZoom = Math.max(0.5, Math.min(5.0, Number((pinchStartZoom * (touchDist(e.touches) / pinchStartDist)).toFixed(2))));
+        if (lbZoom <= 1.0) { lbPanX = 0; lbPanY = 0; }
+        applyLbTransform();
+      }, { passive: false });
+      lbStage.addEventListener('touchend', (e) => {
+        if (!e.touches || e.touches.length < 2) pinchStartDist = 0;
+      }, { passive: true });
+
       // Arrastar no Celular (Touch Drag)
       let touchStartX = 0, touchStartY = 0;
       lbStage.addEventListener('touchstart', (e) => {
@@ -3039,7 +3156,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
           }, 1000);
-          showToast(`Imagem "${fileName}" baixada com sucesso!`);
+          showToast(`Imagem "${fileName}" baixada com sucesso`);
         } catch (err) {
           const a = document.createElement('a');
           a.href = lbImg.src;
@@ -3048,7 +3165,7 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          showToast('Download da imagem iniciado!');
+          showToast('Download da imagem iniciado');
         }
       });
     }
@@ -3072,7 +3189,7 @@
                 await navigator.clipboard.write([
                   new ClipboardItem({ 'image/png': pngBlob })
                 ]);
-                showToast('Imagem copiada para a área de transferência!');
+                showToast('Imagem copiada para a área de transferência');
               } catch {
                 showToast('Acesso à área de transferência negado pelo navegador.');
               }
@@ -3160,6 +3277,10 @@
 
       if (state.sections && state.sections.length) {
         state.sections.forEach((sec, sIdx) => {
+          // EPUB/MOBI montam o HTML só quando o capítulo é aberto; a galeria precisa dele para achar as imagens
+          if (sec.html === null && typeof sec.buildHtml === 'function') {
+            try { sec.html = sec.buildHtml(sec.rawSlice); } catch {}
+          }
           if (sec.images && sec.images.length) {
             sec.images.forEach((imgSrc, iIdx) => {
               addImg(imgSrc, `Cap. ${sIdx + 1} · Imagem ${iIdx + 1}`, sIdx + 1);
@@ -3207,102 +3328,12 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          showToast('Download da ilustração iniciado!');
+          showToast('Download da ilustração iniciado');
         });
         grid.appendChild(card);
       });
     };
 
-    // =====================================================================
-    // 10E. CONVERSOR DE CAPÍTULO PARA ÁUDIO MP3 OFFLINE
-    // =====================================================================
-    async function exportCurrentChapterAudioMp3() {
-      if (!state.sections.length || state.currentIndex < 0) {
-        showToast('Abra um livro para exportar o áudio do capítulo.');
-        return;
-      }
-      const sec = state.sections[state.currentIndex];
-      const rawHtml = sec.html || '';
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = rawHtml;
-      tempDiv.querySelectorAll('script, style, noscript, nav').forEach(el => el.remove());
-      const text = (tempDiv.innerText || tempDiv.textContent || '').trim();
-      if (!text || text.length < 15) {
-        showToast('Este capítulo não possui texto suficiente para narrar.');
-        return;
-      }
-
-      const isEnglish = (state.lang || '').toLowerCase().startsWith('en') || /[a-z]/i.test(text.slice(0, 50)) && !/[ãõéáíóúç]/i.test(text.slice(0, 100));
-      const lang = isEnglish ? 'en' : 'pt-BR';
-      showToast('Sintetizando áudio MP3 narrado do capítulo... Aguarde alguns instantes.');
-
-      const chunks = [];
-      const sentences = text.match(/[^.!?\n]+[.!?\n]+/g) || [text];
-      let curChunk = '';
-      for (const s of sentences) {
-        const cleanS = s.trim();
-        if (!cleanS) continue;
-        if ((curChunk + ' ' + cleanS).length <= 160) {
-          curChunk = curChunk ? (curChunk + ' ' + cleanS) : cleanS;
-        } else {
-          if (curChunk) chunks.push(curChunk);
-          if (cleanS.length <= 160) {
-            curChunk = cleanS;
-          } else {
-            const words = cleanS.split(' ');
-            let sub = '';
-            for (const w of words) {
-              if ((sub + ' ' + w).length <= 160) sub = sub ? (sub + ' ' + w) : w;
-              else { chunks.push(sub); sub = w; }
-            }
-            if (sub) chunks.push(sub);
-            curChunk = '';
-          }
-        }
-      }
-      if (curChunk) chunks.push(curChunk);
-
-      const toProcess = chunks.slice(0, 50);
-      const audioBlobs = [];
-
-      try {
-        for (let i = 0; i < toProcess.length; i++) {
-          const q = encodeURIComponent(toProcess[i]);
-          const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${lang}&q=${q}`;
-          const res = await fetch(ttsUrl);
-          if (!res.ok) throw new Error('Falha no streaming de voz');
-          const ab = await res.arrayBuffer();
-          audioBlobs.push(ab);
-          if (i % 6 === 0) {
-            showToast(`Gerando áudio MP3: ${Math.round(((i + 1) / toProcess.length) * 100)}% concluído...`);
-          }
-        }
-
-        const finalBlob = new Blob(audioBlobs, { type: 'audio/mp3' });
-        const bookSlug = (state.title || 'livro').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 25);
-        const audioFileName = `${bookSlug}_Cap_${state.currentIndex + 1}_Audio.mp3`;
-        const downloadUrl = URL.createObjectURL(finalBlob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = audioFileName;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(downloadUrl);
-        }, 2000);
-        showToast(`Áudio MP3 "${audioFileName}" baixado com sucesso!`);
-      } catch (err) {
-        showToast('Não foi possível gerar arquivo MP3 externo. Iniciando narração por voz local...');
-        const btnPlay = document.getElementById('btnTtsPlayPause');
-        if (btnPlay) btnPlay.click();
-      }
-    }
-
-    const btnExportChapterAudioEl = document.getElementById('btnExportChapterAudio');
-    if (btnExportChapterAudioEl) {
-      btnExportChapterAudioEl.addEventListener('click', exportCurrentChapterAudioMp3);
-    }
 
     /* =====================================================================
      * 11. NARRAÇÃO POR VOZ (TTS / READ-ALONG COM DESTAQUE DE PARÁGRAFO)
@@ -3592,7 +3623,7 @@
           const safe = safeCloudFileName(state.currentFileName || state.title || 'livro');
           saveBookCoverDataUrl(bk, safe, dataUrl);
           if (typeof renderBookshelf === 'function') renderBookshelf();
-          showToast('Página atual definida como capa do livro!');
+          showToast('Página atual definida como capa do livro');
         } catch (err) {
           showToast('Não foi possível capturar a página (CORS ou canvas protegido).', true);
         }
@@ -4086,9 +4117,14 @@
       if (typeof defaultPane === 'string' && defaultPane.startsWith('paneStudio')) {
         switchStudioPane(defaultPane);
       }
-      if (!standaloneConvertBook && state.title) {
-        document.getElementById('convSelectedFileLabel').textContent = `Livro ativo pronto p/ converter: "${state.title}" (${state.format}) — ou clique aqui para enviar outro arquivo`;
+      const hasOpenBook = Boolean(state.sections && state.sections.length && state.title);
+      if (!standaloneConvertBook) {
+        document.getElementById('convSelectedFileLabel').textContent = hasOpenBook
+          ? `Livro ativo pronto p/ converter: "${state.title}" (${state.format}) — ou clique aqui para enviar outro arquivo`
+          : 'Nenhum livro aberto — clique aqui ou arraste um arquivo para converter';
       }
+      const goReaderBtn = document.getElementById('btnStudioGoReader');
+      if (goReaderBtn) goReaderBtn.textContent = hasOpenBook ? 'Voltar ao Leitor' : 'Fechar';
     };
 
     document.querySelectorAll('[data-studio-pane]').forEach(btn => {
@@ -4146,7 +4182,7 @@
         }
         standaloneConvertBook = { ...parsed, buffer, fileName: file.name };
         document.getElementById('convSelectedFileLabel').textContent = `Arquivo selecionado: "${file.name}" (${parsed.format}, ${parsed.sections.length} seções) — escolha o formato abaixo e clique em Converter!`;
-        showToast(`Arquivo "${file.name}" pronto para converter!`);
+        showToast(`Arquivo "${file.name}" pronto para converter`);
       } catch (err) {
         alert('Erro ao ler arquivo para conversão: ' + err.message);
       }
@@ -4229,7 +4265,7 @@
           a.click();
           setTimeout(() => URL.revokeObjectURL(u), 3000);
           if (statusEl) statusEl.textContent = `EPUB corrigido com sucesso para ${dir.toUpperCase()} e baixado!`;
-          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado!`);
+          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado`);
         } else {
           const zip = await openZipBuffer(fileBuf);
           const imgEntries = [];
@@ -4290,12 +4326,12 @@
           a.click();
           setTimeout(() => URL.revokeObjectURL(u), 3000);
           if (statusEl) statusEl.textContent = `EPUB Mangá Fixed-Layout gerado com ${imgEntries.length} páginas!`;
-          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado!`);
+          showToast(`Mangá Kindle (${dir.toUpperCase()}) gerado`);
         }
 
         if (sendToAmazon) {
           window.open('https://www.amazon.com/sendtokindle', '_blank', 'noopener');
-          showToast('Abrindo Send to Kindle oficial da Amazon!');
+          showToast('Abrindo Send to Kindle oficial da Amazon');
         }
       } catch (err) {
         if (statusEl) statusEl.textContent = 'Erro ao converter mangá: ' + err.message;
@@ -4357,7 +4393,7 @@
         state.geminiApiKey = inpGemini.value.trim();
         localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
         if (typeof updateAiKeyBadges === 'function') updateAiKeyBadges();
-        showToast(state.geminiApiKey ? 'Chave Gemini API salva com sucesso!' : 'Chave removida. Usando modo offline.');
+        showToast(state.geminiApiKey ? 'Chave Gemini API salva com sucesso' : 'Chave removida. Usando modo offline.');
       });
     }
 
@@ -4446,7 +4482,7 @@
           podcastUtterances.push({ host, text: speech });
         });
       }
-      showToast('Roteiro do podcast gerado!');
+      showToast('Roteiro do podcast gerado');
     }
 
     function playPodcast() {
@@ -4557,13 +4593,13 @@
         const res = await callGeminiOrLocal(prompt, context);
         if (res && res.success) {
           if (content) content.innerText = res.text;
-          showToast('Guia de Estudo gerado com sucesso!');
+          showToast('Guia de Estudo gerado com sucesso');
         } else if (res && res.error) {
           if (content) content.innerHTML = `<span style="color:var(--danger,#ef4444);">Erro na API: ${escapeHtml(res.message)}. Verifique sua chave Gemini.</span>`;
         } else {
           const capTitle = curSec ? (curSec.title || 'Capítulo Atual') : 'Início';
           if (content) content.innerText = `GUIA DE ESTUDO (MODO ESTRUTURADO LOCAL)\n\nObra: ${state.title}\nCapítulo: ${capTitle}\n\n1. RESUMO GERAL\nO capítulo desenvolve a narrativa a partir das premissas estabelecidas na obra, aprofundando o arco dos personagens e o ritmo da trama.\n\n2. MODO IA AVANÇADO\nPara gerar perguntas frequentes automatizadas, sínteses aprofundadas e análise conceitual via Google Gemini AI, insira sua chave gratuita no topo da janela.`;
-          showToast('Guia básico gerado em modo offline!');
+          showToast('Guia básico gerado em modo offline');
         }
       });
     }
@@ -4585,7 +4621,7 @@
         a.download = `${(state.title || 'livro').replace(/[^a-zA-Z0-9_-]/g, '_')}_NotebookLM.md`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(u), 2000);
-        showToast('Guia exportado para Markdown / Obsidian!');
+        showToast('Guia exportado para Markdown / Obsidian');
       });
     }
 
@@ -4596,8 +4632,8 @@
       chkBionicEl.addEventListener('change', () => {
         state.bionicReading = chkBionicEl.checked;
         applySettings();
-        if (state.sections.length && !dom.viewport.classList.contains('continuous-mode')) {
-          renderSection();
+        if (state.sections.length) {
+          renderSection({ restoreSubPage: state.subPageIndex });
         }
         showToast(state.bionicReading ? 'Leitura Biônica ativada' : 'Leitura Biônica desativada');
       });
@@ -4648,23 +4684,56 @@
       btnCopyQr.addEventListener('click', () => {
         const txt = document.getElementById('qrCodeLinkText');
         if (txt && txt.textContent) {
-          navigator.clipboard.writeText(txt.textContent).then(() => showToast('Link de leitura copiado!'));
+          navigator.clipboard.writeText(txt.textContent).then(() => showToast('Link de leitura copiado'));
         }
       });
     }
 
     // Arrastar e Soltar Global (Drag and Drop)
+    // Barra flutuante de seleção: some (e a seleção é limpa) sempre que um modal, menu ou painel abrir
+    (function autoHideSelectionToolbarOnOverlays() {
+      if (!dom.selectionToolbar || typeof MutationObserver === 'undefined') return;
+      const overlays = document.querySelectorAll('.modal-backdrop, [id$="Modal"], [id$="Popover"], [id$="Dropdown"], [id$="Panel"]');
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          const el = m.target;
+          if (el === dom.lookupModal) continue; // o modal do dicionário usa a seleção atual
+          if (el.classList.contains('open') && !(m.oldValue || '').split(/\s+/).includes('open')) {
+            dom.selectionToolbar.classList.remove('open');
+            try { const sel = window.getSelection(); if (sel) sel.removeAllRanges(); } catch {}
+            break;
+          }
+        }
+      });
+      overlays.forEach(el => obs.observe(el, { attributes: true, attributeFilter: ['class'], attributeOldValue: true }));
+      // Clique fora da barra e fora do texto do livro também fecha
+      document.addEventListener('mousedown', (e) => {
+        if (!dom.selectionToolbar.classList.contains('open')) return;
+        if (dom.selectionToolbar.contains(e.target)) return;
+        if (dom.readerFlow && dom.readerFlow.contains(e.target)) return;
+        if (dom.pdfContainer && dom.pdfContainer.contains(e.target)) return;
+        dom.selectionToolbar.classList.remove('open');
+      });
+    })();
+
+    // Arrastes que começam dentro da própria página (imagem do mangá, texto selecionado) nunca viram "importar arquivo"
+    let __internalDragActive = false;
+    document.addEventListener('dragstart', () => { __internalDragActive = true; });
+    document.addEventListener('dragend', () => { __internalDragActive = false; });
     window.addEventListener('dragover', (e) => { e.preventDefault(); });
     window.addEventListener('drop', async (e) => {
       if (e.target && e.target.closest('#convDropZone')) return;
       e.preventDefault();
+      if (__internalDragActive) { __internalDragActive = false; return; }
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
         const file = e.dataTransfer.files[0];
         const ext = (file.name.split('.').pop() || '').toLowerCase();
-        if (['epub', 'pdf', 'cbz', 'zip', 'mobi', 'azw', 'azw3', 'prc', 'txt', 'html'].includes(ext)) {
+        if (SUPPORTED_BOOK_EXTENSIONS.includes(ext)) {
           showToast(`Carregando "${file.name}"...`);
           const buf = await file.arrayBuffer();
           await loadFile({ name: file.name, size: file.size, buffer: buf });
+        } else {
+          showToast(`Formato ".${ext}" não suportado. Use: ${SUPPORTED_BOOK_EXTENSIONS.join(', ')}.`, true);
         }
       }
     });
@@ -4742,7 +4811,7 @@
         const buf = new TextEncoder().encode(cleanHtml).buffer;
         document.getElementById('toolsModal').classList.remove('open');
         await loadFile({ name: `${title.replace(/[<>:"/\\|?*]+/g, '_').slice(0, 50)}.html`, size: buf.byteLength, buffer: buf });
-        showToast('Página Web importada para a Estante e aberta no leitor!');
+        showToast('Página Web importada para a Estante e aberta no leitor');
       } catch (err) {
         statusEl.textContent = 'Erro ao capturar página: ' + err.message;
       }
@@ -4810,7 +4879,7 @@
       saveAnkiConfigObj(cfg);
       loadAnkiConfigIntoUi();
       document.getElementById('ankiModalStatus').textContent = 'Configurações do Anki salvas!';
-      showToast('Configurações do Anki salvas!');
+      showToast('Configurações do Anki salvas');
     });
 
     async function ankiConnectInvoke(action, params = {}) {
@@ -4839,6 +4908,7 @@
 
         const cfg = getAnkiConfig();
         cfg.cachedModels = models;
+        cfg.ankiConnectEnabled = true; // só tentaremos conectar automaticamente depois de um sucesso
         saveAnkiConfigObj(cfg);
 
         const deckSelect = document.getElementById('selectAnkiDeckModal');
@@ -4856,7 +4926,7 @@
         }
         if (!silent) {
           statusEl.textContent = `AnkiConnect conectado com sucesso! Baralhos encontrados: ${decks.slice(0, 6).join(', ')}`;
-          showToast('Conectado ao Anki Desktop via AnkiConnect!');
+          showToast('Conectado ao Anki Desktop via AnkiConnect');
         }
         return true;
       } catch (err) {
@@ -4914,10 +4984,10 @@
           found.syncedToAnki = true;
           saveVocabList(list);
         }
-        showToast(`Cartão adicionado direto ao baralho "${deckName}" no Anki!`);
+        showToast(`Cartão adicionado direto ao baralho "${deckName}" no Anki`);
         return { ok: true, method: 'AnkiConnect' };
       } catch (ankiConnectErr) {
-        // 2. Fallback: Se o usuário configurou Login AnkiWeb (Online API /api/ankiweb na Vercel/Netlify)
+        // 2. Fallback: Se o usuário configurou Login AnkiWeb (Online API /api/ankiweb na Vercel)
         if (cfg.ankiWebUser && cfg.ankiWebPass) {
           try {
             const res = await fetch(cfg.ankiWebEndpoint || '/api/ankiweb', {
@@ -4940,12 +5010,12 @@
                 found.syncedToAnki = true;
                 saveVocabList(list);
               }
-              showToast(`Cartão adicionado na sua conta AnkiWeb (baralho "${deckName}")!`);
+              showToast(`Cartão adicionado na sua conta AnkiWeb (baralho "${deckName}")`);
               return { ok: true, method: 'AnkiWeb' };
             }
             throw new Error(data.error || `HTTP ${res.status}`);
           } catch (webErr) {
-            showToast(`Salvo na lista local (abra o Anki ou publique na Vercel/Netlify para envio direto).`);
+            showToast(`Salvo na lista local (abra o Anki ou publique na Vercel para envio direto).`);
             return { ok: false, error: webErr.message };
           }
         } else {
@@ -4967,7 +5037,7 @@
         id: 'vc_' + Date.now(),
         front,
         back: dom.inputAnkiBack.value.trim(),
-        context: dom.inputAnkiContext.value.trim(),
+        context: ankiContextFromField(dom.inputAnkiContext.value.trim()),
         book: state.title ? `${state.title}${secTitle ? ' · ' + secTitle : ''}` : 'Leitor Online',
         date: new Date().toLocaleDateString('pt-BR'),
         syncedToAnki: false
@@ -4986,7 +5056,7 @@
       const statusEl = document.getElementById('ankiModalStatus');
       if (!pending.length) {
         statusEl.textContent = 'Todos os cartões da lista já foram enviados ao Anki!';
-        showToast('Todos os cartões já estão no Anki!');
+        showToast('Todos os cartões já estão no Anki');
         return;
       }
       statusEl.textContent = `Enviando ${pending.length} cartão(ões) para o Anki...`;
@@ -5025,12 +5095,12 @@
         const data = await res.json();
         if (res.ok && data.ok) {
           statusEl.textContent = 'Login no AnkiWeb validado com sucesso! Seus cartões serão enviados direto para sua conta.';
-          showToast('Conta AnkiWeb conectada com sucesso!');
+          showToast('Conta AnkiWeb conectada com sucesso');
         } else {
-          statusEl.textContent = 'Aviso: ' + (data.error || 'Para usar o login direto AnkiWeb sem o Anki Desktop aberto, hospede a pasta na Vercel/Netlify (função /api/ankiweb incluída).');
+          statusEl.textContent = 'Aviso: ' + (data.error || 'Para usar o login direto AnkiWeb sem o Anki Desktop aberto, hospede a pasta na Vercel (função /api/ankiweb incluída).');
         }
       } catch {
-        statusEl.textContent = 'Endpoint /api/ankiweb disponível quando hospedado online (Vercel / Netlify). No computador local, você pode usar o AnkiConnect (127.0.0.1:8765) ou exportar .TSV.';
+        statusEl.textContent = 'Endpoint /api/ankiweb disponível quando hospedado online (Vercel). No computador local, você pode usar o AnkiConnect (127.0.0.1:8765) ou exportar .TSV.';
       }
     });
 
@@ -5089,7 +5159,7 @@
         });
         html += '</div>';
         parallelBody.innerHTML = html;
-        showToast('Tradução aberta lado a lado no Painel Paralelo!');
+        showToast('Tradução aberta lado a lado no Painel Paralelo');
       } else {
         paras.forEach((p, idx) => {
           const tr = translatedMap.get(idx);
@@ -5100,7 +5170,7 @@
             p.insertAdjacentElement('afterend', sub);
           }
         });
-        showToast('Tradução inserida abaixo de cada parágrafo!');
+        showToast('Tradução inserida abaixo de cada parágrafo');
       }
     }
 
@@ -5152,7 +5222,7 @@
         const fullTxt = parsed.sections.map(s => s.text || '').join('\n\n').slice(0, 90000);
         document.getElementById('inputSumSource').value = fullTxt;
         generateSummaryAndStats(f.name);
-        showToast(`Documento "${f.name}" carregado e resumido!`);
+        showToast(`Documento "${f.name}" carregado e resumido`);
       } catch (err) {
         alert('Erro ao ler documento: ' + err.message);
       }
@@ -5284,7 +5354,7 @@
                 });
                 if (opt === q.answer) {
                   btn.classList.add('correct');
-                  showToast('Resposta correta!');
+                  showToast('Resposta correta');
                 } else {
                   btn.classList.add('wrong');
                   showToast(`Resposta correta: ${q.answer}`);
@@ -5310,7 +5380,7 @@
               await sendSingleCardToAnki(newCard);
             }
             saveVocabList(list);
-            showToast(`${lastGeneratedQuizItems.length} questões do Quiz adicionadas ao Anki!`);
+            showToast(`${lastGeneratedQuizItems.length} questões do Quiz adicionadas ao Anki`);
           });
         } else {
           quizBox.classList.add('hidden');
@@ -5359,7 +5429,7 @@
         a.download = `${safeName}.txt`;
         a.click();
       }
-      showToast(`Resumo exportado em .${fmt.toUpperCase()}!`);
+      showToast(`Resumo exportado em .${fmt.toUpperCase()}`);
     });
 
     /* =====================================================================
@@ -5422,7 +5492,7 @@
           const translated = Array.isArray(data[0]) ? data[0].map(part => part[0]).join('') : '';
           outputStudioTrans.value = translated || 'Não foi possível traduzir.';
           document.getElementById('lblTransOutCount').textContent = `${outputStudioTrans.value.length} / 5000`;
-          showToast('Tradução concluída!');
+          showToast('Tradução concluída');
         }
       } catch (err) {
         outputStudioTrans.value = 'Erro ao traduzir: ' + err.message;
@@ -5431,11 +5501,11 @@
 
     document.getElementById('btnCopyTransSrc').addEventListener('click', () => {
       navigator.clipboard.writeText(inputStudioTransSrc.value || '');
-      showToast('Texto original copiado!');
+      showToast('Texto original copiado');
     });
     document.getElementById('btnCopyTransOut').addEventListener('click', () => {
       navigator.clipboard.writeText(outputStudioTrans.value || '');
-      showToast('Tradução copiada!');
+      showToast('Tradução copiada');
     });
     document.getElementById('btnSpeakTransSrc').addEventListener('click', () => {
       if ('speechSynthesis' in window && inputStudioTransSrc.value.trim()) {
@@ -5504,7 +5574,7 @@
     });
     document.getElementById('btnCopyProofText').addEventListener('click', () => {
       navigator.clipboard.writeText(inputProofText.value || '');
-      showToast('Texto copiado!');
+      showToast('Texto copiado');
     });
 
     document.getElementById('btnRunProofread').addEventListener('click', async () => {
@@ -5585,12 +5655,12 @@
       if (lastCorrectedProofText) {
         inputProofText.value = lastCorrectedProofText;
         document.getElementById('lblProofCharCount').textContent = `${inputProofText.value.length} / 5000`;
-        showToast('Todas as correções foram aplicadas ao seu texto!');
+        showToast('Todas as correções foram aplicadas ao seu texto');
       }
     });
     document.getElementById('btnCopyCorrectedText').addEventListener('click', () => {
       navigator.clipboard.writeText(lastCorrectedProofText || inputProofText.value || '');
-      showToast('Versão corrigida copiada para a área de transferência!');
+      showToast('Versão corrigida copiada para a área de transferência');
     });
 
     /* =====================================================================
@@ -5697,7 +5767,7 @@
         }
         card.querySelector('.btn-q-copy').addEventListener('click', () => {
           navigator.clipboard.writeText(`"${item.text}" — ${item.bookTitle} (${item.chapterTitle || ''})`);
-          showToast('Citação copiada!');
+          showToast('Citação copiada');
         });
         card.querySelector('.btn-q-anki').addEventListener('click', async () => {
           const newCard = {
@@ -5754,7 +5824,7 @@
         w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Citações e Destaques</title><style>body{font-family:Georgia,serif;max-width:700px;margin:30px auto;color:#111;}blockquote{border-left:3px solid #2f5e4e;padding-left:12px;margin:16px 0;}</style></head><body><h1>Minhas Citações & Destaques</h1>${allQuotes.map(q => `<blockquote><p>"${escapeHtml(q.text)}"</p><small><b>${escapeHtml(q.bookTitle)}</b> — ${escapeHtml(q.chapterTitle || '')}</small></blockquote>`).join('')}<script>window.onload=function(){window.print();};<\/script></body></html>`);
         w.document.close();
       }
-      showToast('Citações exportadas!');
+      showToast('Citações exportadas');
     }
 
     document.getElementById('btnExportQuotesMd').addEventListener('click', () => exportAllQuotes('md'));
@@ -6057,7 +6127,7 @@
         canvas.toBlob(async (blob) => {
           try {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            showToast('Card copiado como imagem para a Área de Transferência!');
+            showToast('Card copiado como imagem para a Área de Transferência');
           } catch (e) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -6065,7 +6135,7 @@
             a.download = `Quote_Card.png`;
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
-            showToast('Card baixado como PNG!');
+            showToast('Card baixado como PNG');
           }
         });
       });
@@ -6082,7 +6152,7 @@
         const safe = (activeQuoteCardData.bookTitle || 'card').replace(/[^a-z0-9_-]/gi, '_').slice(0, 30);
         a.download = `Card_${safe}.png`;
         a.click();
-        showToast('Card visual baixado com sucesso!');
+        showToast('Card visual baixado com sucesso');
       });
     }
 
@@ -6424,8 +6494,8 @@
       }
 
       const lines = [
-        `MODO LOCAL (OFFLINE): "${state.title || 'Livro'}"`,
-        `Capítulos lidos: ${pastStorySections.length} · Posição atual: ${curTitle}`,
+        `MODO BÁSICO (sem IA) — "${state.title || 'Livro'}": abaixo estão trechos reais do livro até onde você parou, não um resumo. Para um resumo de verdade, clique em "Configurar Chave Gemini" (gratuita).`,
+        `Trechos narrativos anteriores analisados: ${pastStorySections.length} · Posição atual: ${curTitle}`,
         '',
         'Nota: Como a IA online não foi acionada (chave não configurada ou inválida), o modo local exibe os marcos reais extraídos dos capítulos anteriores:',
         '',
@@ -6806,7 +6876,7 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
       const c = document.getElementById('aiRecapContent');
       if (c && c.textContent) {
         navigator.clipboard.writeText(c.textContent);
-        showToast('Resumo copiado com sucesso!');
+        showToast('Resumo copiado com sucesso');
       }
     });
 
@@ -6817,7 +6887,7 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
         state.geminiApiKey = inputAiRecapKey.value.trim();
         localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
         updateAiKeyBadges();
-        showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso!' : 'Chave removida.');
+        showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso' : 'Chave removida.');
         const resBox = document.getElementById('aiRecapKeyTestResult');
         if (resBox) {
           resBox.style.display = 'block';
@@ -7052,7 +7122,7 @@ REGRAS CRÍTICAS E OBRIGATÓRIAS:
           state.geminiApiKey = k ? k.value.trim() : '';
           localStorage.setItem('reader_geminiApiKey', state.geminiApiKey);
           updateAiKeyBadges();
-          showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso!' : 'Chave removida.');
+          showToast(state.geminiApiKey ? 'Chave Gemini salva com sucesso' : 'Chave removida.');
           const resBox = document.getElementById('aiTutorKeyTestResult');
           if (resBox) {
             resBox.style.display = 'block';
@@ -7257,7 +7327,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       const ans = document.getElementById('aiTutorAnswer');
       if (ans && ans.textContent) {
         navigator.clipboard.writeText(ans.textContent);
-        showToast('Resposta copiada!');
+        showToast('Resposta copiada');
       }
     });
 
@@ -7404,7 +7474,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       a.download = `${safeName}_Obsidian.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-      showToast('Exportado para Obsidian (.md)!');
+      showToast('Exportado para Obsidian (.md)');
     }
 
     function exportQuotesToObsidianMarkdown() {
@@ -7445,7 +7515,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       a.download = `Citacoes_Obsidian.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-      showToast('Citações exportadas para Obsidian (.md)!');
+      showToast('Citações exportadas para Obsidian (.md)');
     }
 
 
@@ -7471,7 +7541,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         subYoutubeFrameEl.src = `https://www.youtube.com/embed/${m[1]}`;
         subYoutubeFrameEl.classList.remove('hidden');
         if (lblSubMediaStatusEl) lblSubMediaStatusEl.textContent = 'YouTube embeddado! Selecione qualquer palavra da legenda abaixo para traduzir.';
-        showToast('Vídeo do YouTube carregado na barra!');
+        showToast('Vídeo do YouTube carregado na barra');
       });
     }
     if (subMediaInputEl && subMediaPlayerEl) {
@@ -7483,7 +7553,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         subMediaPlayerEl.src = url;
         subMediaPlayerEl.classList.remove('hidden');
         if (lblSubMediaStatusEl) lblSubMediaStatusEl.textContent = `Sincronizado: ${f.name}`;
-        showToast('Mídia local vinculada à legenda!');
+        showToast('Mídia local vinculada à legenda');
       });
       subMediaPlayerEl.addEventListener('timeupdate', () => {
         const t = subMediaPlayerEl.currentTime || 0;
@@ -7669,7 +7739,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         __clozeQueue = generateClozeQuizItems(hls, nts);
         __clozeScore = 0;
         if (!__clozeQueue.length) {
-          showToast('Destaque trechos (>= 18 caracteres) no livro para gerar o Quiz de Lacunas!', true);
+          showToast('Destaque trechos (>= 18 caracteres) no livro para gerar o Quiz de Lacunas', true);
           return;
         }
         renderClozeQuizStep();
@@ -7708,7 +7778,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         try { await navigator.clipboard.writeText(cit); } catch {}
         const statusEl = document.getElementById('lblBookInfoStatus');
         if (statusEl) statusEl.textContent = `Citação ${selCitStyleEl.value} copiada!`;
-        showToast(`Citação ${selCitStyleEl.value} copiada para a área de transferência!`);
+        showToast(`Citação ${selCitStyleEl.value} copiada para a área de transferência`);
       });
     }
 
@@ -7766,7 +7836,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
           a.download = `Cornell_${(state.title || 'notas').replace(/[^a-z0-9_-]/gi, '_')}.md`;
           a.click();
           setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-          showToast('Notas Cornell (.md) exportadas!');
+          showToast('Notas Cornell (.md) exportadas');
         });
       }
     }

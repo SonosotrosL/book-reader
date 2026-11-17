@@ -1,5 +1,5 @@
 /**
- * Serverless Function (Vercel / Netlify) — Envio Direto para E-mail @kindle.com
+ * Serverless Function (Vercel) — Envio Direto para E-mail @kindle.com
  * Suporta:
  *  1) Gmail Direto (SMTPS TLS porta 465 nativo do Node.js, sem pacotes externos)
  *  2) Brevo API (HTTP, sem precisar de domínio próprio)
@@ -13,6 +13,11 @@ function wrapBase64(b64) {
 
 function sendViaSmtpTls({ host, port = 465, user, pass, from, to, subject, text, filename, contentBase64 }) {
   return new Promise((resolve, reject) => {
+    const okAddr = (a) => /^[^\s<>@]+@[^\s<>@]+$/.test(String(a || ''));
+    if (!okAddr(from) || !okAddr(to) || /[\r\n]/.test(String(host || '') + String(user || ''))) {
+      reject(new Error('Endereço de e-mail inválido.'));
+      return;
+    }
     const socket = tls.connect({ host, port, servername: host }, () => {});
     socket.setTimeout(25000);
 
@@ -114,146 +119,163 @@ function sendViaSmtpTls({ host, port = 465, user, pass, from, to, subject, text,
   });
 }
 
-async function handleSendKindle(body) {
-  const {
-    provider = process.env.KINDLE_EMAIL_PROVIDER || 'gmail',
-    apiKey = '',
-    fromEmail = '',
-    kindleEmail,
-    bookTitle = 'Livro',
-    filename = 'livro.epub',
-    contentBase64,
-    smtpHost,
-    notifyOwnerSuggestion = false,
-    senderEmail = '',
-    syncKey = 'minha-estante'
-  } = body || {};
+// ---------------------------------------------------------------------------
+// Regras de segurança
+//  - O servidor NUNCA aceita host SMTP vindo do cliente (evita roubo de senha).
+//  - Envio para Kindle usa SEMPRE as credenciais do próprio usuário; as variáveis
+//    de ambiente do servidor nunca são usadas para enviar livros a terceiros.
+//  - Destinatário de livro: apenas @kindle.com / @free.kindle.com.
+//  - Notificação de sugestão: só usa credenciais do servidor e só envia para
+//    OWNER_NOTIFY_EMAIL (definido na Vercel), nunca para um e-mail do cliente.
+//  - Todos os campos que vão para cabeçalhos são limpos de CR/LF.
+// ---------------------------------------------------------------------------
+const EMAIL_RE = /^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/;
+const KINDLE_RE = /^[A-Za-z0-9._%+-]{1,64}@(free\.)?kindle\.com$/i;
+const MAX_ATTACHMENT_B64 = 4.4 * 1024 * 1024; // ~3,2 MB reais (limite de corpo da Vercel)
 
-  if (notifyOwnerSuggestion) {
-    const ownerEmail = (process.env.OWNER_NOTIFY_EMAIL || kindleEmail || '').trim();
-    const srvUser = (process.env.KINDLE_SMTP_USER || fromEmail || '').trim();
-    const srvSecret = (process.env.KINDLE_SMTP_PASS || process.env.KINDLE_EMAIL_API_KEY || apiKey || '').trim();
-    if (!ownerEmail || !ownerEmail.includes('@') || !srvSecret) {
-      return { status: 200, data: { ok: false, skipped: true, reason: 'Notificação por e-mail opcional não configurada no servidor.' } };
-    }
-    const textMsg = `Um leitor (${senderEmail || 'convidado'}) sugeriu o livro "${bookTitle}" para aprovação na estante "${syncKey}". Abra sua Estante para Aprovar ou Recusar com 1 clique.`;
-    const b64Msg = Buffer.from(textMsg, 'utf8').toString('base64');
-    if (provider === 'gmail' || provider === 'smtp') {
-      if (!srvUser || !srvUser.includes('@')) {
-        return { status: 200, data: { ok: false, skipped: true, reason: 'KINDLE_SMTP_USER ausente.' } };
-      }
-      const host = smtpHost || (srvUser.endsWith('@outlook.com') || srvUser.endsWith('@hotmail.com') ? 'smtp-mail.outlook.com' : 'smtp.gmail.com');
-      const result = await sendViaSmtpTls({
-        host,
-        port: 465,
-        user: srvUser,
-        pass: srvSecret.replace(/\s+/g, ''),
-        from: srvUser,
-        to: ownerEmail,
-        subject: `Nova sugestão na Estante: ${bookTitle}`,
-        text: textMsg,
-        filename: 'sugestao.txt',
-        contentBase64: b64Msg
-      });
-      return { status: 200, data: result };
-    }
-    // Resend / Brevo fallthrough using ownerEmail
-    return await handleSendKindle({
-      provider,
-      apiKey: srvSecret,
-      fromEmail: srvUser,
-      kindleEmail: ownerEmail,
-      bookTitle: `Sugestão: ${bookTitle}`,
-      filename: 'sugestao.txt',
-      contentBase64: b64Msg
-    });
-  }
+function clean(str, max = 200) {
+  return String(str == null ? '' : str).replace(/[\r\n\0]+/g, ' ').trim().slice(0, max);
+}
 
-  if (!kindleEmail || !kindleEmail.includes('@')) {
-    return { status: 400, data: { ok: false, error: 'Informe um endereço @kindle.com válido.' } };
-  }
-  if (!contentBase64) {
-    return { status: 400, data: { ok: false, error: 'Arquivo do livro ausente para anexo.' } };
-  }
+function cleanEmail(str) {
+  const v = clean(str, 254).toLowerCase();
+  return EMAIL_RE.test(v) ? v : '';
+}
 
-  const resolvedSender = (fromEmail || process.env.KINDLE_SMTP_USER || '').trim();
-  const resolvedSecret = (apiKey || process.env.KINDLE_SMTP_PASS || process.env.KINDLE_EMAIL_API_KEY || '').trim();
+function smtpHostFor(sender) {
+  const domain = sender.split('@')[1] || '';
+  if (/^(outlook|hotmail|live|msn)\.[a-z.]+$/.test(domain)) return 'smtp-mail.outlook.com';
+  return 'smtp.gmail.com'; // Gmail e Google Workspace
+}
 
+// Limitador simples por IP (melhor esforço: cada instância serverless tem sua memória)
+const hits = new Map();
+function rateLimited(key, max, windowMs) {
+  const now = Date.now();
+  const arr = (hits.get(key) || []).filter((t) => now - t < windowMs);
+  arr.push(now);
+  hits.set(key, arr);
+  if (hits.size > 5000) hits.clear();
+  return arr.length > max;
+}
+
+async function sendWithProvider({ provider, sender, secret, to, subject, text, filename, contentBase64 }) {
   if (provider === 'gmail' || provider === 'smtp') {
-    if (!resolvedSender || !resolvedSender.includes('@')) {
-      return { status: 400, data: { ok: false, error: 'Informe seu Gmail remetente (o mesmo aprovado na Amazon).' } };
-    }
-    if (!resolvedSecret) {
-      return { status: 400, data: { ok: false, error: 'Informe a Senha de App de 16 letras do Google.' } };
-    }
-    const cleanPass = resolvedSecret.replace(/\s+/g, '');
-    const host = smtpHost || (resolvedSender.endsWith('@outlook.com') || resolvedSender.endsWith('@hotmail.com') ? 'smtp-mail.outlook.com' : 'smtp.gmail.com');
-    const result = await sendViaSmtpTls({
-      host,
+    return sendViaSmtpTls({
+      host: smtpHostFor(sender),
       port: 465,
-      user: resolvedSender,
-      pass: cleanPass,
-      from: resolvedSender,
-      to: kindleEmail,
-      subject: `Convert: ${bookTitle}`,
-      text: `Livro "${bookTitle}" enviado pelo Leitor Portatil.`,
+      user: sender,
+      pass: secret.replace(/\s+/g, ''),
+      from: sender,
+      to,
+      subject,
+      text,
       filename,
       contentBase64
     });
-    return { status: 200, data: result };
-  }
-
-  if (!resolvedSecret) {
-    return { status: 400, data: { ok: false, error: 'Informe a API Key do provedor de envio (Brevo ou Resend).' } };
   }
 
   if (provider === 'brevo') {
-    if (!resolvedSender || !resolvedSender.includes('@')) {
-      return { status: 400, data: { ok: false, error: 'Na Brevo, informe seu e-mail remetente verificado na Amazon e na Brevo.' } };
-    }
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
-      headers: {
-        'api-key': resolvedSecret,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers: { 'api-key': secret, 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
-        sender: { name: 'Leitor Portátil', email: resolvedSender },
-        to: [{ email: kindleEmail }],
-        subject: `Convert: ${bookTitle}`,
-        textContent: `Livro "${bookTitle}" enviado pelo Leitor Portátil.`,
+        sender: { name: 'Leitor Portátil', email: sender },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
         attachment: [{ name: filename, content: contentBase64 }]
       })
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      return { status: res.status, data: { ok: false, error: data.message || `Brevo HTTP ${res.status}` } };
-    }
-    return { status: 200, data: { ok: true, id: data.messageId || 'sent' } };
+    if (!res.ok) throw new Error(data.message || `Brevo HTTP ${res.status}`);
+    return { ok: true, id: data.messageId || 'sent' };
   }
 
-  // Resend API
-  const resendSender = resolvedSender && resolvedSender.includes('@') ? resolvedSender : 'onboarding@resend.dev';
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${resolvedSecret}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: resendSender,
-      to: [kindleEmail],
-      subject: `Convert: ${bookTitle}`,
-      text: `Livro "${bookTitle}" enviado para o seu Kindle.`,
-      attachments: [{ filename, content: contentBase64 }]
-    })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return { status: res.status, data: { ok: false, error: data.message || data.error || `Resend HTTP ${res.status}` } };
+  if (provider === 'resend') {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: sender || 'onboarding@resend.dev',
+        to: [to],
+        subject,
+        text,
+        attachments: [{ filename, content: contentBase64 }]
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || data.error || `Resend HTTP ${res.status}`);
+    return { ok: true, id: data.id || 'sent' };
   }
-  return { status: 200, data: { ok: true, id: data.id || 'sent' } };
+
+  throw new Error('Provedor de e-mail inválido (use gmail, brevo ou resend).');
+}
+
+async function handleOwnerNotification(body) {
+  const ownerEmail = cleanEmail(process.env.OWNER_NOTIFY_EMAIL);
+  const srvUser = cleanEmail(process.env.KINDLE_SMTP_USER);
+  const srvSecret = String(process.env.KINDLE_SMTP_PASS || process.env.KINDLE_EMAIL_API_KEY || '').trim();
+  const provider = String(process.env.KINDLE_EMAIL_PROVIDER || 'gmail').toLowerCase();
+  if (!ownerEmail || !srvSecret || (provider !== 'resend' && !srvUser)) {
+    return { status: 200, data: { ok: false, skipped: true, reason: 'Notificação por e-mail não configurada no servidor.' } };
+  }
+  const bookTitle = clean(body.bookTitle || 'Livro', 120);
+  const senderEmail = cleanEmail(body.senderEmail) || 'convidado';
+  const syncKey = clean(body.syncKey || 'minha-estante', 60);
+  const text = `Um leitor (${senderEmail}) sugeriu o livro "${bookTitle}" para aprovação na estante "${syncKey}". Abra sua Estante para Aprovar ou Recusar.`;
+  const result = await sendWithProvider({
+    provider,
+    sender: srvUser,
+    secret: srvSecret,
+    to: ownerEmail,
+    subject: `Nova sugestão na Estante: ${bookTitle}`,
+    text,
+    filename: 'sugestao.txt',
+    contentBase64: Buffer.from(text, 'utf8').toString('base64')
+  });
+  return { status: 200, data: result };
+}
+
+async function handleSendKindle(body) {
+  body = body || {};
+  if (body.notifyOwnerSuggestion) return handleOwnerNotification(body);
+
+  const provider = String(body.provider || 'gmail').toLowerCase();
+  const kindleEmail = clean(body.kindleEmail, 254).toLowerCase();
+  const sender = cleanEmail(body.fromEmail);
+  const secret = String(body.apiKey || '').trim();
+  const bookTitle = clean(body.bookTitle || 'Livro', 150);
+  const filename = clean(body.filename || 'livro.epub', 120).replace(/[^\w.\- ()À-ÿ]/g, '_') || 'livro.epub';
+  const contentBase64 = String(body.contentBase64 || '');
+
+  if (!KINDLE_RE.test(kindleEmail)) {
+    return { status: 400, data: { ok: false, error: 'Destino inválido: use apenas um endereço @kindle.com.' } };
+  }
+  if (!contentBase64 || !/^[A-Za-z0-9+/=\s]+$/.test(contentBase64)) {
+    return { status: 400, data: { ok: false, error: 'Arquivo do livro ausente ou inválido.' } };
+  }
+  if (contentBase64.length > MAX_ATTACHMENT_B64) {
+    return { status: 413, data: { ok: false, error: 'Livro grande demais para envio pelo servidor (máx. ~3 MB).' } };
+  }
+  if (!secret) {
+    return { status: 400, data: { ok: false, error: 'Informe sua Senha de App do Google (ou a chave Brevo/Resend).' } };
+  }
+  if (provider !== 'resend' && !sender) {
+    return { status: 400, data: { ok: false, error: 'Informe seu e-mail remetente (o mesmo aprovado na Amazon).' } };
+  }
+
+  const result = await sendWithProvider({
+    provider,
+    sender,
+    secret,
+    to: kindleEmail,
+    subject: `Convert: ${bookTitle}`,
+    text: `Livro "${bookTitle}" enviado pelo Leitor Portatil.`,
+    filename,
+    contentBase64
+  });
+  return { status: 200, data: result };
 }
 
 module.exports = async (req, res) => {
@@ -265,10 +287,16 @@ module.exports = async (req, res) => {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const ip = String((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || 'anon').split(',')[0].trim();
+    const isNotify = body && body.notifyOwnerSuggestion;
+    if (rateLimited(`${isNotify ? 'n' : 'k'}:${ip}`, isNotify ? 5 : 10, 10 * 60 * 1000)) {
+      return res.status(429).json({ ok: false, error: 'Muitas solicitações. Tente novamente em alguns minutos.' });
+    }
     const result = await handleSendKindle(body);
     return res.status(result.status).json(result.data);
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: clean(err.message, 300) });
   }
 };
 module.exports.sendViaSmtpTls = sendViaSmtpTls;
+module.exports.handleSendKindle = handleSendKindle;

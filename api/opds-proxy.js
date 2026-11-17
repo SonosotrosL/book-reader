@@ -3,6 +3,29 @@ const net = require('net');
 
 const MAX_BYTES = 35 * 1024 * 1024; // 35 MB cap for serverless proxy
 
+// Segurança: o proxy só atende os acervos usados pelo app (não é um proxy aberto).
+// Para liberar um catálogo OPDS próprio, defina na Vercel:
+//   OPDS_PROXY_EXTRA_HOSTS=meucatalogo.com,outro.org
+const ALLOWED_HOST_SUFFIXES = [
+  'mangadex.org', 'mangadex.network',
+  'webtoons.com', 'pstatic.net',
+  'tapas.io',
+  'standardebooks.org',
+  'gutenberg.org', 'gutendex.com',
+  'archive.org',
+  'openlibrary.org',
+  'wikisource.org', 'wikimedia.org', 'wmcloud.org'
+];
+
+function isAllowedHost(host) {
+  const extra = String(process.env.OPDS_PROXY_EXTRA_HOSTS || '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase().replace(/^\*\./, ''))
+    .filter(Boolean);
+  const h = String(host || '').toLowerCase().replace(/\.$/, '');
+  return [...ALLOWED_HOST_SUFFIXES, ...extra].some((s) => h === s || h.endsWith('.' + s));
+}
+
 function isPrivateIp(ip) {
   if (!ip) return true;
   const clean = ip.replace(/^::ffff:/i, '');
@@ -32,6 +55,11 @@ async function validatePublicUrl(rawUrl) {
     throw new Error('Apenas links HTTP ou HTTPS são permitidos.');
   }
   const host = (parsed.hostname || '').toLowerCase();
+  if (!isAllowedHost(host)) {
+    const err = new Error(`Domínio não permitido no proxy: ${host}. O site precisa permitir acesso direto (CORS) ou ser liberado em OPDS_PROXY_EXTRA_HOSTS.`);
+    err.statusCode = 403;
+    throw err;
+  }
   if (!host || host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) {
     throw new Error('Host local ou privado não permitido.');
   }
@@ -182,7 +210,7 @@ module.exports = async (req, res) => {
     }
     return res.status(out.status).send(out.buffer);
   } catch (err) {
-    return res.status(400).json({ ok: false, error: err.message || 'Erro no proxy OPDS.' });
+    return res.status(err.statusCode || 400).json({ ok: false, error: err.message || 'Erro no proxy OPDS.' });
   }
 };
 

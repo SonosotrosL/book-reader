@@ -3648,3 +3648,113 @@
   color: #d97706 !important;
   font-weight: 700 !important;
 }
+
+/* Dica do visualizador de imagens: texto certo para mouse ou toque */
+.lightbox-hint .hint-touch { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .lightbox-hint .hint-mouse { display: none; }
+  .lightbox-hint .hint-touch { display: inline; }
+}
+
+/* =====================================================================
+ * LIMPEZA DE REDUNDÂNCIAS + EXPERIÊNCIA MOBILE (estante e leitor)
+ * ===================================================================== */
+/* "Estante" é agora um botão único (fecha o livro salvando o progresso) */
+#btnShowShelf { display: none !important; }
+/* Na estante, "+ Abrir" da barra duplicava "+ Adicionar Livro" */
+body.is-shelf-home .toolbar label[for="fileInput"] { display: none !important; }
+body.is-shelf-home .doc-meta { display: none !important; }
+
+@media (max-width: 768px) {
+  /* ---------- Barra do leitor cabendo em 360–390px ---------- */
+  #btnCloseBook::after { content: none !important; }
+  #btnCloseBook span,
+  #btnSidebar span,
+  #btnMangaStrip span { display: none !important; }
+  #btnMangaStrip::after { content: '▤'; font-size: 15px; }
+  #lblTypographyBtn { display: none; }
+  #btnTypography::after { content: 'Aa'; font-weight: 700; font-size: 13px; }
+  #btnToolsMenuToggle span { display: none; }
+  #btnToolsMenuToggle::after { content: '⋯'; font-size: 20px; line-height: 1; }
+  body:not(.is-shelf-home) .user-menu-wrap,
+  body:not(.is-shelf-home) #btnImmersive { display: none !important; }
+  .toolbar .tb-btn { padding-left: 8px; padding-right: 8px; }
+
+  /* ---------- Estante: livros já na primeira tela ---------- */
+  body.is-shelf-home .empty-header { flex-direction: column !important; align-items: stretch !important; gap: 8px; margin-bottom: 10px; }
+  body.is-shelf-home .empty-header h1 { font-size: 20px; margin: 0; }
+  body.is-shelf-home .shelf-header-actions { flex-direction: row !important; justify-content: flex-start !important; width: 100%; }
+  body.is-shelf-home .shelf-header-actions .tb-btn { width: auto !important; flex: 0 0 auto; }
+  .bookshelf-grid .book-card-cover:not(:has(img)) { aspect-ratio: 3 / 2; }
+  body.is-shelf-home .shelf-subtitle,
+  body.is-shelf-home #lblOfflineStatusBadge { display: none !important; }
+  body.is-shelf-home .shelf-header-actions .tb-btn { white-space: nowrap; height: 32px; overflow: hidden; text-overflow: ellipsis; }
+  body.is-shelf-home #btnResumeLastBook { order: -1; flex: 1 1 100% !important; max-width: 100%; justify-content: center; }
+
+  .drop-area { padding: 10px !important; margin-bottom: 10px !important; }
+  .drop-area .drop-hint { display: none; }
+  .drop-area #inputBookUrl { width: auto !important; flex: 1; min-width: 0; }
+
+  .shelf-controls-row,
+  .shelf-tabs-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .shelf-controls-row::-webkit-scrollbar,
+  .shelf-tabs-row::-webkit-scrollbar,
+  .shelf-header-actions::-webkit-scrollbar { display: none; }
+  .shelf-controls-row > *,
+  .shelf-tabs-row > * { flex-shrink: 0; }
+  .shelf-controls-row #inputFilterShelf { min-width: 150px; }
+
+  /* Grade de capas em 2 colunas */
+  .bookshelf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  .bookshelf-grid .book-card { padding: 8px !important; }
+  .bookshelf-grid .book-card-top span:last-child { display: none; }
+  .bookshelf-grid .book-card-body-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .bookshelf-grid .book-card-cover { width: 100% !important; height: auto !important; aspect-ratio: 2 / 3; }
+  .bookshelf-grid .book-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .bookshelf-grid .book-card-title { font-size: 12.5px; -webkit-line-clamp: 2; }
+  .bookshelf-grid .book-card-author { font-size: 11px; }
+  .bookshelf-grid .book-card-iconrow .btn-book-cover,
+  .bookshelf-grid .book-card-iconrow .btn-book-group,
+  .bookshelf-grid .book-card-rating { display: none !important; }
+  .bookshelf-grid .book-card-actions { flex-wrap: wrap; gap: 4px; }
+  .bookshelf-grid .book-card-actions .btn-read-book { flex-basis: 100% !important; font-size: 12px; }
+  .bookshelf-grid .book-card-actions .btn:not(.btn-read-book) { flex: 1; height: 26px; font-size: 11px; padding: 0 4px; }
+}
+
+/* Opções do painel de aparência conforme o tipo de arquivo aberto */
+body:not([data-book-kind="manga"]) .ctx-manga-only,
+body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
+
+/* Barra superior no desktop: cabe em telas de 1024px a 1500px sem cortar botões */
+@media (min-width: 769px) and (max-width: 1500px) {
+  #btnFullscreen,
+  #btnImmersive,
+  #toolbarUserGreeting,
+  #btnPdfTintToolbar,
+  #btnSetPageAsCover { display: none !important; }
+  .doc-header { max-width: 220px; min-width: 0; }
+}
+@media (min-width: 769px) and (max-width: 1250px) {
+  #btnSidebar span,
+  #btnCloseBook span,
+  .toolbar label[for="fileInput"] span,
+  #lblZoom,
+  #lblTypographyBtn,
+  #btnToolsMenuToggle span { display: none !important; }
+  #btnTypography::after { content: 'Aa'; font-weight: 700; }
+  #btnToolsMenuToggle::after { content: '⋯'; font-size: 18px; line-height: 1; }
+  #flowModeGroup button { padding: 0 6px; font-size: 11px; }
+  .doc-header { max-width: 150px; }
+}
+@media (min-width: 769px) and (max-width: 1600px) {
+  body[data-book-kind="pdf"] #lblTypographyBtn,
+  body[data-book-kind="pdf"] #btnToolsMenuToggle span { display: none !important; }
+  body[data-book-kind="pdf"] #btnTypography::after { content: 'Aa'; font-weight: 700; }
+  body[data-book-kind="pdf"] #btnToolsMenuToggle::after { content: '⋯'; font-size: 18px; line-height: 1; }
+}

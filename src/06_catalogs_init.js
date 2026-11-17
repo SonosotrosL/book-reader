@@ -120,7 +120,7 @@
 
     async function pushSharedCatalogMeta(safeFile, entry, overrideCfg = null) {
       const cfg = overrideCfg || getCloudConfig();
-      if (!isCloudProfileAuthenticated(cfg) || cfg.provider === 'firebase' || !safeFile) return;
+      if (!canWriteCloud(cfg) || cfg.provider === 'firebase' || !safeFile) return;
       try {
         await pullSharedCatalogFromCloud(cfg);
         const cat = getCloudCatalogMap();
@@ -180,7 +180,7 @@
       let list = mergeSharedActivityLists([fullEntry], getSharedActivityLog());
       saveSharedActivityLog(list);
 
-      if (isCloudProfileAuthenticated(cfg) && cfg.provider !== 'firebase') {
+      if (canWriteCloud(cfg) && cfg.provider !== 'firebase') {
         try {
           const existing = await pullSharedActivityFromCloud();
           list = mergeSharedActivityLists([fullEntry], existing);
@@ -520,7 +520,7 @@
         saveUserProfile({ avatarDataUrl: dataUrl });
         await renderProfileModal();
         pushCloudSyncSilent();
-        showToast('Foto de perfil atualizada!');
+        showToast('Foto de perfil atualizada');
       }
     });
     document.getElementById('btnProfileAvatarRemove').addEventListener('click', async () => {
@@ -539,14 +539,14 @@
       await renderProfileModal();
       await pushCloudSyncSilent();
       document.getElementById('lblProfileStatus').textContent = 'Perfil salvo e sincronizado!';
-      showToast('Perfil salvo com sucesso!');
+      showToast('Perfil salvo com sucesso');
     });
     document.getElementById('btnSaveProfileGoal').addEventListener('click', async () => {
       const g = Math.max(1, parseInt(document.getElementById('inputProfileAnnualGoal').value || '12', 10) || 12);
       saveUserProfile({ annualGoalBooks: g });
       await renderProfileModal();
       await pushCloudSyncSilent();
-      showToast(`Meta anual definida: ${g} livros!`);
+      showToast(`Meta anual definida: ${g} livros`);
     });
 
     /* =====================================================================
@@ -565,7 +565,7 @@
         }
         return await proxied.text();
       }
-      throw new Error('Servidor bloqueou acesso direto (CORS). Abra pela versão hospedada (Vercel/Netlify) para usar o proxy OPDS.');
+      throw new Error('Servidor bloqueou acesso direto (CORS). Abra pela versão hospedada (Vercel) para usar o proxy OPDS.');
     }
 
     let activeDownloadAbortCtrl = null;
@@ -656,7 +656,7 @@
           throw new Error('Download bloqueado por CORS em arquivo local (file://).');
         }
 
-        // Blocos de 1.5 MB: evita timeout de 10s na Vercel Hobby e limites de payload (4.5 MB Vercel / 6 MB Netlify)
+        // Blocos de 1.5 MB: evita timeout de 10s na Vercel Hobby e limites de payload (4.5 MB na Vercel)
         const CHUNK_BYTES = 1536 * 1024;
         const MAX_BROWSER_BYTES = 250 * 1024 * 1024;
         let firstRes;
@@ -1337,7 +1337,7 @@
               showToast('Série removida do Radar.');
             } else {
               list.push({ key: seriesKey, title: spec.title || 'Série', source: spec.source || '', url: spec.url || '', lastKnownCount: 0, checkedAt: Date.now() });
-              showToast('Série adicionada ao Radar de Atualizações!');
+              showToast('Série adicionada ao Radar de Atualizações');
             }
             saveFollowedSeriesList(list);
             updateFollowBtn();
@@ -1405,7 +1405,7 @@
       try {
         if (srcType === 'mangadex') {
           if (!location.protocol.startsWith('http')) {
-            throw new Error('O catálogo MangaDex exige rodar pela URL hospedada (Vercel/Netlify) por causa do proxy CORS.');
+            throw new Error('O catálogo MangaDex exige rodar pela URL hospedada (Vercel) por causa do proxy CORS.');
           }
           const langParams = langs.map(l => `availableTranslatedLanguage[]=${encodeURIComponent(l)}`).join('&');
           const titleParam = query ? `&title=${encodeURIComponent(query)}` : '&order[followedCount]=desc';
@@ -1541,7 +1541,7 @@
                         a.download = fileName;
                         a.click();
                         setTimeout(() => URL.revokeObjectURL(url), 2500);
-                        showToast(`.CBZ "${fileName}" baixado!`);
+                        showToast(`.CBZ "${fileName}" baixado`);
                         return;
                       }
                       await loadFile({ name: fileName, size: cbzBuf.byteLength, buffer: cbzBuf });
@@ -1761,7 +1761,7 @@
                               const a = document.createElement('a'); a.href = u; a.download = fn; a.click();
                               setTimeout(() => URL.revokeObjectURL(u), 2500);
                             }
-                            showToast(`Lote concluído: ${picked.length} capítulo(s) .CBZ baixado(s)!`);
+                            showToast(`Lote concluído: ${picked.length} capítulo(s) .CBZ baixado(s)`);
                           } catch (e) {
                             if (e && e.name !== 'AbortError') alert('Erro no download em lote: ' + e.message);
                           } finally {
@@ -1796,7 +1796,7 @@
 
         if (srcType === 'webtoon-scrape') {
           if (!location.protocol.startsWith('http')) {
-            throw new Error('O web-scraper WEBTOON precisa rodar pela URL hospedada (Vercel/Netlify) por causa do proxy CORS/Referer.');
+            throw new Error('O web-scraper WEBTOON precisa rodar pela URL hospedada (Vercel) por causa do proxy CORS/Referer.');
           }
           const wtSearchUrl = query
             ? `https://www.webtoons.com/en/search?keyword=${encodeURIComponent(query)}`
@@ -1850,7 +1850,7 @@
                             const a = document.createElement('a'); a.href = u; a.download = fn; a.click();
                             setTimeout(() => URL.revokeObjectURL(u), 2500);
                           }
-                          showToast(`Lote WEBTOON concluído: ${picked.length} episódio(s)!`);
+                          showToast(`Lote WEBTOON concluído: ${picked.length} episódio(s)`);
                         } catch (e) { alert('Erro no lote WEBTOON: ' + e.message); }
                         finally { hideFloatingDownloadProgress(); }
                       }
@@ -2053,7 +2053,7 @@
 
         if (srcType === 'tapas-comics') {
           if (!location.protocol.startsWith('http')) {
-            throw new Error('O web-scraper Tapas precisa rodar pela URL hospedada (Vercel/Netlify) por causa do proxy CORS.');
+            throw new Error('O web-scraper Tapas precisa rodar pela URL hospedada (Vercel) por causa do proxy CORS.');
           }
           const onlyPt = langs.length === 1 && langs[0].startsWith('pt');
           const searchTerm = query || (onlyPt ? 'quadrinhos' : 'comic');
@@ -2105,7 +2105,7 @@
                             const a = document.createElement('a'); a.href = u; a.download = fn; a.click();
                             setTimeout(() => URL.revokeObjectURL(u), 2500);
                           }
-                          showToast(`Lote Tapas concluído: ${picked.length} episódio(s)!`);
+                          showToast(`Lote Tapas concluído: ${picked.length} episódio(s)`);
                         } catch (e) { alert('Erro no lote Tapas: ' + e.message); }
                         finally { hideFloatingDownloadProgress(); }
                       }
@@ -2318,7 +2318,7 @@
                         a.download = f.name;
                         a.click();
                         setTimeout(() => URL.revokeObjectURL(url), 2500);
-                        showToast(`"${f.name}" baixado!`);
+                        showToast(`"${f.name}" baixado`);
                         return;
                       }
                       await loadFile({ name: f.name, size: buf.byteLength, buffer: buf });
@@ -2407,7 +2407,7 @@
                           if (mode === 'dl') {
                             const u = URL.createObjectURL(new Blob([buf])); const a = document.createElement('a'); a.href = u; a.download = f.name; a.click();
                             setTimeout(() => URL.revokeObjectURL(u), 2500);
-                            showToast(`"${f.name}" baixado!`);
+                            showToast(`"${f.name}" baixado`);
                             return;
                           }
                           closeCatDetail();
@@ -2706,7 +2706,7 @@
         const lbl = document.getElementById('lblFollowedSeriesCount');
         if (!list.length) {
           if (lbl) lbl.textContent = '0 série(s) seguida(s)';
-          showToast('Siga um mangá ou webtoon nos catálogos primeiro!', true);
+          showToast('Siga um mangá ou webtoon nos catálogos primeiro', true);
           return;
         }
         btnCheckRadarEl.disabled = true;
@@ -2728,7 +2728,7 @@
         saveFollowedSeriesList(list);
         btnCheckRadarEl.disabled = false;
         if (lbl) lbl.textContent = updatedCount > 0 ? `${updatedCount} série(s) com novos capítulos!` : `${list.length} série(s) verificada(s) (em dia)`;
-        showToast(updatedCount > 0 ? `${updatedCount} série(s) atualizada(s)!` : 'Radar verificado!');
+        showToast(updatedCount > 0 ? `${updatedCount} série(s) atualizada(s)` : 'Radar verificado');
       });
     }
 
@@ -2757,7 +2757,7 @@
         deferredPwaPrompt = null;
         if (choice && choice.outcome === 'accepted') {
           btnInstallPwaEl.classList.add('hidden');
-          showToast('Aplicativo instalado para leitura offline!');
+          showToast('Aplicativo instalado para leitura offline');
         }
       });
     }
@@ -2779,7 +2779,7 @@
     });
     window.addEventListener('offline', () => {
       updateOfflineBadgeUi();
-      showToast('Sem internet: seus livros locais/abertos seguem disponíveis offline!');
+      showToast('Sem internet: seus livros locais/abertos seguem disponíveis offline');
     });
     updateOfflineBadgeUi();
 
@@ -2797,5 +2797,6 @@
     renderBookshelf();
     initCloudAutoConnect();
     renderVocabList();
-    testAnkiConnectDecks(true);
+    // Só sonda o AnkiConnect (127.0.0.1:8765) se o usuário já conectou o Anki Desktop antes
+    if (getAnkiConfig().ankiConnectEnabled) testAnkiConnectDecks(true);
   

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'leitor-portatil-v25';
+const CACHE_VERSION = 'leitor-portatil-v27';
 const APP_SHELL = [
   './',
   './portable_book_reader.html',
@@ -34,7 +34,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
   // Nunca cachear rotas /api/* nem chamadas de API/Auth/Storage de nuvem
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/.netlify/functions/')) return;
+  if (url.pathname.startsWith('/api/')) return;
   if (url.hostname.includes('supabase.co') || url.hostname.includes('firebaseio.com') || url.hostname.includes('googleapis.com') || url.hostname.includes('accounts.google.com') || url.hostname.includes('graph.microsoft.com') || url.hostname.includes('login.microsoftonline.com')) return;
 
   // Bibliotecas CDN (PDF.js): Cache-First

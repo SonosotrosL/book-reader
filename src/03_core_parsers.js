@@ -7,6 +7,62 @@
      * - Paginação por colunas (1 ou 2 colunas) + Rolagem contínua
      **********************************************************************/
 
+    /* =====================================================================
+     * SEGURANÇA: sanitização do HTML vindo de livros (EPUB/MOBI/HTML/DOCX…)
+     * Todo HTML de livro é inserido via innerHTML; um arquivo malicioso poderia
+     * executar JS (onerror=, javascript:, <iframe srcdoc>…) e roubar a chave
+     * Gemini / sessão da nuvem. Esta função neutraliza esses vetores mantendo
+     * texto, estilos inline, imagens (blob:/data:image) e links internos.
+     * ===================================================================== */
+    const BOOK_HTML_SUSPICIOUS_RE = /\son[a-z]+\s*=|javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|srcdoc|<\s*(script|iframe|frame|frameset|object|embed|applet|base|meta|link|form|input|button|textarea|select|animate|set|portal|noscript|template)\b/i;
+    const BOOK_HTML_DROP_TAGS = 'script, iframe, frame, frameset, object, embed, applet, base, meta, link, form, input, button, textarea, select, portal, noscript, template, animate, set, animateMotion, animateTransform, foreignObject';
+    const BOOK_HTML_URL_ATTRS = ['href', 'src', 'xlink:href', 'action', 'formaction', 'poster', 'background', 'srcset', 'data', 'longdesc', 'cite'];
+
+    function isDangerousBookUrl(value) {
+      const v = String(value || '').replace(/[\u0000- \u007f-\u009f]+/g, '').toLowerCase();
+      return v.startsWith('javascript:') || v.startsWith('vbscript:') || v.startsWith('data:text/html') || v.startsWith('data:application') || v.startsWith('data:image/svg');
+    }
+
+    function sanitizeBookHtml(html) {
+      if (typeof html !== 'string' || !html) return html;
+      if (!BOOK_HTML_SUSPICIOUS_RE.test(html)) return html; // caminho rápido: livro comum
+      try {
+        const doc = new DOMParser().parseFromString(`<!DOCTYPE html><html><body>${html}</body></html>`, 'text/html');
+        doc.body.querySelectorAll(BOOK_HTML_DROP_TAGS).forEach(el => el.remove());
+        doc.body.querySelectorAll('*').forEach(el => {
+          for (const attr of Array.from(el.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (name.startsWith('on') || name === 'srcdoc' || name === 'formaction') {
+              el.removeAttribute(attr.name);
+            } else if (BOOK_HTML_URL_ATTRS.includes(name) && isDangerousBookUrl(attr.value)) {
+              el.removeAttribute(attr.name);
+            } else if (name === 'style' && /javascript\s*:|expression\s*\(/i.test(attr.value)) {
+              el.removeAttribute(attr.name);
+            }
+          }
+        });
+        return doc.body.innerHTML;
+      } catch {
+        return escapeHtml(html.replace(/<[^>]*>/g, ' '));
+      }
+    }
+
+    function sanitizeParsedBook(parsed) {
+      if (parsed && Array.isArray(parsed.sections)) {
+        for (const sec of parsed.sections) {
+          if (!sec) continue;
+          if (typeof sec.html === 'string') sec.html = sanitizeBookHtml(sec.html);
+          // EPUB/MOBI geram o HTML sob demanda (buildHtml(rawSlice)): sanitiza também essa saída
+          if (typeof sec.buildHtml === 'function' && !sec.buildHtml.__sanitized) {
+            const originalBuild = sec.buildHtml;
+            sec.buildHtml = function sanitizedBuildHtml(...args) { return sanitizeBookHtml(originalBuild.apply(this, args)); };
+            sec.buildHtml.__sanitized = true;
+          }
+        }
+      }
+      return parsed;
+    }
+
     const state = {
       bookKey: null,
       title: '',
@@ -226,7 +282,7 @@
         dom.btnMangaRtl.classList.toggle('active', state.mangaRtl);
         const lblDir = document.getElementById('lblMangaDir');
         if (lblDir) {
-          lblDir.textContent = state.mangaRtl ? 'Mangá Japonês (Direita ← Esquerda)' : 'HQ Ocidental (Esquerda → Direita)';
+          lblDir.textContent = state.mangaRtl ? 'Japonês ←' : 'Ocidental →';
         }
       }
       const btnStripEl = document.getElementById('btnMangaStrip');
@@ -2426,7 +2482,8 @@
     function applyBionicReadingToHtml(htmlStr) {
       if (!htmlStr || typeof htmlStr !== 'string') return htmlStr;
       return htmlStr.replace(/(<p\b[^>]*>)([\s\S]*?)(<\/p>)/gi, (match, openTag, innerText, closeTag) => {
-        const transformed = innerText.replace(/(<[^>]+>)|([A-Za-zÀ-ÿ0-9_]+)/g, (m, tag, word) => {
+        // Tags e entidades (&amp; &nbsp; &#8212;) passam intactas; só palavras recebem o negrito
+        const transformed = innerText.replace(/(<[^>]+>|&#?[A-Za-z0-9]+;)|([A-Za-zÀ-ÿ0-9_]+)/g, (m, tag, word) => {
           if (tag) return tag;
           if (!word || word.length < 2) return word;
           const half = Math.ceil(word.length * 0.45);
@@ -2486,6 +2543,13 @@
       const sentencesCount = Math.max(1, rawSentences.length);
       const words = cleanText.toLowerCase().match(/[a-zà-ÿ]{2,}/gi) || [];
       if (words.length < 30) return null;
+
+      // O classificador CEFR é calibrado para inglês: em português, mangás ou texto inválido não mostra nível
+      const EN_STOP = new Set(['the', 'and', 'of', 'to', 'in', 'is', 'that', 'it', 'was', 'he', 'for', 'you', 'with', 'his', 'she', 'her', 'they', 'had', 'but', 'not']);
+      const PT_STOP = new Set(['de', 'que', 'do', 'da', 'em', 'um', 'uma', 'não', 'para', 'com', 'os', 'as', 'no', 'na', 'se', 'por', 'mais', 'ele', 'ela', 'foi']);
+      let enHits = 0, ptHits = 0;
+      for (const w of words) { if (EN_STOP.has(w)) enHits++; else if (PT_STOP.has(w)) ptHits++; }
+      if (enHits / words.length < 0.08 || ptHits > enHits) return null;
 
       const wordCount = words.length;
       const totalChars = words.reduce((acc, w) => acc + w.length, 0);
@@ -2647,7 +2711,6 @@
           }
           dom.readerFlow.innerHTML = html;
           dom.sheetBookTitle.textContent = `${state.title} › ${sec.title}`;
-          dom.sheetChapterTitle.textContent = `${state.currentIndex + 1} / ${state.sections.length}`;
 
           applySettings();
 
@@ -2807,19 +2870,28 @@
       };
     }
 
+    // Métrica mestre de progresso: a MESMA % aparece no rodapé, na barra, no histórico e nos cards da estante.
+    // Livros de texto: proporção de palavras lidas; PDF/Mangá: página atual / total de páginas.
+    function getCurrentBookPercent() {
+      const total = state.sections.length;
+      if (!total) return 0;
+      const cur = state.currentIndex + 1;
+      const metrics = (state.format !== 'PDF' && state.format !== 'CBZ') ? computeKindleReadingMetrics() : null;
+      if (metrics && metrics.totalLoc > 0) {
+        return Math.min(100, Math.max(0, Math.round((metrics.currentLoc / metrics.totalLoc) * 100)));
+      }
+      return Math.min(100, Math.round((cur / Math.max(1, total)) * 100));
+    }
+
     function updateFooterLabels() {
       const total = state.sections.length;
       if (!total) return;
       const cur = state.currentIndex + 1;
       const metrics = computeKindleReadingMetrics();
-      // O percentual deve refletir o progresso real de leitura no livro (Posição/palavras),
-      // e não apenas o índice bruto de arquivos de capítulo (que causava 'Pos. 7538 (50%)' em vez de 84%)
-      const pct = (metrics && metrics.totalLoc > 0 && state.format !== 'PDF')
-        ? Math.min(100, Math.max(0, Math.round((metrics.currentLoc / metrics.totalLoc) * 100)))
-        : Math.round((cur / Math.max(1, total)) * 100);
+      const pct = getCurrentBookPercent();
 
       dom.inputSectionNum.value = String(cur);
-      dom.lblTotalSections.textContent = `/ ${total}`;
+      dom.lblTotalSections.textContent = `/ ${total} ${(state.format === 'PDF' || state.format === 'CBZ') ? 'pág.' : 'cap.'}`;
       if (state.format === 'PDF') {
         dom.inputSectionNum.title = `Página ${cur} de ${total} do PDF (digite o número e pressione Enter)`;
       } else {
@@ -2959,9 +3031,9 @@
 
         const secTitle = sec && sec.title ? `${sec.title} · ` : '';
         if (dom.viewport.classList.contains('paginated-mode')) {
-          dom.sheetChapterTitle.textContent = `${state.subPageIndex + 1} / ${state.subPageCount}`;
-          const screenDetail = state.subPageCount > 1 ? ` (Tela ${state.subPageIndex + 1}/${state.subPageCount})` : '';
-          const sheetPagePart = `${pageStr}${screenDetail}`;
+          // Um único indicador de progresso: a mesma % do rodapé, da barra e dos cards da estante
+          dom.sheetChapterTitle.textContent = `${pct}%`;
+          const sheetPagePart = pageStr;
           dom.sheetFooterInfo.textContent = `${secTitle}${sheetPagePart}${timeOrDetail ? ' · ' + timeOrDetail : ''}`;
         } else {
           dom.sheetFooterInfo.textContent = `${secTitle}${kindleSummary}`;
@@ -2973,6 +3045,7 @@
       }
       dom.sheetFooterInfo.style.cursor = 'pointer';
       dom.sheetFooterInfo.title = 'Clique para alternar o indicador de página/tempo estilo Kindle';
+      if (dom.sheetChapterTitle) dom.sheetChapterTitle.textContent = `${pct}%`;
     }
 
     function cycleKindleFooterMode() {
@@ -3062,6 +3135,20 @@
       }
     }
 
+    // Largura das zonas laterais de toque para virar página (maior em telas de celular)
+    function getTapZoneWidth() {
+      return window.innerWidth < 768 ? 0.28 : 0.18;
+    }
+
+    // Toque/clique duplo em qualquer imagem abre o visualizador com zoom (inclusive páginas de mangá)
+    dom.readerFlow.addEventListener('dblclick', (e) => {
+      const imgEl = e.target.closest('img');
+      if (!imgEl || !imgEl.src || typeof openImageLightbox !== 'function') return;
+      e.preventDefault();
+      try { const sel = window.getSelection(); if (sel) sel.removeAllRanges(); } catch {}
+      openImageLightbox(imgEl.src, imgEl.alt || 'Imagem do Livro');
+    });
+
     // Interceptar cliques em Personagens/Notas (X-Ray), destaques salvos e links internos / Notas de Rodapé
     dom.readerFlow.addEventListener('click', (e) => {
       const entitySpan = e.target.closest('.entity-note-ref');
@@ -3081,7 +3168,13 @@
       }
 
       const imgEl = e.target.closest('img');
-      if (imgEl && imgEl.src) {
+      // Mangá/HQ: toque simples vira página (zonas de toque); zoom só com toque duplo (ver dblclick abaixo).
+      // Livros: imagens nas laterais da tela também viram página em vez de abrir o zoom.
+      const isMangaView = state.readingType === 'manga' || state.format === 'CBZ';
+      const vpRect = dom.viewport.getBoundingClientRect();
+      const relX = vpRect.width ? (e.clientX - vpRect.left) / vpRect.width : 0.5;
+      const inSideZone = state.tapZones && (relX <= getTapZoneWidth() || relX >= 1 - getTapZoneWidth());
+      if (imgEl && imgEl.src && !isMangaView && !inSideZone) {
         e.preventDefault();
         e.stopPropagation();
         if (typeof openImageLightbox === 'function') {
@@ -3796,6 +3889,7 @@
           subPageIndex: state.subPageIndex,
           scrollRatio: +scrollRatio.toFixed(4),
           total: state.sections.length,
+          percent: getCurrentBookPercent(),
           updatedAt: Date.now()
         };
         localStorage.setItem('reader_history', JSON.stringify(hist));
@@ -4061,7 +4155,7 @@
         div.addEventListener('click', () => {
           dom.inputAnkiFront.value = card.front;
           dom.inputAnkiBack.value = card.back || '';
-          dom.inputAnkiContext.value = card.context || '';
+          dom.inputAnkiContext.value = ankiContextToField(card.context || '');
           dom.modalStatus.textContent = 'Editando cartão salvo';
           dom.lookupModal.classList.add('open');
         });
@@ -4246,6 +4340,11 @@
         if (res.ok) {
           const data = await res.json();
           const translated = Array.isArray(data[0]) ? data[0].map(part => (part && part[0]) ? part[0] : '').join('') : '';
+          const srcLang = typeof data[2] === 'string' ? data[2].toLowerCase().split('-')[0] : '';
+          if (srcLang && srcLang === String(targetLang).toLowerCase().split('-')[0]) {
+            dom.modalStatus.textContent = `O texto já está no idioma de destino. Escolha outro idioma em "Traduzir p/" ou use Dicio / Wiktionary abaixo.`;
+            return;
+          }
           let transliteration = '';
           if (Array.isArray(data[0])) {
             for (const part of data[0]) {
@@ -4275,6 +4374,10 @@
       dom.modalStatus.textContent = 'Sem conexão com a API — use os botões externos abaixo ou digite a nota manualmente.';
     }
 
+    // O campo de contexto mostra «palavra» (legível); o cartão salvo usa <b>palavra</b> (formatação do Anki)
+    function ankiContextToField(v) { return String(v || '').replace(/<b>([\s\S]*?)<\/b>/gi, '«$1»'); }
+    function ankiContextFromField(v) { return String(v || '').replace(/«([^»]+)»/g, '<b>$1</b>'); }
+
     function openLookupModal(mode) {
       dom.selectionToolbar.classList.remove('open');
       dom.inputAnkiFront.value = state.selectedText || '';
@@ -4286,7 +4389,7 @@
           ctx = ctx.replace(new RegExp(escaped, 'i'), `<b>${state.selectedText}</b>`);
         } catch {}
       }
-      dom.inputAnkiContext.value = ctx;
+      dom.inputAnkiContext.value = ankiContextToField(ctx);
       dom.lookupModal.classList.add('open');
       if (mode === 'dict' && state.selectedText) {
         fetchDictionaryDefinition(state.selectedText);

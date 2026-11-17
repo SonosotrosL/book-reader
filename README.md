@@ -1,235 +1,234 @@
-# 📚 Leitor Portátil & Estante Universal de Livros & Mangás
+# Tonho Book Reader
 
-> **Leitor universal, portátil e 100% autossuficiente (PWA)** para **EPUB**, **MOBI**, **AZW3/KF8**, **PDF**, **CBZ/CBR** e **TXT**. Funciona diretamente no navegador (offline-first via Service Worker) ou como aplicativo desktop/mobile instalado, com sincronização em nuvem via **Supabase**, **Google Drive** ou **OneDrive**, suporte a múltiplos perfis, estantes compartilhadas seguras e suíte integrada de **Inteligência Artificial (NotebookLM)** e **Estudo de Idiomas**.
+Leitor de livros, mangás e quadrinhos que roda no navegador, no computador e no celular. Dá para instalar como app (PWA) e ler sem internet os livros que já estão no aparelho.
 
-![HTML5](https://img.shields.io/badge/HTML5-Single--File-E34F26?logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-Modern%20Themes-1572B6?logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla%20ES6+-F7DF1E?logo=javascript&logoColor=black)
-![PWA](https://img.shields.io/badge/PWA-Offline%20Ready-5A0FC8?logo=pwa&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-Cloud%20Sync-3ECF8E?logo=supabase&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-Auto%20Deploy-000000?logo=vercel&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue.svg)
+Além de ler, ele tem ferramentas para estudar e aprender idiomas: destaques, notas, cartões no estilo Anki, tradução, dicionário e resumos com IA (opcional, com uma chave gratuita do Google Gemini).
+
+Site: https://tonhobookreader.vercel.app
 
 ---
 
-## 📑 Índice
-1. [🌟 Catálogo Completo de Recursos](#-catálogo-completo-de-recursos)
-   - [Formatos Suportados](#-formatos-suportados-100-no-navegador)
-   - [Leitura & Ergonomia Visual](#-leitura--ergonomia-visual)
-   - [Suíte NotebookLM (IA & Aprendizado)](#-suíte-notebooklm-ia--aprendizado)
-   - [Idiomas & Vocabulário](#-ferramentas-de-idiomas--vocabulário)
-   - [Método Cornell & Estudos](#-método-cornell--estudo-ativo)
-   - [Conversor de Mangás p/ Kindle (KCC RTL)](#-conversor-de-mangás-p-kindle-kcc-web--calibre-rtl)
-   - [Nuvem, Perfis & Segurança](#-nuvem-estantes-compartilhadas--segurança)
-   - [Scrapers & Acervos Públicos](#-explorador-de-acervos-públicos--scrapers)
-2. [📖 Guia Prático: Como Usar Cada Ferramenta](#-guia-prático-como-usar-cada-ferramenta)
-3. [💾 Como Funciona o Armazenamento Local (IndexedDB)](#-como-funciona-o-armazenamento-local-indexeddb)
-4. [🔒 Segurança dos Convites: O que acontece se alguém compartilhar o link?](#-segurança-dos-convites-o-que-acontece-se-alguém-compartilhar-o-link)
-5. [🚀 Como Rodar e Fazer Deploy (Vercel / GitHub)](#-como-rodar-e-fazer-deploy)
-6. [🛠️ Arquitetura e Compilação (`src/`)](#-arquitetura-e-compilação)
+## Sumário
+
+- [O que ele lê](#o-que-ele-lê)
+- [Lendo](#lendo)
+- [Estudo e idiomas](#estudo-e-idiomas)
+- [IA (opcional)](#ia-opcional)
+- [Nuvem e estante compartilhada](#nuvem-e-estante-compartilhada)
+- [Livros e mangás gratuitos](#livros-e-mangás-gratuitos)
+- [Kindle](#kindle)
+- [O que precisa de internet](#o-que-precisa-de-internet)
+- [Limitações conhecidas](#limitações-conhecidas)
+- [Publicar na Vercel](#publicar-na-vercel)
+- [Configurar o Supabase](#configurar-o-supabase)
+- [Rodar no computador](#rodar-no-computador)
+- [Estrutura do código](#estrutura-do-código)
 
 ---
 
-## 🌟 Catálogo Completo de Recursos
+## O que ele lê
 
-### 📖 Formatos Suportados (100% no Navegador)
-* **EPUB 2 / 3**: Suporte completo a imagens, CSS nativo, tipografia adaptável, notas de rodapé flutuantes, sumário multinível (NCX / Nav) e capas SVG.
-* **MOBI / AZW3 (KF8)**: Descompressão PalmDOC LZ77 pura em JavaScript, decodificação oficial de cabeçalhos Mobipocket, imagens `recindex` e links internos via `filepos`.
-* **PDF**: Renderização nítida via PDF.js, com sumário em árvore, busca textual por palavra-chave, controle de contraste e filtro noturno invertido.
-* **CBZ / CBR / ZIP / Mangás**: Modo Mangá com leitura tradicional oriental da **Direita para a Esquerda (RTL)**, detecção inteligente de **página dupla panorâmica** e modo **Tira Contínua (Webtoon)** com zoom de toque.
-* **TXT & Markdown**: Paginação instantânea e auto-detecção de charset (UTF-8, ISO-8859-1).
+| Formato | Observações |
+|---|---|
+| EPUB 2 e 3 | Imagens, sumário, notas de rodapé e capa. |
+| MOBI, AZW, AZW3, PRC | Leitura dos formatos do Kindle sem DRM. |
+| PDF | Página original (com zoom) ou modo texto. Sumário e busca. |
+| CBZ / ZIP | Mangá (direita para a esquerda), HQ (esquerda para a direita), página dupla e tira contínua estilo Webtoon. |
+| FB2 | Inclui arquivos antigos em windows-1251. |
+| DOCX, ODT, RTF | Abre como livro de texto. |
+| TXT, Markdown, HTML | TXT em UTF-8 ou Latin-1 (acentos de arquivos antigos aparecem certos). |
+| SRT, VTT | Legendas, lidas como texto. |
 
----
-
-### 🎨 Leitura & Ergonomia Visual
-* **Leitura Biônica (Bionic Reading)**: Destaque visual guiado nas primeiras letras das palavras (*Fixação Visual*). Permite ao cérebro processar a leitura até 2x mais rápido sem cansaço visual.
-* **Temas do Site**: Claro, Sépia e Escuro com paleta customizável de **Cores de Destaque** (Marrom Editorial, Azul, Verde, Roxo, Âmbar e Rosa).
-* **Papel da Folha Independente**: Mude a folha do livro para claro, sépia ou escuro sem alterar as barras do leitor.
-* **Filtro de Luz Âmbar**: Controle deslizante de luz quente sobre toda a tela para proteger seus olhos durante a leitura noturna.
-* **Régua de Foco Visual**: Linha horizontal semi-transparente que acompanha a leitura para evitar perda de foco em parágrafos longos.
-* **Sons Ambiente 100% Offline**: Chuva suave, Ruído Marrom e Lareira sintetizados em tempo real via Web Audio API (sem consumir internet nem carregar MP3s pesados).
-* **Timer Pomodoro**: Temporizador de foco e pausas (15, 25, 45, 60 min) embutido no topo.
-* **Galeria de Imagens & Mapas do Livro (Sidebar)**: Nova aba *Imagens* na barra lateral que escaneia e exibe todas as ilustrações, gravuras e mapas do livro em miniaturas organizadas, permitindo abri-las em alta resolução ou baixá-las individualmente.
-* **Fita Marcadora de Retorno de Leitura**: Ao retomar a leitura de onde você parou, uma elegante fita iluminada (*"📍 Você parou aqui"*) aponta visualmente para o parágrafo exato onde a leitura parou, sumindo suavemente após alguns segundos.
-* **Conversor de Capítulo para Áudio MP3 Offline**: Na barra de narração (TTS), clique em **📥 Baixar Áudio (.mp3)** para sintetizar e exportar o capítulo inteiro em arquivo MP3 contínuo para ouvir no carro, smartphone ou caixinha de som sem precisar de internet!
-* **Visualizador & Ampliador Profissional de Imagens**: Clique em qualquer imagem de livro, mangá ou mapa para abrir o visualizador em tela cheia com **Zoom livre (até 500% ou roda do mouse)**, **Arrasto de detalhes (Pan)**, **Rotação 90°**, **Copiar Imagem** para a área de transferência e **Baixar Imagem (`.png`/`.jpg`)** com 1 clique.
-* **Botão Direto "Fechar Livro" (`✕ Fechar`)**: Localizado na barra superior de leitura, descarrega o livro da memória RAM e retorna instantaneamente para a Estante inicial.
-* **Page Flip**: Folheie rapidamente qualquer capítulo com grade de miniaturas sem perder a página em que estava (graças ao *Pino de Retorno*).
+CBR (RAR) não é suportado. Converta para CBZ antes (o Calibre ou o 7-Zip fazem isso).
 
 ---
 
-### 🧠 Suíte NotebookLM (IA & Aprendizado)
-Localizada na **Central de Ferramentas ↗** → aba **NotebookLM**:
-1. **Chat Grounded (Sem Alucinações)**: Converse com o livro! Tire dúvidas sobre personagens, enredo, teorias ou conceitos históricos. A IA é estritamente ancorada no texto do livro aberto.
-2. **Audio Overview (Podcast com 2 Apresentadores)**: Gera um bate-papo dinâmico entre dois anfitriões (Alex e Sam) debatendo os principais insights da obra. A reprodução é feita em voz alta alternando dois sintetizadores de voz nativos do navegador!
-3. **Guia de Estudo / Dossiê Automático**: Cria em segundos um documento completo contendo Resumo Executivo, Fatos-Chave, Linha do Tempo e Perguntas de Fixação, com botão de **Exportar para Markdown (`.md`)**.
-4. **Motor Híbrido**: Funciona 100% offline via algoritmo léxico semântico ou conectado à chave gratuita do Google Gemini 1.5 Flash.
+## Lendo
+
+- **Abrir um livro:** "+ Adicionar livro" na estante, arrastar o arquivo para a janela, ou colar o link de um arquivo.
+- **Virar a página:** setas do teclado, botões da barra, toque nas laterais da tela ou deslizar o dedo. No mangá, toque duplo na página abre o zoom.
+- **Modos de página:** Contínuo, Capítulo, 1 página e 2 páginas.
+- **Voltar à estante:** botão "‹ Estante". O ponto onde você parou fica salvo, e ao reabrir o livro aparece uma marca "Você parou aqui".
+- **Progresso:** a porcentagem é a mesma no rodapé, no topo da página e no card da estante. O rodapé também mostra página estimada, posição no estilo Kindle e tempo restante (clique nele para alternar).
+- **Aparência (botão Aa):** tema do app (claro, sépia, escuro, OLED), cor da página, fonte (inclui OpenDyslexic, se estiver instalada no aparelho), tamanho, entrelinha, largura do texto, alinhamento e texto vertical (japonês/chinês).
+- **Conforto:** luz âmbar sobre a tela, régua de foco, leitura biônica, Pomodoro e sons de fundo (chuva, ruído marrom e lareira, gerados no próprio navegador).
+- **Navegação:** sumário, busca (Ctrl+F), marcadores (Ctrl+D), "Ir para" uma porcentagem ou posição (tecla G), miniaturas para folhear o livro e galeria com todas as imagens do livro.
+- **Imagens:** clique (ou toque duplo) para ampliar, girar, copiar ou baixar.
+
+Pomodoro, sons, ferramentas de estudo e de idiomas ficam escondidos por padrão. Ative em **Aa → App e estante → Mostrar ferramentas extras**.
 
 ---
 
-### 🌍 Ferramentas de Idiomas & Vocabulário
-* **Barra Rápida de Seleção**: Selecione qualquer palavra ou frase para abrir opções instantâneas:
-  * **Tradução Imediata**: Tradução sem sair da página.
-  * **Pronúncia (Shadowing)**: Ouve o trecho com sotaque nativo para treino auditivo e vocal.
-  * **Frequência Lexical**: Descubra se a palavra é comum ou rara na literatura.
-  * **Salvar no Anki**: Cria flashcard com a palavra, significado e frase exata de exemplo do livro com 1 clique.
-* **Classificador de Nível CEFR (A1 a C2)**: Badge inteligente no rodapé do livro avaliando a complexidade do vocabulário do capítulo atual.
-* **Word Wise (Estilo Kindle)**: Exibe dicas e sinônimos simples em inglês diretamente sobre palavras difíceis do texto.
-* **Integração Direta com Anki**: Conexão com AnkiConnect (desktop) e AnkiWeb, além de sistema interno de revisão espaçada (SRS).
+## Estudo e idiomas
+
+Ao selecionar um trecho aparece uma barra com:
+
+- **Cores de destaque** e nota.
+- **Dicionário** (português e inglês) e **Wikipédia**.
+- **Traduzir** e **Ouvir** (pronúncia com a voz do aparelho).
+- **+ Anki**: cria um cartão com a palavra, o significado e a frase do livro.
+
+Outras ferramentas:
+
+- **Cartões e revisão:** revisão espaçada dentro do app (no estilo do Anki), exportação em `.tsv` e envio direto para o Anki Desktop (pelo add-on AnkiConnect).
+- **Quiz de lacunas** feito a partir dos seus destaques.
+- **Vocabulário frequente** do livro, com botão para virar cartão.
+- **Word Wise:** dicas curtas acima de palavras difíceis. Usa uma lista pequena de palavras literárias (português e inglês) mais as palavras que você salvou como cartão.
+- **Nível CEFR** (A1 a C2) no rodapé, só para livros em inglês.
+- **Método Cornell:** painel de anotações (perguntas, notas e resumo), exportável em Markdown.
+- **Destaques e citações:** lista com filtro e exportação em Markdown, Word, PDF ou para o Obsidian.
+- **Citação bibliográfica** do livro em ABNT, APA ou BibTeX.
+- **Tradução do capítulo** lado a lado ou abaixo de cada parágrafo.
+- **Resumo e quiz** do capítulo, e **revisor gramatical** (LanguageTool).
+- **Metas:** minutos lidos por dia, sequência de dias, palavras por minuto e meta anual de livros.
 
 ---
 
-### 📝 Método Cornell & Estudo Ativo
-* **Painel Dividido Cornell**: Clique no botão `Cornell` no topo para abrir o caderno de anotações dividido no formato pedagógico clássico:
-  1. *Perguntas & Palavras-Chave (Cues)*
-  2. *Anotações principais da leitura (Notes)*
-  3. *Resumo executivo do capítulo (Summary)*
-* Todas as anotações ficam gravadas automaticamente por livro no navegador.
-* **Citações & Destaques**: Marque trechos com cores diferentes, adicione notas e exporte todas as suas marcações organizadas em Markdown.
+## IA (opcional)
+
+Sem chave, essas ferramentas funcionam em modo básico: mostram trechos do próprio livro, não respostas geradas. Com uma chave gratuita do Google Gemini (criada em aistudio.google.com) elas passam a usar o Gemini 2.5 Flash. A chave fica salva só no seu navegador.
+
+- **Recap:** "o que aconteceu até aqui", com ou sem spoilers.
+- **Tutor:** perguntas sobre o trecho selecionado ou o capítulo.
+- **Raio-X:** personagens e termos recorrentes e onde aparecem.
+- **NotebookLM:** chat com o livro (precisa da chave), guia de estudo exportável em `.md` e um "podcast" com duas vozes lido pelo próprio aparelho.
+
+Tudo isso fica em **⋯ Recursos → IA & Estudo**. O mesmo menu mostra se a chave está configurada.
 
 ---
 
-### 🎌 Conversor de Mangás p/ Kindle (KCC Web & Calibre RTL)
-* **Conversor Web Embutido**: Na *Central de Ferramentas*, arraste qualquer mangá em `.cbz` ou `.epub` para gerar um arquivo formatado com leitura oriental (Direita → Esquerda / RTL), diagramação fixa e metadados oficiais para o *Send to Kindle*.
-* **Script Python Autônomo**: Acompanha o arquivo [`manga_kindle_converter.py`](./manga_kindle_converter.py) para conversão em lote de pastas inteiras via linha de comando no computador.
-* **Envio para Amazon**: Envie direto para o e-mail `@kindle.com` ou abra a página oficial da Amazon com 1 clique.
+## Nuvem e estante compartilhada
+
+- **Supabase:** guarda os livros, o progresso, as notas, os cartões e o perfil, e sincroniza entre celular e computador.
+- **Google Drive ou OneDrive:** alternativa usando a sua própria conta.
+- **Estante compartilhada:** cada pessoa entra com o próprio e-mail e tem progresso e notas separados. O dono escolhe o papel de cada um:
+
+| Papel | Pode |
+|---|---|
+| Dono | Tudo, inclusive gerenciar membros |
+| Membro | Ler, enviar e apagar livros |
+| Colaborador | Ler e sugerir livros (o dono aprova) |
+| Leitor | Ler e salvar o próprio progresso |
+
+A estante é privada: quem não estiver logado com um e-mail liberado em **Gerenciar membros** não vê nada. O link de convite só leva a pessoa até a estante; ela ainda precisa entrar com o e-mail cadastrado.
 
 ---
 
-### ☁️ Nuvem, Estantes Compartilhadas & Segurança
-* **Supabase (PostgreSQL + Storage)**: Sincronize estantes inteiras, capas, progresso de leitura, resenhas e cartões entre celular, tablet e computador.
-* **Nuvem Pessoal Direta (Google Drive & OneDrive)**: Conecte seu próprio Google Drive ou OneDrive via OAuth seguro no navegador, sem passar seus arquivos por servidores intermediários.
-* **Múltiplos Leitores & Clube do Livro**:
-  * Cada leitor tem seu próprio perfil (foto, metas anuais, histórico e estatísticas).
-  * Progresso individual separado: duas pessoas lendo o mesmo livro compartilhado mantêm páginas e marcações independentes.
-* **Sistema de Permissões Granular**:
-  * **Owner (Dono)**: Acesso total (subir, apagar, gerenciar membros).
-  * **Member (Membro)**: Leitura total e permissão para subir livros direto.
-  * **Contributor (Colaborador)**: Pode ler e sugerir livros que caem em uma fila de aprovação (`_inbox`).
-  * **Viewer (Somente Leitura)**: Pode ler e salvar seu próprio progresso, sem permissão de alterar a estante.
+## Livros e mangás gratuitos
+
+Na estante, "Buscar livros e mangás gratuitos" pesquisa em:
+
+- MangaDex (português e inglês), WEBTOON e Tapas;
+- Standard Ebooks, Project Gutenberg, Open Library, Wikisource;
+- Internet Archive (livros, quadrinhos e mangás).
+
+Dá para ler na hora ou salvar na estante. Essas buscas passam pelo servidor (`/api/opds-proxy`), então só funcionam no site publicado, não abrindo o arquivo direto do computador.
 
 ---
 
-### 🌐 Explorador de Acervos Públicos & Scrapers
-Acesse milhões de obras gratuitas e legais direto na aba retrátil da Estante:
-* **MangaDex**: Pesquise mangás em Português (PT-BR) e Inglês com leitura imediata ou download `.cbz`.
-* **WEBTOON & Tapas**: Scrapers públicos de quadrinhos e cartoons.
-* **Standard Ebooks & Project Gutenberg**: Mais de 70.000 livros clássicos em alta qualidade tipográfica.
-* **Internet Archive & Wikisource**: Acervos abertos de livros e documentos históricos.
+## Kindle
+
+- **Conversor de mangá:** gera um EPUB de layout fixo, da direita para a esquerda, pronto para o Send to Kindle (Ferramentas → Conversor). Também existe o script `manga_kindle_converter.py`, para converter pastas inteiras no computador:
+  ```bash
+  python manga_kindle_converter.py "C:\Mangas" -o "C:\Mangas\Kindle"
+  ```
+  Use `--ltr` para quadrinhos ocidentais.
+- **Enviar por e-mail:** envia para o seu endereço `@kindle.com` usando o seu Gmail (com senha de app), Brevo ou Resend. O servidor só aceita destinos `@kindle.com` e arquivos de até ~3 MB. Para arquivos maiores, use o botão que abre o Send to Kindle da Amazon.
+- **Conversor de formatos:** gera EPUB, MOBI, RTF, ODT, Markdown e TXT a partir do livro aberto. É uma conversão só de texto (imagens e formatação avançada se perdem). "PDF" abre a janela de impressão para salvar como PDF. Para conversões fiéis, use o Calibre.
 
 ---
 
-## 📖 Guia Prático: Como Usar Cada Ferramenta
+## O que precisa de internet
 
-### 1. Como Abrir Livros e Usar no Dia a Dia
-* **Arrastar e Soltar:** Arraste qualquer arquivo `.epub`, `.mobi`, `.azw3`, `.pdf`, `.cbz` ou `.txt` de qualquer pasta do seu computador para o navegador. Ele entra na sua Estante imediatamente.
-* **Navegação:** Use as setas `←` e `→` do teclado, a roda do mouse, ou toque nas laterais da tela no celular.
-* **Voltar à Estante:** Clique no botão `Estante` no topo esquerdo a qualquer momento.
+Funciona sem internet: ler livros que já estão no aparelho, destaques, notas, cartões, revisão, Cornell, metas, sons, Pomodoro e o modo básico das ferramentas de IA.
 
-### 2. Como Usar a Leitura Biônica
-1. Abra qualquer livro de texto (EPUB, MOBI, TXT).
-2. Clique no menu **Aa Tema** no topo direito.
-3. Marque a caixa **Habilitar Leitura Biônica**.
-4. O texto terá as primeiras letras destacadas em negrito instantaneamente. Para voltar ao normal, basta desmarcar.
-
-### 3. Como Usar o NotebookLM (Chat, Podcast e Dossiê)
-1. Com um livro aberto, clique em **Recursos ▾** → **Central de Ferramentas ↗**.
-2. Clique na aba **NotebookLM**.
-3. **Chat:** Digite qualquer pergunta na caixa de texto e clique em *Perguntar*.
-4. **Podcast:** Clique no botão azul *Gerar Conversa em Podcast* para ouvir os dois apresentadores debatendo o livro.
-5. **Dossiê:** Clique em *Gerar Dossiê de Estudo* para montar o roteiro e clique em *Exportar Markdown* para salvar no seu computador ou Obsidian.
-
-### 4. Como Converter Mangás para Ler no Kindle (RTL)
-1. Vá em **Central de Ferramentas ↗** → aba **Conversor & Otimizador**.
-2. Arraste seu arquivo `.cbz` ou `.epub` para a área de conversão.
-3. Escolha a ordem *Direita para a Esquerda (Mangá Tradicional)*.
-4. Clique em *Baixar EPUB Kindle* ou *Enviar p/ Kindle por E-mail*.
-
-### 5. Como Continuar no Celular (QR Code)
-1. Enquanto estiver lendo no computador, clique em **Recursos ▾** → **Continuar no Celular**.
-2. Um modal flutuante com o QR Code da sua leitura se abrirá.
-3. Aponte a câmera do celular para o QR Code: a mesma página e livro serão abertos no seu telefone na hora.
+Precisa de internet: nuvem, acervos gratuitos, dicionário, tradução, Wikipédia, revisor gramatical, IA com chave, QR code e envio ao Kindle.
 
 ---
 
-## 💾 Como Funciona o Armazenamento Local (IndexedDB)
+## Limitações conhecidas
 
-> **Pergunta frequente:** *"O app guarda os livros no IndexedDB do navegador. Isso não vai deixar o site lento ou pesado com o tempo?"*
-
-**Resposta técnica:** **Não, o site não fica lento!**
-1. **Armazenamento em Disco vs Memória RAM:** O IndexedDB funciona como uma pasta no seu disco rígido (SSD/HD), **não na memória RAM ativa do navegador**. Ter 100 livros ou 2 GB de mangás salvos ocupa apenas espaço de armazenamento do dispositivo, sem consumir memória de processamento.
-2. **Carregamento Sob Demanda (Lazy Loading):** Ao abrir a Estante, o leitor carrega apenas uma lista leve de metadados (título, autor, capa e porcentagem). O arquivo de 50 MB ou as centenas de imagens de um mangá **nunca são carregadas na memória** até você clicar explicitamente em *Continuar Lendo*.
-3. **Liberação Automática de Memória:** Ao fechar o livro ou voltar para a estante, o navegador descarta as páginas da memória RAM imediatamente.
-4. **Opção "Só Nuvem":** Se você tem livros sincronizados no Supabase/Drive e quer liberar espaço do seu disco rígido local, basta clicar no botão **Só Nuvem** no card do livro na estante: o arquivo pesado local é removido do navegador, mas o livro continua disponível na sua nuvem para ler quando quiser.
+- CBR não é suportado.
+- A narração (TTS) usa as vozes instaladas no aparelho, então a qualidade e os idiomas variam. Não há exportação em MP3.
+- O "Continuar no celular" (QR code) abre o mesmo livro e posição no celular se o livro estiver na nuvem ou já estiver salvo no celular.
+- Livros com DRM (comprados na Amazon, Kobo etc.) não abrem.
+- O conversor de formatos trabalha só com o texto.
 
 ---
 
-## 🔒 Segurança dos Convites: O que acontece se alguém compartilhar o link?
+## Publicar na Vercel
 
-> **Pergunta frequente:** *"Se eu enviar um convite de Somente Leitura para alguém, e essa pessoa tentar compartilhar com acesso completo para ela mesma ou para outro conhecido?"*
+1. Suba o repositório no GitHub e importe o projeto na Vercel. A cada commit a Vercel publica de novo.
+2. Configure as variáveis de ambiente (Settings → Environment Variables):
 
-O sistema possui uma camada dupla de proteção que **impede qualquer escalação indevida de privilégios**:
+| Variável | Para quê |
+|---|---|
+| `SUPABASE_URL` | URL do projeto Supabase |
+| `SUPABASE_ANON_KEY` | chave pública (anon) do Supabase |
+| `SUPABASE_BUCKET` | nome do bucket (padrão `books`) |
+| `GDRIVE_CLIENT_ID` / `ONEDRIVE_CLIENT_ID` | opcional, login no Drive ou OneDrive |
+| `OWNER_NOTIFY_EMAIL` | opcional, e-mail que recebe aviso de livros sugeridos |
+| `KINDLE_SMTP_USER`, `KINDLE_SMTP_PASS`, `KINDLE_EMAIL_PROVIDER` | opcional, conta usada só para enviar esse aviso |
+| `OPDS_PROXY_EXTRA_HOSTS` | opcional, domínios extras liberados no proxy (ex.: `meucatalogo.com,outro.org`) |
 
-1. **O que contém no link de convite:**
-   * Quando você escolhe **"Somente Ver e Baixar/Ler" (viewer)**, o link codifica a chave pública e a permissão restrita `role: "viewer"`.
-   * Se o convidado repassar o link dele para terceiros, todo mundo que abrir aquele link entrará **obrigatoriamente como Somente Leitura**.
-2. **Impossível fraudar no navegador (Bloqueio do Banco de Dados / RLS):**
-   * Mesmo que um usuário com conhecimentos de programação tente alterar o código JavaScript ou mandar requisições manuais ao Supabase fingindo ser administrador, o banco de dados PostgreSQL bloqueia a operação através do **Row-Level Security (RLS)**.
-   * No modo protegido com a tabela `library_members`, o Supabase verifica se o e-mail dele está registrado como `owner` ou `member`. Como o e-mail dele não está na lista de donos, o banco **rejeita** a gravação com erro `403 Unauthorized`.
-3. **Autonomia Segura de Dono:**
-   * Somente você, no painel *Gerenciar Membros com Acesso Total*, pode digitar o e-mail de um amigo de confiança e promovê-lo a Membro Completo. Visitantes e convidados de leitura **nunca** conseguem se autopromover.
-
----
-
-## 🚀 Como Rodar e Fazer Deploy
-
-### 1. Deploy Automático no Vercel (Recomendado)
-Como este repositório possui `vercel.json` configurado:
-1. Suba este repositório para a sua conta do **GitHub**.
-2. Conecte o repositório na **Vercel**.
-3. A cada novo commit que você fizer no GitHub, a Vercel compila e atualiza o seu leitor automaticamente na nuvem!
-
-### 2. Deploy no GitHub Pages
-1. No seu repositório do GitHub, vá em **Settings** > **Pages**.
-2. Em **Branch**, selecione `main` e a pasta `/ (root)`.
-3. Clique em **Save**. O link do site será gerado em instantes.
-
-### 3. Execução 100% Offline no Computador
-* Dê dois cliques no arquivo **[`Start_Visual_App.bat`](./Start_Visual_App.bat)** (Windows) ou simplesmente abra o arquivo **[`index.html`](./index.html)** no Chrome, Edge ou Firefox.
+O GitHub Pages não serve, porque não roda as funções da pasta `api/`.
 
 ---
 
-## 🛠️ Arquitetura e Compilação
+## Configurar o Supabase
 
-O código-fonte é organizado de forma modular dentro da pasta `src/`:
+1. Crie um projeto no Supabase.
+2. Abra o SQL Editor, cole o conteúdo de `SUPABASE_SETUP.sql`, troque o e-mail do dono se precisar e clique em Run. Pode rodar de novo sem problema.
+3. No app, entre com o e-mail do dono e adicione as outras pessoas em **Conta → Nuvem → Gerenciar membros**.
 
-```
-portable-book-reader/
-├── index.html                  # Bundle final compilado pronto para deploy
-├── portable_book_reader.html    # Cópia monolítica para uso local
-├── build_bundle.py             # Compilador dos arquivos de src/
-├── SUPABASE_SETUP.sql          # Configuração do banco Postgres & Storage
-├── manga_kindle_converter.py   # Utilitário CLI Python para mangás
-│
-├── src/                        # Código-fonte limpo e modular
-│   ├── 00_head.html            # Metatags, PWA e bibliotecas JS
-│   ├── 01_styles.css           # Estilos visuais, temas e responsividade
-│   ├── 02_body.html            # Estrutura HTML, menus e modais
-│   ├── 03_core_parsers.js      # Decodificadores MOBI, EPUB, PDF, CBZ
-│   ├── 04_reader_ui.js         # Interface de leitura, paginação e eventos
-│   ├── 05_cloud_sync.js        # Supabase, Google Drive, OneDrive, Perfis
-│   ├── 06_catalogs_init.js     # OPDS, Scrapers e inicialização
-│   └── 99_tail.html            # Fechamento e Service Worker
+O script deixa o bucket privado, cria os papéis acima e garante que cada pessoa só altere o próprio progresso.
+
+---
+
+## Rodar no computador
+
+Abrir o `index.html` direto funciona para ler livros locais. Para testar tudo (Service Worker, nuvem), sirva a pasta com um servidor simples:
+
+```bash
+python -m http.server 8080
 ```
 
-### Como Compilar Alterações:
-Sempre que fizer mudanças dentro da pasta `src/`, execute no terminal:
+e abra http://localhost:8080. As funções da pasta `api/` (acervos, Kindle) só funcionam na Vercel ou com `vercel dev`.
+
+---
+
+## Estrutura do código
+
+O app é um único HTML gerado a partir dos arquivos em `src/`:
+
+```
+index.html                  gerado pelo build (é o que a Vercel publica)
+portable_book_reader.html   cópia idêntica do index.html
+build_bundle.py             junta os arquivos de src/ e gera os dois HTML
+sw.js                       Service Worker (cache offline)
+manifest.webmanifest        dados do app instalável
+SUPABASE_SETUP.sql          tabelas e permissões do Supabase
+manga_kindle_converter.py   conversor de mangá para Kindle (linha de comando)
+api/                        funções da Vercel: proxy dos acervos, Kindle, AnkiWeb, configuração da nuvem
+src/
+  00_head.html              cabeçalho e bibliotecas
+  01_styles.css             estilos e temas
+  02_body.html              HTML da interface
+  03_core_parsers.js        leitura dos formatos (EPUB, MOBI, PDF, CBZ...)
+  04_reader_ui.js           leitor, estante, menus e ferramentas
+  05_cloud_sync.js          nuvem, perfis e membros
+  06_catalogs_init.js       acervos gratuitos e inicialização
+  99_tail.html              fechamento do HTML
+```
+
+Depois de mudar qualquer arquivo em `src/`, rode:
+
 ```bash
 python build_bundle.py
 ```
-Isso atualizará automaticamente os arquivos finais `index.html` e `portable_book_reader.html`.
+
+Ao publicar mudanças, aumente o número em `CACHE_VERSION` no `sw.js` para os aparelhos baixarem a versão nova.
 
 ---
 
-## 📄 Licença
-Distribuído sob a licença **MIT**. Sinta-se livre para usar, estudar, modificar e compartilhar com seus amigos!
+Licença MIT.

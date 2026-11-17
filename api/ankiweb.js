@@ -1,5 +1,5 @@
 /**
- * Serverless Function (Vercel / Netlify) — Ponte Direta para Conta AnkiWeb
+ * Serverless Function (Vercel) — Ponte Direta para Conta AnkiWeb
  * Permite autenticar na conta AnkiWeb (ankiweb.net) e adicionar cartões
  * diretamente pelo navegador ou celular sem bloqueio de CORS.
  */

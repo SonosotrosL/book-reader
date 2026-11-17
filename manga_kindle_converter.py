@@ -138,7 +138,7 @@ def convert_cbz_to_kindle_epub(cbz_path: pathlib.Path, out_path: pathlib.Path, d
 
     print(f"   [OK] Convertido com sucesso: {out_path.name}")
 
-def process_path(target_path: str, direction: str = "rtl"):
+def process_path(target_path: str, direction: str = "rtl", out_dir: str = ""):
     p = pathlib.Path(target_path.strip('\'"'))
     if not p.exists():
         print(f"Erro: Caminho não encontrado: {p}")
@@ -161,7 +161,7 @@ def process_path(target_path: str, direction: str = "rtl"):
         if f.name.endswith(f"_Kindle_{direction.upper()}.epub"):
             continue # Não reprocessa arquivo já convertido
         out_name = f.stem + f"_Kindle_{direction.upper()}.epub"
-        out_path = f.parent / out_name
+        out_path = (pathlib.Path(out_dir) if out_dir else f.parent) / out_name
 
         try:
             if f.suffix.lower() == '.epub':
@@ -175,17 +175,23 @@ def process_path(target_path: str, direction: str = "rtl"):
     print("https://www.amazon.com/sendtokindle\n")
 
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    if args:
-        target = args[0]
-        direction = args[1] if len(args) > 1 else "rtl"
-        process_path(target, direction)
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Converte mangás (.cbz, .zip ou .epub) em EPUB de layout fixo para o Kindle.")
+    parser.add_argument("caminhos", nargs="*", help="arquivos ou pastas com mangás")
+    parser.add_argument("--ltr", action="store_true", help="leitura da esquerda para a direita (HQ ocidental)")
+    parser.add_argument("-o", "--saida", default="", help="pasta onde salvar os EPUBs (padrão: ao lado do original)")
+    opts = parser.parse_args()
+    direction = "ltr" if opts.ltr else "rtl"
+    if opts.saida:
+        pathlib.Path(opts.saida).mkdir(parents=True, exist_ok=True)
+    if opts.caminhos:
+        for target in opts.caminhos:
+            process_path(target, direction, opts.saida)
     else:
-        print("="*60)
-        print("  Manga Kindle Converter (KCC & Calibre RTL Standalone)")
-        print("="*60)
+        print("Manga Kindle Converter")
         user_input = input("Arraste um arquivo (.cbz/.epub) ou cole o caminho de uma pasta: ").strip()
         if user_input:
-            process_path(user_input, "rtl")
+            process_path(user_input, direction)
         else:
-            print("Nenhum caminho informado. Encerrando.")
+            print("Nenhum caminho informado.")

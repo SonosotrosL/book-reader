@@ -16,9 +16,9 @@
         <span>Estante</span>
       </button>
 
-      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnCloseBook" title="Fechar este livro e voltar para a Estante" style="border-color:rgba(239,68,68,0.4); color:#ef4444; font-weight:600;">
-        <svg class="icon" viewBox="0 0 24 24" style="stroke:#ef4444;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        <span>Fechar</span>
+      <button class="tb-btn tb-btn-solid reader-only-ctrl" id="btnCloseBook" title="Voltar para a Estante (seu progresso fica salvo)">
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <span>Estante</span>
       </button>
 
       <label class="tb-btn tb-btn-solid" for="fileInput" title="Abrir arquivo do computador (.epub, .mobi, .azw3, .pdf, .docx, .odt, .rtf, .cbz, .fb2, .md, .txt)">
@@ -87,7 +87,7 @@
 
       <!-- Controle exclusivo do Modo Mangá (oculto no Modo Livro comum!) -->
       <button class="tb-btn tb-btn-solid hidden" id="btnMangaRtl" title="Alternar sentido de leitura do Mangá: Direita → Esquerda (Oriental) ou Esquerda → Direita">
-        <span id="lblMangaDir">Mangá Japonês (Direita ← Esquerda)</span>
+        <span id="lblMangaDir">Japonês ←</span>
       </button>
       <button class="tb-btn tb-btn-solid hidden" id="btnMangaStrip" title="Modo Tira Vertical Contínua (ideal para WEBTOON e Tapas sem espaços entre imagens)">
         <span>Tira Webtoon</span>
@@ -184,68 +184,82 @@
       <span style="font-weight:700; font-size:11.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">Recursos &amp; Ferramentas</span>
       <button type="button" class="tb-btn tb-btn-icon" id="btnCloseToolsDropdown" title="Fechar (Esc)" style="width:26px; height:26px; font-size:13px; cursor:pointer;">✕</button>
     </div>
-    <div class="reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Leitura &amp; Recursos do Livro</div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Navegação</div>
     <button class="menu-item-btn reader-only-ctrl" id="btnMenuGoToPosition">
       <span>Ir Para Posição / Porcentagem</span>
-      <span class="menu-item-sub">Porcentagem (%), Posição Kindle ou Página (G)</span>
-    </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiRecap">
-      <span>O Que Aconteceu Até Aqui? (Recap IA)</span>
-      <span class="menu-item-sub">Sem Spoilers</span>
-    </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiTutor">
-      <span>Tutor IA (Conversar com o Livro)</span>
-      <span class="menu-item-sub">Tire Dúvidas</span>
-    </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnWordWiseToggle">
-      <span>Word Wise (Dicas Acima de Palavras)</span>
-      <span class="menu-item-sub" id="lblWordWiseState">Desativado</span>
+      <span class="menu-item-sub">Tecla G</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnPageFlipOpen">
-      <span>Page Flip (Folhear Livro c/ Pino)</span>
+      <span>Folhear Livro (Miniaturas)</span>
       <span class="menu-item-sub">Grade</span>
     </button>
+    <div class="reader-only-ctrl" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">IA &amp; Estudo</div>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiRecap">
+      <span>Recap: O Que Aconteceu Até Aqui?</span>
+      <span class="menu-item-sub">Sem spoilers</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenAiTutor">
+      <span>Tutor IA (Perguntar ao Livro)</span>
+      <span class="menu-item-sub">Dúvidas</span>
+    </button>
     <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioXray">
-      <span>Raio-X do Livro (Personagens &amp; Termos)</span>
+      <span>Raio-X (Personagens &amp; Termos)</span>
       <span class="menu-item-sub">Auto X-Ray</span>
     </button>
-    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioReviews">
-      <span>Avaliação (Estrelas) &amp; Resenha</span>
-      <span class="menu-item-sub">Notas</span>
+    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioNotebookLM">
+      <span>NotebookLM (Chat, Podcast, Dossiê)</span>
+      <span class="menu-item-sub">Estúdio</span>
     </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnWordWiseToggle">
+      <span>Word Wise (Dicas Acima das Palavras)</span>
+      <span class="menu-item-sub" id="lblWordWiseState">Desativado</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnOpenVocab">
+      <span>Meus Cartões (Anki / Revisão)</span>
+      <span class="menu-item-sub">Aba lateral</span>
+    </button>
+    <button class="menu-item-btn reader-only-ctrl" id="btnMenuAiKeyStatus" data-open-studio-tab="paneStudioNotebookLM">
+      <span>Chave da IA (Gemini)</span>
+      <span class="menu-item-sub" id="lblMenuAiKeyState">—</span>
+    </button>
+    <div class="reader-only-ctrl" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Ouvir &amp; Foco</div>
     <button class="menu-item-btn reader-only-ctrl" id="btnTtsToggle">
-      <span>Ouvir Livro (Narração por Voz)</span>
+      <span>Ouvir Livro (Narração)</span>
       <span class="menu-item-sub">TTS</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnParallelToggle">
-      <span>Leitura Paralela (Lado a Lado)</span>
-      <span class="menu-item-sub">2 Telas</span>
+      <span>Tradução Lado a Lado</span>
+      <span class="menu-item-sub">2 colunas</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnRulerToggle">
       <span>Régua de Foco Visual</span>
       <span class="menu-item-sub">Guia</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnRsvpReading">
-      <span>Leitura Rápida RSVP (Spritz)</span>
+      <span>Leitura Rápida (RSVP)</span>
       <span class="menu-item-sub">Velocidade</span>
     </button>
-    <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-    <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:4px 8px; text-transform:uppercase;">Ferramentas &amp; Utilidades</div>
-    <button class="menu-item-btn" id="btnToolsStudio" data-open-studio-tab="paneStudioConvert">
-      <span>Central de Ferramentas ↗</span>
-      <span class="menu-item-sub">KCC · NotebookLM · IA · Metas</span>
+    <div class="reader-only-ctrl" style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title reader-only-ctrl" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Este Livro</div>
+    <button class="menu-item-btn reader-only-ctrl" data-open-studio-tab="paneStudioReviews">
+      <span>Avaliação &amp; Resenha</span>
+      <span class="menu-item-sub">Estrelas</span>
     </button>
     <button class="menu-item-btn reader-only-ctrl" id="btnMenuQrCode">
       <span>Continuar no Celular</span>
-      <span class="menu-item-sub">QR Code de Leitura</span>
+      <span class="menu-item-sub">QR Code</span>
     </button>
-    <button class="menu-item-btn reader-only-ctrl" id="btnOpenVocab">
-      <span>Meus Cartões Salvos (Anki)</span>
-      <span class="menu-item-sub">Aba Lateral</span>
+    <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+    <div class="menu-section-title" style="font-size:10.5px; font-weight:600; color:var(--text-muted); padding:6px 8px 4px; text-transform:uppercase;">Ferramentas</div>
+    <button class="menu-item-btn" id="btnToolsStudio" data-open-studio-tab="paneStudioConvert">
+      <span>Central de Ferramentas ↗</span>
+      <span class="menu-item-sub">Conversor · Kindle · Metas</span>
     </button>
     <button class="menu-item-btn" id="btnMenuAnkiLogin">
-      <span>Conexão Direta Anki</span>
-      <span class="menu-item-sub">AnkiConnect</span>
+      <span>Conectar Anki</span>
+      <span class="menu-item-sub">AnkiConnect / AnkiWeb</span>
     </button>
   </div>
 
@@ -257,14 +271,14 @@
     </div>
 
     <div class="segmented" style="width:100%; margin-bottom:12px;" id="typoPopoverTabs">
-      <button type="button" class="active" id="tabBtnTypoBook" style="flex:1;">Livro &amp; Leitura</button>
-      <button type="button" id="tabBtnTypoSite" style="flex:1;">Site &amp; Estante</button>
+      <button type="button" class="active" id="tabBtnTypoBook" style="flex:1;">Leitura</button>
+      <button type="button" id="tabBtnTypoSite" style="flex:1;">App e estante</button>
     </div>
 
     <!-- Aba 1: Livro & Leitura -->
     <div id="tabContentTypoBook">
       <div class="prop-row">
-        <div class="prop-label"><span>Papel da Folha do Livro</span></div>
+        <div class="prop-label"><span>Cor da página</span></div>
         <div class="prop-controls">
           <button class="book-theme-opt active" data-book-theme="same" title="Segue o mesmo tema escolhido para o site">Site</button>
           <button class="book-theme-opt" data-book-theme="light">Claro</button>
@@ -302,7 +316,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Espaçamento entre Linhas</span></div>
+        <div class="prop-label"><span>Entrelinha</span></div>
         <div class="prop-controls">
           <button class="line-opt" data-lh="1.45">Compacto</button>
           <button class="line-opt active" data-lh="1.72">Normal</button>
@@ -311,7 +325,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Largura da Coluna (Rolagem)</span></div>
+        <div class="prop-label"><span>Largura do texto</span></div>
         <div class="prop-controls">
           <button class="width-opt" data-mw="600px">Estreita</button>
           <button class="width-opt active" data-mw="720px">Média</button>
@@ -320,7 +334,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Alinhamento &amp; Opções PDF</span></div>
+        <div class="prop-label"><span>Alinhamento</span></div>
         <div class="prop-controls">
           <button class="align-opt active" data-align="justify">Justificado</button>
           <button class="align-opt" data-align="left">À Esquerda</button>
@@ -329,7 +343,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Orientação de Leitura</span></div>
+        <div class="prop-label"><span>Direção do texto</span></div>
         <div class="prop-controls">
           <button id="btnTextOrientHorizontal" class="active" title="Leitura padrão ocidental (linhas horizontais)">Horizontal</button>
           <button id="btnTextOrientVertical" title="Leitura vertical tradicional (Tate-gaki CJK)">Vertical (縦書き)</button>
@@ -337,14 +351,14 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Formatação do Livro</span></div>
+        <div class="prop-label"><span>Estilo do livro</span></div>
         <div class="prop-controls">
           <button id="btnStyleAdapted" class="active" title="Modo adaptado: aplica sua fonte, tamanho, espaçamento e cores escolhidos acima">Adaptado</button>
           <button id="btnStyleOriginal" title="Formatação original: respeita os recuos, fontes e estilos próprios definidos pelo editor do livro">Original do Livro</button>
         </div>
       </div>
 
-      <div class="prop-row">
+      <div class="prop-row ctx-manga-only">
         <div class="prop-label">
           <span>Largura Webtoon / Long Strip</span>
           <span id="lblWebtoonWidth">100%</span>
@@ -354,7 +368,7 @@
         </div>
       </div>
 
-      <div class="prop-row">
+      <div class="prop-row ctx-pdf-only">
         <div class="prop-label">
           <span>PDF Escaneado: Contraste / Brilho</span>
           <span id="lblPdfAdjust">100% / 100%</span>
@@ -375,7 +389,7 @@
     <!-- Aba 2: Site & Estante -->
     <div id="tabContentTypoSite" class="hidden">
       <div class="prop-row">
-        <div class="prop-label"><span>Tema do Site / App</span></div>
+        <div class="prop-label"><span>Tema do app</span></div>
         <div class="prop-controls">
           <button data-theme-val="light">Claro</button>
           <button class="active" data-theme-val="sepia">Sépia</button>
@@ -385,7 +399,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Cor de Destaque</span></div>
+        <div class="prop-label"><span>Cor de destaque</span></div>
         <div class="accent-swatch-row" id="accentSwatchRow">
           <button type="button" class="accent-swatch-btn active" data-accent-val="default" style="background:#7c3f1c;" title="Marrom Editorial (Padrão)"></button>
           <button type="button" class="accent-swatch-btn" data-accent-val="blue" style="background:#2563eb;" title="Azul"></button>
@@ -397,7 +411,7 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Tamanho da Grade da Estante</span></div>
+        <div class="prop-label"><span>Tamanho das capas</span></div>
         <div class="prop-controls">
           <button class="density-opt" data-density="compact">Compacta</button>
           <button class="density-opt active" data-density="normal">Padrão</button>
@@ -416,28 +430,28 @@
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Pacotes de Ferramentas (Interface Limpa)</span></div>
+        <div class="prop-label"><span>Mostrar ferramentas extras</span></div>
         <div class="prop-controls" style="flex-direction:column; align-items:flex-start; gap:6px;">
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableStudyTools" /> Habilitar Ferramentas de Estudo (Cornell, Quiz, Dossiê, Citações)
+            <input type="checkbox" id="chkEnableStudyTools" /> Estudo (Cornell, quiz, dossiê, citações)
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableLangTools" /> Habilitar Ferramentas de Idiomas (Tradução rápida, SRS, Frequência, Shadowing)
+            <input type="checkbox" id="chkEnableLangTools" /> Idiomas (tradução rápida, revisão de cartões, frequência, pronúncia)
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableAmbientAudio" /> Exibir Sons Ambiente na Barra
+            <input type="checkbox" id="chkEnableAmbientAudio" /> Sons ambiente na barra
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-            <input type="checkbox" id="chkEnableBionic" /> Habilitar Leitura Biônica (Destaque guiado nas primeiras letras)
+            <input type="checkbox" id="chkEnableBionic" /> Leitura biônica (início das palavras em negrito)
           </label>
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;" title="Quando desativado (padrão), o app NÃO baixa nenhum capítulo sozinho; só baixa quando você clica em Próximo Capítulo">
-            <input type="checkbox" id="chkAutoPrefetchChapter" /> Pré-carregar próximo capítulo online automaticamente
+            <input type="checkbox" id="chkAutoPrefetchChapter" /> Pré-carregar o próximo capítulo (mangás online)
           </label>
         </div>
       </div>
 
       <div class="prop-row">
-        <div class="prop-label"><span>Timer Pomodoro na Barra</span></div>
+        <div class="prop-label"><span>Pomodoro</span></div>
         <div class="prop-controls" style="align-items:center; justify-content:space-between; gap:8px;">
           <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
             <input type="checkbox" id="chkEnablePomodoro" /> Exibir Pomodoro
@@ -543,7 +557,6 @@
     <span style="font-size:11.5px; font-weight:600; color:var(--accent);">Narração (TTS):</span>
     <span id="lblTtsStatus" style="font-size:11px; color:var(--text-muted);">Pronto</span>
     <button class="tb-btn tb-btn-solid" id="btnTtsPlayPause">▶ Ler Capítulo</button>
-    <button class="tb-btn tb-btn-solid" id="btnExportChapterAudio" title="Exportar áudio narrado deste capítulo para ouvir no celular ou carro" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Baixar Áudio (.mp3)</button>
     <button class="tb-btn" id="btnTtsPrevPara" title="Parágrafo Anterior">⏮</button>
     <button class="tb-btn" id="btnTtsNextPara" title="Próximo Parágrafo">⏭</button>
     <button class="tb-btn" id="btnTtsStop" title="Parar">⏹</button>
@@ -591,7 +604,7 @@
     <div class="lightbox-stage" id="lightboxStage">
       <img id="imgLightboxTarget" src="" alt="Visualização Ampliada" draggable="false" />
     </div>
-    <div class="lightbox-hint">Use a roda do mouse (scroll) para Zoom · Arraste para explorar detalhes · Esc ou clique fora para fechar</div>
+    <div class="lightbox-hint"><span class="hint-mouse">Roda do mouse para zoom · Arraste para explorar · Esc ou clique fora para fechar</span><span class="hint-touch">Use os botões − / + ou pinça para zoom · Arraste para explorar · Toque fora para fechar</span></div>
   </div>
 
   <!-- Modal Integrado de Dicionário, Tradutor, Wikipédia e Cartão Anki Direto -->
@@ -697,7 +710,7 @@
         <div style="border:1px solid var(--border-color); border-radius:5px; padding:12px; background:var(--bg-toolbar);">
           <div style="font-weight:600; margin-bottom:6px; color:var(--text-primary);">2. Login na Conta AnkiWeb (Adição Online via Servidor / Proxy)</div>
           <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px; line-height:1.45;">
-            Para adicionar cartões direto na sua conta <strong>ankiweb.net</strong> pelo celular ou navegador sem abrir o Anki no PC (funciona automaticamente quando hospedado na Vercel/Netlify através da rota integrada <code>/api/ankiweb</code>):
+            Para adicionar cartões direto na sua conta <strong>ankiweb.net</strong> pelo celular ou navegador sem abrir o Anki no PC (funciona automaticamente quando hospedado na Vercel através da rota integrada <code>/api/ankiweb</code>):
           </div>
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
             <div class="modal-field">
@@ -710,7 +723,7 @@
             </div>
           </div>
           <div class="modal-field" style="margin-bottom:8px;">
-            <label>Endpoint da API AnkiWeb (Padrão automático na Vercel/Netlify: <code>/api/ankiweb</code>)</label>
+            <label>Endpoint da API AnkiWeb (Padrão automático na Vercel: <code>/api/ankiweb</code>)</label>
             <input type="text" id="inputAnkiWebEndpoint" value="/api/ankiweb" />
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
@@ -759,7 +772,7 @@
   <div class="modal-backdrop" id="toolsModal">
     <div class="studio-modal-card">
       <div class="modal-header">
-        <span>Ferramentas — Conversor · Raio-X · Resumidor · Tradutor · Revisor · Citações · Metas</span>
+        <span>Ferramentas</span>
         <button class="tb-btn tb-btn-icon" id="btnCloseToolsModal">✕</button>
       </div>
       <div class="studio-layout">
@@ -768,16 +781,16 @@
           <div class="studio-brand">
             <span>Ferramentas</span>
           </div>
-          <button class="studio-nav-btn active" data-studio-pane="paneStudioConvert">Conversor de Formatos</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioNotebookLM">NotebookLM (IA &amp; Estudo)</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioXray">Raio-X (Personagens)</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioSummary">Resumidor & Quiz</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioTranslate">Tradutor de Texto</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioProofread">Revisor Gramatical</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioQuotes">Citações & Destaques</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioReviews">Notas & Resenhas</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioInsights">Hábito & Metas</button>
-          <button class="studio-nav-btn" data-studio-pane="paneStudioKindle">Conta Kindle</button>
+          <button class="studio-nav-btn active" data-studio-pane="paneStudioConvert">Conversor</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioNotebookLM">NotebookLM</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioXray">Raio-X</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioSummary">Resumo e quiz</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioTranslate">Tradutor</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioProofread">Revisor</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioQuotes">Destaques</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioReviews">Resenha e citação</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioInsights">Metas</button>
+          <button class="studio-nav-btn" data-studio-pane="paneStudioKindle">Kindle</button>
           <div style="height:1px; background:var(--border-color); margin:6px 4px;"></div>
           <button class="studio-nav-btn" id="btnStudioGoReader">Voltar ao Leitor</button>
         </aside>
@@ -787,14 +800,14 @@
           <!-- ABA 1: CONVERSOR DE EBOOKS -->
           <div class="studio-pane active" id="paneStudioConvert">
             <div>
-              <h2 style="margin:0 0 4px 0; font-size:17px;">Conversor de Formatos</h2>
+              <h2 style="margin:0 0 4px 0; font-size:17px;">Conversor</h2>
               <div style="font-size:12px; color:var(--text-muted);">Converta o livro aberto atualmente ou selecione outro arquivo do computador.</div>
             </div>
 
             <div class="studio-upload-box" id="convDropZone">
               <div style="font-size:13.5px; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Arraste um arquivo aqui ou clique para selecionar</div>
               <div id="convSelectedFileLabel" style="font-size:12px; color:var(--accent);">
-                Usando o livro aberto atualmente no leitor (ou clique aqui para escolher outro arquivo)
+                Nenhum livro aberto — clique aqui ou arraste um arquivo para converter
               </div>
               <input type="file" id="convUploadInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.fb2,.cbz,.md,.txt,.html,.htm" class="hidden" />
             </div>
@@ -802,16 +815,15 @@
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--bg-toolbar); padding:10px 12px; border:1px solid var(--border-color); border-radius:6px;">
               <span style="font-size:12px; color:var(--text-secondary);">Formato de destino:</span>
               <select id="selectConvertFormat" style="height:30px; border:1px solid var(--border-strong); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 10px; font-size:12px;">
-                <option value="azw3">AZW3 (Kindle .azw3)</option>
-                <option value="mobi">MOBI (Kindle .mobi)</option>
-                <option value="epub" selected>EPUB Padrão (.epub)</option>
-                <option value="pdf">PDF Paginado (.pdf)</option>
-                <option value="docx">Word (.doc)</option>
-                <option value="rtf">Rich Text (.rtf)</option>
-                <option value="odt">OpenDocument (.odt)</option>
-                <option value="html">HTML Página Única (.html)</option>
+                <option value="epub" selected>EPUB simples (.epub · só texto)</option>
+                <option value="mobi">MOBI Kindle antigo (.mobi · só texto)</option>
+                <option value="pdf">PDF (abre Imprimir → Salvar como PDF)</option>
+                <option value="docx">Word compatível (.doc em HTML)</option>
+                <option value="rtf">Rich Text (.rtf · só texto)</option>
+                <option value="odt">OpenDocument (.odt · só texto)</option>
+                <option value="html">HTML página única (.html)</option>
                 <option value="md">Markdown (.md)</option>
-                <option value="txt">Texto Puro (.txt)</option>
+                <option value="txt">Texto puro (.txt)</option>
               </select>
               <button class="studio-btn-primary" id="btnRunConvert">Converter e Baixar</button>
               <button class="tb-btn tb-btn-solid" id="btnConvClearFile" title="Voltar a usar o livro aberto no leitor">Usar Livro Aberto</button>
@@ -820,21 +832,19 @@
             <div>
               <div style="font-weight:600; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Atalhos Diretos de Conversão</div>
               <div class="conv-presets-grid">
-                <button class="conv-preset-btn" data-conv-target="pdf">EPUB para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="azw3">EPUB para AZW3</button>
-                <button class="conv-preset-btn" data-conv-target="mobi">EPUB para MOBI</button>
-                <button class="conv-preset-btn" data-conv-target="epub">PDF para EPUB</button>
-                <button class="conv-preset-btn" data-conv-target="azw3">PDF para AZW3</button>
-                <button class="conv-preset-btn" data-conv-target="docx">PDF para WORD</button>
-                <button class="conv-preset-btn" data-conv-target="txt">PDF para TXT</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">WORD para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="rtf">WORD para RTF</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">DOC para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">RTF para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="txt">RTF para TXT</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">ODT para PDF</button>
-                <button class="conv-preset-btn" data-conv-target="docx">ODT para WORD</button>
-                <button class="conv-preset-btn" data-conv-target="pdf">TXT para PDF</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">EPUB → PDF (impressão)</button>
+                <button class="conv-preset-btn" data-conv-target="mobi">EPUB → MOBI (só texto)</button>
+                <button class="conv-preset-btn" data-conv-target="epub">PDF → EPUB (só texto)</button>
+                <button class="conv-preset-btn" data-conv-target="docx">PDF → Word (.doc)</button>
+                <button class="conv-preset-btn" data-conv-target="txt">PDF → TXT</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">Word → PDF (impressão)</button>
+                <button class="conv-preset-btn" data-conv-target="rtf">Word → RTF</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">RTF / ODT → PDF (impressão)</button>
+                <button class="conv-preset-btn" data-conv-target="docx">ODT → Word (.doc)</button>
+                <button class="conv-preset-btn" data-conv-target="pdf">TXT → PDF (impressão)</button>
+              </div>
+              <div style="font-size:11px; color:var(--text-muted); margin-top:6px; line-height:1.45;">
+                As conversões rodam no seu navegador e geram uma versão de <strong>texto</strong>: imagens, notas e formatação avançada não são preservadas (exceto em "PDF (impressão)" e "HTML"). Para converter com fidelidade total, use o Calibre no computador.
               </div>
             </div>
 
@@ -1510,7 +1520,7 @@
         <div style="border:1px solid var(--border-color); border-radius:4px; padding:10px 12px; background:var(--bg-toolbar); display:flex; flex-direction:column; gap:6px;">
           <div style="font-size:12px; font-weight:600; color:var(--text-primary);">Convidar Outra Pessoa para Ver ou Sugerir Livros</div>
           <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.45;">
-            Envie um link de convite seguro: seus convidados podem entrar/criar a própria conta de usuário, ler os livros do banco compartilhado com o próprio progresso/foto e <strong>sugerir</strong> ou <strong>subir livros direto</strong> (tudo registrado no histórico).
+            Sua estante é <strong>privada</strong>: só entra quem você liberar abaixo em <em>Gerenciar Membros</em>. O link de convite apenas leva a pessoa até a sua estante — ela precisa <strong>entrar com o mesmo e-mail</strong> que você cadastrou.
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
             <select id="selectInviteRole" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
@@ -1518,17 +1528,23 @@
               <option value="contributor">Ver + Sugerir livros p/ aprovação (+ Login Próprio)</option>
               <option value="member">Membro Completo: Ver + Subir livros direto (+ Login Próprio)</option>
             </select>
-            <input type="email" id="inputInviteNotifyEmail" placeholder="Seu e-mail p/ aviso opcional (via Conta Kindle/Resend)..." style="flex:1; min-width:160px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
+            <input type="email" id="inputInviteNotifyEmail" class="hidden" placeholder="" style="flex:1; min-width:160px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
             <button class="tb-btn tb-btn-solid" id="btnGenerateInviteLink" style="height:28px; border-color:var(--accent); color:var(--accent); font-weight:600;">Copiar Link de Convite</button>
           </div>
           <div id="ownerMembersManageBox" class="hidden" style="margin-top:6px; padding-top:8px; border-top:1px dashed var(--border-color); display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
-              <strong style="font-size:11.5px; color:var(--accent);">Gerenciar Membros com Acesso Total (Supabase)</strong>
+              <strong style="font-size:11.5px; color:var(--accent);">Gerenciar Membros (quem pode acessar a estante)</strong>
               <button class="tb-btn" id="btnRefreshOwnerMembers" style="height:24px; font-size:11px;">Atualizar Lista</button>
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <input type="email" id="inputOwnerAddMemberEmail" placeholder="E-mail do amigo para liberar acesso total..." style="flex:1; min-width:170px; height:26px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
-              <button class="tb-btn tb-btn-solid" id="btnOwnerAddMember" style="height:26px; font-size:11px;">Promover a Membro</button>
+              <input type="email" id="inputOwnerAddMemberEmail" placeholder="E-mail da pessoa..." style="flex:1; min-width:170px; height:26px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
+              <select id="selectOwnerAddMemberRole" style="height:26px; font-size:11px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary);">
+                <option value="viewer">Leitor (só lê)</option>
+                <option value="contributor">Colaborador (sugere)</option>
+                <option value="member">Membro (sobe/apaga)</option>
+                <option value="owner">Dono</option>
+              </select>
+              <button class="tb-btn tb-btn-solid" id="btnOwnerAddMember" style="height:26px; font-size:11px;">Liberar Acesso</button>
             </div>
             <div id="ownerMembersList" style="display:flex; flex-direction:column; gap:4px; font-size:11.5px; color:var(--text-secondary);"></div>
           </div>
@@ -2093,31 +2109,31 @@
         <div class="shelf-box" id="shelfBox">
           <div class="empty-header">
             <div>
-              <h1>Biblioteca & Estante de Livros</h1>
-              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
-                Salvo neste navegador · Livros sincronizados em outro dispositivo? Entre na Nuvem para continuar lendo.
+              <h1>Minha Estante</h1>
+              <div class="shelf-subtitle" style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                Seus livros ficam salvos neste aparelho. Entre na sua conta para ver os da nuvem.
               </div>
             </div>
-            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <div class="shelf-header-actions" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
               <span class="offline-pill" id="lblOfflineStatusBadge" title="Estado da conexão e cache offline">Online · Cache OK</span>
-              <button class="tb-btn tb-btn-solid hidden" id="btnInstallPwa" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Instalar App (Offline)</button>
+              <button class="tb-btn tb-btn-solid hidden" id="btnInstallPwa" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Instalar app</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnResumeLastBook" style="background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600;">▶ Continuar Lendo</button>
-              <button class="tb-btn tb-btn-solid" id="btnShelfCloud" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Entrar / Sincronizar Nuvem</button>
+              <button class="tb-btn tb-btn-solid" id="btnShelfCloud" style="border-color:var(--accent); color:var(--accent); font-weight:600;">Entrar na nuvem</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnCloseBookShelf" title="Fechar o livro aberto e permanecer na Estante" style="border-color:#ef4444; color:#ef4444; font-weight:600; padding:0 10px;">Fechar Livro</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnCloseShelf" title="Voltar para o livro que está aberto (Esc)" style="background:var(--bg-control-active); color:#fff; border-color:var(--accent); font-weight:600; padding:0 10px;">← Voltar p/ Livro</button>
             </div>
           </div>
 
           <div class="drop-area" style="padding:18px 16px; margin-bottom:16px;">
-            <p style="margin-bottom:10px;">
-              Arraste e solte arquivos <strong>.epub</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.pdf</strong>, <strong>.fb2</strong>, <strong>.cbz</strong>, <strong>.md</strong> ou <strong>.txt</strong> aqui para adicionar à sua Estante:
+            <p class="drop-hint" style="margin-bottom:10px;">
+              Arraste um arquivo para cá (EPUB, MOBI, AZW3, PDF, CBZ, FB2, DOCX, TXT, MD) para adicionar à sua Estante:
             </p>
             <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;">
               <label class="tb-btn tb-btn-solid" for="fileInput" style="height:32px; padding:0 14px; font-size:12.5px; border-color:var(--accent); color:var(--accent); font-weight:600;">
-                + Adicionar Livro do Computador
+                + Adicionar Livro
               </label>
               <div style="display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:center;">
-                <input type="text" id="inputBookUrl" placeholder="Ou cole um link direto (https://.../livro.epub)" style="height:32px; width:250px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
+                <input type="text" id="inputBookUrl" placeholder="Ou cole o link de um arquivo" style="height:32px; width:250px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:12px;" />
                 <button class="tb-btn tb-btn-solid" id="btnLoadUrl" style="height:32px;">Abrir Link</button>
                 <label style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--text-secondary); cursor:pointer;" title="Envia o livro baixado diretamente para o banco compartilhado no Supabase">
                   <input type="checkbox" id="chkSaveUrlToCloud" /> Salvar na Nuvem
@@ -2128,7 +2144,7 @@
 
           <!-- Busca Integrada em Catálogos OPDS Abertos & Acervos Públicos (Livros + Mangás PT-BR/EN) -->
           <details class="opds-panel" id="opdsCatalogDetails">
-            <summary>Explorar Acervos Públicos &amp; Web-Scrapers (Livros · Mangás · Quadrinhos · Cartoons — PT-BR &amp; EN)</summary>
+            <summary>Buscar livros e mangás gratuitos</summary>
             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:10px;">
               <select id="selectOpdsSource" style="height:30px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:12px;">
                 <option value="mangadex">Mangás: MangaDex (PT-BR &amp; Inglês · Ler / Baixar .CBZ)</option>
@@ -2185,14 +2201,14 @@
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <span style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Minha Estante (Local + Nuvem)</span>
+              <span style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Meus livros</span>
               <span id="lblLocalShelfSpace" style="font-size:11px; color:var(--text-muted);"></span>
             </div>
-            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <div class="shelf-controls-row" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
               <button class="tb-btn tb-btn-solid hidden" id="btnQuickRenewGDrive" style="height:26px; font-size:11px; border-color:#f59e0b; color:#f59e0b; font-weight:600;" title="Sua sessão do Google Drive expirou (1h). Clique para renovar em 1 toque">Renovar Google Drive</button>
-              <button class="tb-btn tb-btn-solid" id="btnShelfBatchMode" style="height:26px; font-size:11px;" title="Selecionar vários livros de uma vez para enviar, agrupar ou remover em lote">Selecionar Vários</button>
-              <button class="tb-btn tb-btn-solid" id="btnToggleShelfGroup" style="height:26px; font-size:11px;" title="Agrupar séries automáticas e seus grupos/coleções personalizados em pastas">Agrupar Séries / Grupos</button>
-              <button class="tb-btn tb-btn-solid" id="btnExtractAllShelfCovers" style="height:26px; font-size:11px;" title="Extrair automaticamente a capa e metadados originais de todos os livros salvos">Extrair Capas &amp; Info</button>
+              <button class="tb-btn tb-btn-solid" id="btnShelfBatchMode" style="height:26px; font-size:11px;" title="Selecionar vários livros de uma vez para enviar, agrupar ou remover em lote">Selecionar</button>
+              <button class="tb-btn tb-btn-solid" id="btnToggleShelfGroup" style="height:26px; font-size:11px;" title="Agrupar séries automáticas e seus grupos/coleções personalizados em pastas">Agrupar séries</button>
+              <button class="tb-btn tb-btn-solid" id="btnExtractAllShelfCovers" style="height:26px; font-size:11px;" title="Extrair automaticamente a capa e metadados originais de todos os livros salvos">Buscar capas</button>
               <select id="selectShelfOrigin" title="Filtrar livros por origem: Local, Nuvem ou Nos Dois" style="height:26px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-toolbar); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
                 <option value="all">Origem: Todos (Local + Nuvem)</option>
                 <option value="local-only">Origem: Só Local (Offline)</option>

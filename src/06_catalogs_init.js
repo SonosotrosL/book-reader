@@ -1378,9 +1378,43 @@
       }
       if (opdsQueryIn) {
         opdsQueryIn.classList.toggle('hidden', v === 'web-scrape-url');
+        if (v === 'mangadex') {
+          opdsQueryIn.placeholder = 'Buscar mangá no MangaDex (ex: One Piece, Jujutsu Kaisen, Berserk)...';
+        } else if (v === 'webtoon-scrape') {
+          opdsQueryIn.placeholder = 'Buscar webtoon no WEBTOON (ex: Lore Olympus, Tower of God)...';
+        } else if (v === 'tapas-comics') {
+          opdsQueryIn.placeholder = 'Buscar quadrinho ou webcomic no Tapas...';
+        } else if (v === 'standardebooks-scrape' || v === 'gutendex' || v === 'gutenberg-opds' || v === 'wikisource') {
+          opdsQueryIn.placeholder = 'Buscar clássicos em domínio público (ex: Machado de Assis, Sherlock Holmes, Mary Shelley)...';
+        } else if (v === 'archive-comics' || v === 'archive-manga') {
+          opdsQueryIn.placeholder = 'Buscar HQs e mangás no Internet Archive...';
+        } else if (v === 'archive-books') {
+          opdsQueryIn.placeholder = 'Buscar acervo aberto no Internet Archive...';
+        } else if (v === 'openlibrary') {
+          opdsQueryIn.placeholder = 'Buscar no catálogo Open Library (livros mundiais, Stephen King, Tolkien, etc.)...';
+        } else {
+          opdsQueryIn.placeholder = 'Buscar livro, autor ou termo...';
+        }
       }
       if (opdsLangSel) opdsLangSel.classList.toggle('hidden', v === 'gutenberg-opds' || v === 'custom' || v === 'standardebooks-scrape' || v === 'web-scrape-url');
       if (opdsDataWrap) opdsDataWrap.classList.toggle('hidden', v !== 'mangadex');
+
+      const statusEl = document.getElementById('lblOpdsStatus');
+      if (statusEl) {
+        if (v === 'mangadex' || v === 'webtoon-scrape' || v === 'tapas-comics' || v === 'archive-comics' || v === 'archive-manga') {
+          statusEl.textContent = 'Acervo de mangás, quadrinhos e webcomics (PT-BR e Inglês) para ler ou baixar .cbz.';
+        } else if (v === 'gutendex' || v === 'gutenberg-opds' || v === 'standardebooks-scrape' || v === 'wikisource') {
+          statusEl.textContent = 'Acervo de livros clássicos em Domínio Público (EPUB gratuito). Obras comerciais protegidas por copyright não estão neste acervo.';
+        } else if (v === 'openlibrary') {
+          statusEl.textContent = 'Catálogo Open Library: busca metadados, capas e detalhes de obras de todo o mundo.';
+        } else if (v === 'archive-books') {
+          statusEl.textContent = 'Acervo Aberto do Internet Archive: documentos históricos, manuscritos e livros públicos (.epub/.pdf).';
+        } else if (v === 'custom') {
+          statusEl.textContent = 'Feed OPDS pessoal: conecte seu catálogo privado do Calibre, Kavita ou Z-Library.';
+        } else if (v === 'web-scrape-url') {
+          statusEl.textContent = 'Web-Scraper: informe o endereço de uma página ou capítulo para convertê-lo em livro para sua estante.';
+        }
+      }
     }
     if (opdsSourceSel) {
       opdsSourceSel.addEventListener('change', syncOpdsFilterControls);
@@ -2510,24 +2544,25 @@
             const rawOpds2 = await fetchExternalTextOrXml('https://openlibrary.org/opds/');
             books = parseOpdsFeedAuto(rawOpds2, 'https://openlibrary.org').slice(0, 24);
           } else {
-            const olUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&has_fulltext=true&limit=24`;
+            const olUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=24`;
             const raw = await fetchExternalTextOrXml(olUrl);
             const data = JSON.parse(raw);
             (data.docs || []).forEach(doc => {
               const ia = Array.isArray(doc.ia) && doc.ia[0] ? doc.ia[0] : '';
-              if (!ia || doc.public_scan_b === false) return;
+              const hasPublicScan = Boolean(ia && doc.public_scan_b !== false);
               books.push({
                 title: doc.title || 'Sem título',
                 author: Array.isArray(doc.author_name) ? doc.author_name.join(', ') : 'Open Library',
                 coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : '',
-                downloadUrl: `https://archive.org/download/${encodeURIComponent(ia)}/${encodeURIComponent(ia)}.epub`,
-                fallbackPdfUrl: `https://archive.org/download/${encodeURIComponent(ia)}/${encodeURIComponent(ia)}.pdf`,
-                format: 'EPUB',
+                downloadUrl: hasPublicScan ? `https://archive.org/download/${encodeURIComponent(ia)}/${encodeURIComponent(ia)}.epub` : '',
+                fallbackPdfUrl: hasPublicScan ? `https://archive.org/download/${encodeURIComponent(ia)}/${encodeURIComponent(ia)}.pdf` : '',
+                borrowUrl: ia ? `https://archive.org/details/${encodeURIComponent(ia)}` : (doc.key ? `https://openlibrary.org${doc.key}` : ''),
+                format: hasPublicScan ? 'EPUB' : 'Empréstimo',
                 lang: Array.isArray(doc.language) ? doc.language[0].toUpperCase() : '',
                 year: doc.first_publish_year ? String(doc.first_publish_year) : '',
                 olWorkKey: doc.key || '',
                 iaId: ia,
-                source: 'Open Library'
+                source: hasPublicScan ? 'Open Library (Download Direto)' : 'Open Library (Catálogo Mundial)'
               });
             });
           }
@@ -2541,7 +2576,12 @@
         }
 
         if (!books.length) {
-          statusEl.textContent = 'Nenhum livro com arquivo direto (.epub/.pdf) encontrado para essa busca.';
+          const isClassicSource = (srcType === 'gutendex' || srcType === 'gutenberg-opds' || srcType === 'standardebooks-scrape' || srcType === 'wikisource');
+          if (isClassicSource) {
+            statusEl.innerHTML = `<strong>Nenhum livro encontrado no acervo de domínio público para "${escapeHtml(query)}".</strong><br><span style="color:var(--text-secondary); font-size:11px;">Nota: Esta fonte contém exclusivamente clássicos com direitos autorais expirados (ex: Machado de Assis, Shakespeare, etc.). Livros comerciais recentes (como Stephen King, J.K. Rowling, etc.) possuem direitos autorais e não são distribuídos em acervos públicos. Você pode adicionar seus próprios arquivos (.epub, .pdf) na estante pelo botão "+ Abrir" ou configurar seu Feed OPDS pessoal.</span>`;
+          } else {
+            statusEl.textContent = `Nenhum título encontrado para "${query}". Tente ajustar o termo de busca ou alterar o filtro de idioma.`;
+          }
           return;
         }
 
@@ -2558,9 +2598,15 @@
               <div style="font-size:12px; font-weight:600; color:var(--text-primary); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${escapeHtml(item.title)}</div>
               <div style="font-size:11px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(item.author)}${item.lang ? ' · ' + escapeHtml(item.lang) : ''}</div>
               <div style="display:flex; gap:5px; margin-top:4px; flex-wrap:wrap;">
-                <button class="btn primary btn-opds-read" style="height:24px; font-size:11px; padding:0 8px;">Baixar &amp; Ler</button>
-                <button class="btn btn-opds-cloud" style="height:24px; font-size:11px; padding:0 8px;">+ Nuvem</button>
-                <button class="btn btn-opds-expand" style="height:24px; font-size:11px; padding:0 8px;">Expandir ⤢</button>
+                ${item.downloadUrl ? `
+                  <button class="btn primary btn-opds-read" style="height:24px; font-size:11px; padding:0 8px;">Baixar &amp; Ler</button>
+                  <button class="btn btn-opds-cloud" style="height:24px; font-size:11px; padding:0 8px;">+ Nuvem</button>
+                ` : (item.borrowUrl ? `
+                  <a href="${escapeHtml(item.borrowUrl)}" target="_blank" rel="noopener noreferrer" class="btn primary" style="height:24px; font-size:11px; padding:0 8px; text-decoration:none; display:inline-flex; align-items:center;">Ver Empréstimo ↗</a>
+                ` : `
+                  <span style="font-size:11px; color:var(--text-muted); align-self:center;">Apenas catálogo</span>
+                `)}
+                <button class="btn btn-opds-expand" style="height:24px; font-size:11px; padding:0 8px;">Detalhes</button>
               </div>
             </div>
           `;

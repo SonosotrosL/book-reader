@@ -1,11 +1,37 @@
 %PDF-1.4
-1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
-2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
-3 0 obj << /Type /Page /Parent 2 0 R /Contents 4 0 R >> endobj
-4 0 obj << /Length 127 /Filter /FlateDecode >>
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 187 >>
 stream
-xœŒ;‚0†¯ò—X¨jCcA±XÉ:Ä		“oï$õ÷¸®ºC7€^èzÕ‚šÇ±YÏ˜CÌüt‚yÔ˜käz£ÅYÅ«­*mC«MUK9
-o°	KØö()‰Á×æÚq–Q–`ìv…yÎö#îw©ï;ıHZ-a
+BT /F1 20 Tf 72 740 Td 24 TL
+(Lumina Reader Welcome Guide (PDF)) Tj T*
+() Tj T*
+(Welcome to your portable EPUB, MOBI, and PDF reader.) Tj T*
+(Read anywhere without installation.) Tj T*
+ET
 endstream
 endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000479 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+549
 %%EOF

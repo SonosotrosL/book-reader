@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'leitor-portatil-v29';
+const CACHE_VERSION = 'leitor-portatil-v30';
 const APP_SHELL = [
   './',
   './portable_book_reader.html',

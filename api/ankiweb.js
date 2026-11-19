@@ -4,6 +4,14 @@
  * diretamente pelo navegador ou celular sem bloqueio de CORS.
  */
 
+function cookieJar(res) {
+  // getSetCookie() evita quebrar cookies cujo 'Expires' contém vírgula (split(',') corrompia o valor)
+  const list = typeof res.headers.getSetCookie === 'function'
+    ? res.headers.getSetCookie()
+    : (res.headers.get('set-cookie') || '').split(/,(?=\s*[^;,=\s]+=)/);
+  return list.map((c) => c.split(';')[0].trim()).filter(Boolean).join('; ');
+}
+
 async function handleAnkiWebRequest(body) {
   const { action, username, password, deck = 'Default', front = '', back = '', tags = '' } = body || {};
   if (!username || !password) {
@@ -18,7 +26,7 @@ async function handleAnkiWebRequest(body) {
   });
   const loginHtml = await loginPageRes.text();
   const csrfMatch = loginHtml.match(/name="csrf_token"\s+value="([^"]+)"/i);
-  const cookies = (loginPageRes.headers.get('set-cookie') || '').split(',').map(c => c.split(';')[0]).join('; ');
+  const cookies = cookieJar(loginPageRes);
 
   const form = new URLSearchParams();
   form.set('submitted', '1');
@@ -37,7 +45,7 @@ async function handleAnkiWebRequest(body) {
     body: form.toString()
   });
 
-  const authCookies = [cookies, (authRes.headers.get('set-cookie') || '').split(',').map(c => c.split(';')[0]).join('; ')]
+  const authCookies = [cookies, cookieJar(authRes)]
     .filter(Boolean)
     .join('; ');
 

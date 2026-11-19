@@ -1286,7 +1286,8 @@
       padding: 7px 12px;
       font-size: 12px;
       box-shadow: var(--page-shadow);
-      z-index: 140;
+      z-index: 1000;
+      pointer-events: none;
       display: none;
     }
     .toast-bar.show {
@@ -2109,7 +2110,7 @@
     /* Card Flutuante (Popover X-Ray & Notas de Rodapé) */
     .entity-popover {
       position: fixed;
-      z-index: 160;
+      z-index: 900;
       width: 340px;
       max-width: 92vw;
       background: var(--bg-toolbar);
@@ -2879,6 +2880,11 @@
       .modal-backdrop {
         padding: 6px;
       }
+      .modal-card select,
+      .modal-card input,
+      .modal-card textarea {
+        max-width: 100%;
+      }
       .modal-card,
       .studio-modal-card {
         width: 100%;
@@ -2906,6 +2912,10 @@
       }
       .studio-sidebar::-webkit-scrollbar {
         display: none;
+      }
+      .studio-sidebar {
+        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent);
+        mask-image: linear-gradient(to right, #000 88%, transparent);
       }
       .modal-card .btn,
       .modal-card .tb-btn,
@@ -3800,7 +3810,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span>+ Abrir</span>
       </label>
-      <input type="file" id="fileInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.cbz,.zip,.fb2,.md,.markdown,.txt,.html,.htm,.srt,.vtt" class="hidden" />
+      <input type="file" id="fileInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.odt,.rtf,.cbz,.zip,.fb2,.md,.markdown,.txt,.html,.htm,.srt,.vtt" class="hidden" />
 
       <div class="toolbar-divider reader-only-ctrl"></div>
 
@@ -4584,7 +4594,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
               <div id="convSelectedFileLabel" style="font-size:12px; color:var(--accent);">
                 Nenhum livro aberto — clique aqui ou arraste um arquivo para converter
               </div>
-              <input type="file" id="convUploadInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.fb2,.cbz,.md,.txt,.html,.htm" class="hidden" />
+              <input type="file" id="convUploadInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.odt,.rtf,.fb2,.cbz,.md,.txt,.html,.htm" class="hidden" />
             </div>
 
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--bg-toolbar); padding:10px 12px; border:1px solid var(--border-color); border-radius:6px;">
@@ -4674,9 +4684,9 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
 
             <!-- Seção de Chave de IA / Modo Offline -->
             <div style="border:1px solid var(--border-color); border-radius:6px; padding:10px 12px; background:var(--bg-toolbar); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
-                <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">Chave Gemini API (Opcional):</span>
-                <input type="password" id="inputGeminiApiKey" placeholder="Cole sua chave gratuita do Google AI Studio..." style="flex:1; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px;" />
+              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; flex-wrap:wrap;">
+                <span style="font-size:12px; font-weight:600; color:var(--text-secondary); width:100%;">Chave do Gemini (opcional)</span>
+                <input type="password" id="inputGeminiApiKey" placeholder="Cole sua chave do Google AI Studio" style="flex:1; min-width:150px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px;" />
                 <button class="tb-btn tb-btn-solid" id="btnSaveGeminiKey" style="height:28px; font-size:11px;">Salvar Chave</button>
               </div>
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="font-size:11px; color:var(--accent); text-decoration:none;">Obter chave gratuita (Google AI Studio) ↗</a>
@@ -5299,9 +5309,9 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
             <select id="selectInviteRole" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
-              <option value="viewer">Somente Ver e Baixar/Ler (+ Login Próprio)</option>
-              <option value="contributor">Ver + Sugerir livros p/ aprovação (+ Login Próprio)</option>
-              <option value="member">Membro Completo: Ver + Subir livros direto (+ Login Próprio)</option>
+              <option value="viewer">Só ler</option>
+              <option value="contributor">Ler e sugerir livros</option>
+              <option value="member">Ler e enviar livros</option>
             </select>
             <input type="email" id="inputInviteNotifyEmail" class="hidden" placeholder="" style="flex:1; min-width:160px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
             <button class="tb-btn tb-btn-solid" id="btnGenerateInviteLink" style="height:28px; border-color:var(--accent); color:var(--accent); font-weight:600;">Copiar Link de Convite</button>
@@ -5409,7 +5419,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
               <button class="studio-btn-primary" id="btnExtractBuiltinCover" style="height:28px;">Pegar Capa do Arquivo</button>
               <button class="tb-btn tb-btn-solid" id="btnDownloadBookCover" style="height:28px;">Baixar Imagem</button>
-              <label class="tb-btn tb-btn-solid" for="inputCustomCoverFile" style="height:28px; cursor:pointer;">Enviar do Computador</label>
+              <label class="tb-btn tb-btn-solid" for="inputCustomCoverFile" style="height:28px; cursor:pointer;">Escolher Imagem</label>
               <input type="file" id="inputCustomCoverFile" accept="image/*" class="hidden" />
               <button class="tb-btn" id="btnRemoveBookCover" style="height:28px;">Remover</button>
             </div>
@@ -5961,7 +5971,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button class="tb-btn tb-btn-solid" id="btnGuestSignIn" style="height:26px;">Entrar / Criar Minha Conta</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnGuestSuggestBook" style="height:26px;">+ Sugerir Livro p/ Aprovação</button>
-              <input type="file" id="inputGuestUploadFile" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.cbz,.zip,.fb2,.md,.txt,.html" class="hidden" />
+              <input type="file" id="inputGuestUploadFile" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.odt,.rtf,.cbz,.zip,.fb2,.md,.txt,.html" class="hidden" />
               <button class="tb-btn" id="btnLeaveInviteMode" style="height:26px;">Voltar p/ Minha Estante</button>
             </div>
           </div>
@@ -9709,6 +9719,19 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
       return false;
     }
 
+    // No modo rolagem, o toque/seta anda uma tela; só troca de capítulo no fim (ou no topo, ao voltar)
+    function scrollViewportByScreen(dir) {
+      const v = dom.viewport;
+      if (!v || v.classList.contains('paginated-mode')) return false;
+      if (state.format === 'PDF' && state.pdfViewMode === 'canvas') return false;
+      const max = v.scrollHeight - v.clientHeight;
+      if (max < 8) return false;
+      const step = Math.max(80, v.clientHeight - 60);
+      if (dir > 0 && v.scrollTop < max - 4) { v.scrollTo({ top: Math.min(max, v.scrollTop + step), behavior: 'smooth' }); return true; }
+      if (dir < 0 && v.scrollTop > 4) { v.scrollTo({ top: Math.max(0, v.scrollTop - step), behavior: 'smooth' }); return true; }
+      return false;
+    }
+
     function stepForward() {
       if (!state.sections.length) return;
       updateReadingSpeedSample(180);
@@ -9729,6 +9752,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         saveProgress();
         return;
       }
+      if (scrollViewportByScreen(1)) return;
       if (state.currentIndex < state.sections.length - 1) {
         state.currentIndex++;
         renderSection();
@@ -9751,6 +9775,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         saveProgress();
         return;
       }
+      if (scrollViewportByScreen(-1)) return;
       if (state.currentIndex > 0) {
         state.currentIndex--;
         renderSection({ fromEnd: true });
@@ -9771,6 +9796,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
 
     // Salvar progresso de rolagem continuamente para retomar no ponto exato
     let scrollSaveTimer = null;
+    let footerScrollRaf = 0;
     dom.viewport.addEventListener('scroll', () => {
       if (dom.viewport.classList.contains('paginated-mode') || !state.sections.length) return;
       if (state.flowMode === 'scroll-all') {
@@ -9789,6 +9815,8 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
           }
         }
       }
+      // Atualiza página/porcentagem do rodapé enquanto rola (no máximo 1x por quadro)
+      if (!footerScrollRaf) footerScrollRaf = requestAnimationFrame(() => { footerScrollRaf = 0; try { updateFooterLabels(); } catch (_) {} });
       clearTimeout(scrollSaveTimer);
       scrollSaveTimer = setTimeout(saveProgress, 250);
     });
@@ -10933,10 +10961,15 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
         h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
         h = h.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+        // Links viram texto (o leitor não navega para fora do livro)
+        h = h.replace(/\[([^\]]+)\]\((?:[^)\s]+)\)/g, '$1');
         return h.split(/\r?\n\r?\n+/).map(block => {
           const b = block.trim();
           if (!b) return '';
           if (/^<(h[1-3]|pre|blockquote)/i.test(b)) return b;
+          const lines = b.split(/\r?\n/);
+          if (lines.every(l => /^\s*[-*+]\s+/.test(l))) return '<ul>' + lines.map(l => `<li>${l.replace(/^\s*[-*+]\s+/, '')}</li>`).join('') + '</ul>';
+          if (lines.every(l => /^\s*\d+[.)]\s+/.test(l))) return '<ol>' + lines.map(l => `<li>${l.replace(/^\s*\d+[.)]\s+/, '')}</li>`).join('') + '</ol>';
           return `<p>${b.replace(/\r?\n/g, '<br>')}</p>`;
         }).join('\n');
       };
@@ -10976,21 +11009,44 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
           }
         };
 
+        // Negrito e itálico de cada trecho (run) do parágrafo
+        const runsHtml = (p) => Array.from(p.getElementsByTagNameNS('*', 'r')).map(r => {
+          const t = Array.from(r.getElementsByTagNameNS('*', 't')).map(x => x.textContent || '').join('');
+          if (!t) return '';
+          const rPr = r.getElementsByTagNameNS('*', 'rPr')[0];
+          const isOn = (tag) => { const el = rPr && rPr.getElementsByTagNameNS('*', tag)[0]; if (!el) return false; const v = el.getAttribute('w:val') || el.getAttribute('val'); return v !== '0' && v !== 'false'; };
+          let h = escapeHtml(t);
+          if (isOn('i')) h = `<em>${h}</em>`;
+          if (isOn('b')) h = `<strong>${h}</strong>`;
+          return h;
+        }).join('').replace(/\s+/g, ' ').trim();
+        let started = false;
         paragraphs.forEach(p => {
           const texts = Array.from(p.getElementsByTagNameNS('*', 't')).map(t => t.textContent || '').join('');
           const clean = texts.replace(/\s+/g, ' ').trim();
           if (!clean) return;
           const pStyle = p.getElementsByTagNameNS('*', 'pStyle')[0];
           const styleVal = pStyle ? (pStyle.getAttribute('w:val') || pStyle.getAttribute('val') || '') : '';
-          if (/^(Heading1|Heading2|Titulo1|Título1|Title)$/i.test(styleVal) && curText.length > 8) {
+          // Word em inglês usa "Heading1"; em português o id costuma ser "Ttulo1" (sem o acento)
+          const level = (styleVal.match(/^(?:Heading|T[íi]?tulo|Ttulo)(\d)$/i) || [])[1];
+          const isTitle = /^(Title|T[íi]?tulo|Ttulo)$/i.test(styleVal);
+          if ((level === '1' || isTitle) && started) {
             flushSection();
             curTitle = clean.slice(0, 90);
             curHtml = `<div class="book-chapter"><h2>${escapeHtml(curTitle)}</h2>`;
             curText = [clean];
+          } else if ((level === '1' || isTitle) && !started) {
+            curTitle = clean.slice(0, 90);
+            curHtml = `<div class="book-chapter"><h2>${escapeHtml(curTitle)}</h2>`;
+            curText = [clean];
+          } else if (level) {
+            curHtml += `<h3>${escapeHtml(clean)}</h3>`;
+            curText.push(clean);
           } else {
-            curHtml += `<p>${escapeHtml(clean)}</p>`;
+            curHtml += `<p>${runsHtml(p) || escapeHtml(clean)}</p>`;
             curText.push(clean);
           }
+          started = true;
         });
         flushSection();
         if (!sections.length) {
@@ -14946,6 +15002,8 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
     function switchStudioPane(paneId) {
       document.querySelectorAll('[data-studio-pane]').forEach(b => {
         b.classList.toggle('active', b.dataset.studioPane === paneId);
+        // No celular as abas rolam na horizontal: deixa a aba ativa à vista
+        if (b.dataset.studioPane === paneId) requestAnimationFrame(() => { try { b.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (_) {} });
       });
       document.querySelectorAll('.studio-pane').forEach(p => {
         p.classList.toggle('active', p.id === paneId);
@@ -26243,6 +26301,59 @@ ${r.reviewText || '_Sem resenha escrita._'}
         navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
+
+    // Pilha de modais: todos usam a mesma camada, então o que abre por último
+    // precisa ficar por cima (ex.: "Capa" aberta de dentro de "Sobre o Livro").
+    (function initModalStacking() {
+      let top = 166;
+      const raise = (m) => {
+        if (!m.classList.contains('modal-backdrop')) return;
+        if (m.classList.contains('open')) {
+          if (!m.dataset.stacked) { top += 1; m.style.zIndex = String(top); m.dataset.stacked = '1'; }
+        } else if (m.dataset.stacked) {
+          m.style.zIndex = '';
+          delete m.dataset.stacked;
+          if (!document.querySelector('.modal-backdrop.open')) top = 166;
+        }
+      };
+      // Botão "voltar" do celular/navegador fecha a janela aberta em vez de sair do app.
+      // Cada janela aberta tem uma entrada no histórico; o reconcile mantém as duas contagens iguais.
+      let pushed = 0;
+      let ignorePops = 0;
+      let reconcileTimer = null;
+      const overlays = () => [...document.querySelectorAll('.modal-backdrop.open, .img-lightbox.open')];
+      const reconcile = () => {
+        reconcileTimer = null;
+        const n = overlays().length;
+        if (n > pushed) {
+          while (pushed < n) { history.pushState({ readerOverlay: true }, ''); pushed += 1; }
+        } else if (n < pushed) {
+          const diff = pushed - n;
+          pushed = n;
+          ignorePops += 1;
+          history.go(-diff);
+        }
+      };
+      const scheduleReconcile = () => { if (!reconcileTimer) reconcileTimer = setTimeout(reconcile, 40); };
+      window.addEventListener('popstate', () => {
+        if (ignorePops > 0) { ignorePops -= 1; return; }
+        if (pushed === 0) return;
+        pushed -= 1;
+        const open = overlays().sort((x, y) => (parseInt(y.style.zIndex, 10) || 0) - (parseInt(x.style.zIndex, 10) || 0));
+        const topEl = open.find((m) => m.classList.contains('img-lightbox')) || open[0];
+        if (!topEl) return;
+        const closeBtn = topEl.id === 'imgLightbox'
+          ? document.getElementById('btnCloseLightbox')
+          : topEl.querySelector('.modal-header [id^="btnClose"], .modal-header .tb-btn-icon, [id^="btnClose"]');
+        if (closeBtn) closeBtn.click();
+        if (topEl.classList.contains('open')) topEl.classList.remove('open');
+      });
+      const obs = new MutationObserver((list) => { list.forEach((r) => raise(r.target)); scheduleReconcile(); });
+      document.querySelectorAll('.modal-backdrop, .img-lightbox').forEach((m) => {
+        obs.observe(m, { attributes: true, attributeFilter: ['class'] });
+        if (m.classList.contains('modal-backdrop')) raise(m);
+      });
+    })();
 
     applySettings();
     loadAnkiConfigIntoUi();

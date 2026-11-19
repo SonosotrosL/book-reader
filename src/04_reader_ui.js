@@ -80,10 +80,15 @@
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
         h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
         h = h.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+        // Links viram texto (o leitor não navega para fora do livro)
+        h = h.replace(/\[([^\]]+)\]\((?:[^)\s]+)\)/g, '$1');
         return h.split(/\r?\n\r?\n+/).map(block => {
           const b = block.trim();
           if (!b) return '';
           if (/^<(h[1-3]|pre|blockquote)/i.test(b)) return b;
+          const lines = b.split(/\r?\n/);
+          if (lines.every(l => /^\s*[-*+]\s+/.test(l))) return '<ul>' + lines.map(l => `<li>${l.replace(/^\s*[-*+]\s+/, '')}</li>`).join('') + '</ul>';
+          if (lines.every(l => /^\s*\d+[.)]\s+/.test(l))) return '<ol>' + lines.map(l => `<li>${l.replace(/^\s*\d+[.)]\s+/, '')}</li>`).join('') + '</ol>';
           return `<p>${b.replace(/\r?\n/g, '<br>')}</p>`;
         }).join('\n');
       };
@@ -123,21 +128,44 @@
           }
         };
 
+        // Negrito e itálico de cada trecho (run) do parágrafo
+        const runsHtml = (p) => Array.from(p.getElementsByTagNameNS('*', 'r')).map(r => {
+          const t = Array.from(r.getElementsByTagNameNS('*', 't')).map(x => x.textContent || '').join('');
+          if (!t) return '';
+          const rPr = r.getElementsByTagNameNS('*', 'rPr')[0];
+          const isOn = (tag) => { const el = rPr && rPr.getElementsByTagNameNS('*', tag)[0]; if (!el) return false; const v = el.getAttribute('w:val') || el.getAttribute('val'); return v !== '0' && v !== 'false'; };
+          let h = escapeHtml(t);
+          if (isOn('i')) h = `<em>${h}</em>`;
+          if (isOn('b')) h = `<strong>${h}</strong>`;
+          return h;
+        }).join('').replace(/\s+/g, ' ').trim();
+        let started = false;
         paragraphs.forEach(p => {
           const texts = Array.from(p.getElementsByTagNameNS('*', 't')).map(t => t.textContent || '').join('');
           const clean = texts.replace(/\s+/g, ' ').trim();
           if (!clean) return;
           const pStyle = p.getElementsByTagNameNS('*', 'pStyle')[0];
           const styleVal = pStyle ? (pStyle.getAttribute('w:val') || pStyle.getAttribute('val') || '') : '';
-          if (/^(Heading1|Heading2|Titulo1|Título1|Title)$/i.test(styleVal) && curText.length > 8) {
+          // Word em inglês usa "Heading1"; em português o id costuma ser "Ttulo1" (sem o acento)
+          const level = (styleVal.match(/^(?:Heading|T[íi]?tulo|Ttulo)(\d)$/i) || [])[1];
+          const isTitle = /^(Title|T[íi]?tulo|Ttulo)$/i.test(styleVal);
+          if ((level === '1' || isTitle) && started) {
             flushSection();
             curTitle = clean.slice(0, 90);
             curHtml = `<div class="book-chapter"><h2>${escapeHtml(curTitle)}</h2>`;
             curText = [clean];
+          } else if ((level === '1' || isTitle) && !started) {
+            curTitle = clean.slice(0, 90);
+            curHtml = `<div class="book-chapter"><h2>${escapeHtml(curTitle)}</h2>`;
+            curText = [clean];
+          } else if (level) {
+            curHtml += `<h3>${escapeHtml(clean)}</h3>`;
+            curText.push(clean);
           } else {
-            curHtml += `<p>${escapeHtml(clean)}</p>`;
+            curHtml += `<p>${runsHtml(p) || escapeHtml(clean)}</p>`;
             curText.push(clean);
           }
+          started = true;
         });
         flushSection();
         if (!sections.length) {
@@ -4093,6 +4121,8 @@
     function switchStudioPane(paneId) {
       document.querySelectorAll('[data-studio-pane]').forEach(b => {
         b.classList.toggle('active', b.dataset.studioPane === paneId);
+        // No celular as abas rolam na horizontal: deixa a aba ativa à vista
+        if (b.dataset.studioPane === paneId) requestAnimationFrame(() => { try { b.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (_) {} });
       });
       document.querySelectorAll('.studio-pane').forEach(p => {
         p.classList.toggle('active', p.id === paneId);

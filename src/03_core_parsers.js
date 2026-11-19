@@ -3258,6 +3258,19 @@
       return false;
     }
 
+    // No modo rolagem, o toque/seta anda uma tela; só troca de capítulo no fim (ou no topo, ao voltar)
+    function scrollViewportByScreen(dir) {
+      const v = dom.viewport;
+      if (!v || v.classList.contains('paginated-mode')) return false;
+      if (state.format === 'PDF' && state.pdfViewMode === 'canvas') return false;
+      const max = v.scrollHeight - v.clientHeight;
+      if (max < 8) return false;
+      const step = Math.max(80, v.clientHeight - 60);
+      if (dir > 0 && v.scrollTop < max - 4) { v.scrollTo({ top: Math.min(max, v.scrollTop + step), behavior: 'smooth' }); return true; }
+      if (dir < 0 && v.scrollTop > 4) { v.scrollTo({ top: Math.max(0, v.scrollTop - step), behavior: 'smooth' }); return true; }
+      return false;
+    }
+
     function stepForward() {
       if (!state.sections.length) return;
       updateReadingSpeedSample(180);
@@ -3278,6 +3291,7 @@
         saveProgress();
         return;
       }
+      if (scrollViewportByScreen(1)) return;
       if (state.currentIndex < state.sections.length - 1) {
         state.currentIndex++;
         renderSection();
@@ -3300,6 +3314,7 @@
         saveProgress();
         return;
       }
+      if (scrollViewportByScreen(-1)) return;
       if (state.currentIndex > 0) {
         state.currentIndex--;
         renderSection({ fromEnd: true });
@@ -3320,6 +3335,7 @@
 
     // Salvar progresso de rolagem continuamente para retomar no ponto exato
     let scrollSaveTimer = null;
+    let footerScrollRaf = 0;
     dom.viewport.addEventListener('scroll', () => {
       if (dom.viewport.classList.contains('paginated-mode') || !state.sections.length) return;
       if (state.flowMode === 'scroll-all') {
@@ -3338,6 +3354,8 @@
           }
         }
       }
+      // Atualiza página/porcentagem do rodapé enquanto rola (no máximo 1x por quadro)
+      if (!footerScrollRaf) footerScrollRaf = requestAnimationFrame(() => { footerScrollRaf = 0; try { updateFooterLabels(); } catch (_) {} });
       clearTimeout(scrollSaveTimer);
       scrollSaveTimer = setTimeout(saveProgress, 250);
     });

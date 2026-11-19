@@ -2789,6 +2789,59 @@
       });
     }
 
+    // Pilha de modais: todos usam a mesma camada, então o que abre por último
+    // precisa ficar por cima (ex.: "Capa" aberta de dentro de "Sobre o Livro").
+    (function initModalStacking() {
+      let top = 166;
+      const raise = (m) => {
+        if (!m.classList.contains('modal-backdrop')) return;
+        if (m.classList.contains('open')) {
+          if (!m.dataset.stacked) { top += 1; m.style.zIndex = String(top); m.dataset.stacked = '1'; }
+        } else if (m.dataset.stacked) {
+          m.style.zIndex = '';
+          delete m.dataset.stacked;
+          if (!document.querySelector('.modal-backdrop.open')) top = 166;
+        }
+      };
+      // Botão "voltar" do celular/navegador fecha a janela aberta em vez de sair do app.
+      // Cada janela aberta tem uma entrada no histórico; o reconcile mantém as duas contagens iguais.
+      let pushed = 0;
+      let ignorePops = 0;
+      let reconcileTimer = null;
+      const overlays = () => [...document.querySelectorAll('.modal-backdrop.open, .img-lightbox.open')];
+      const reconcile = () => {
+        reconcileTimer = null;
+        const n = overlays().length;
+        if (n > pushed) {
+          while (pushed < n) { history.pushState({ readerOverlay: true }, ''); pushed += 1; }
+        } else if (n < pushed) {
+          const diff = pushed - n;
+          pushed = n;
+          ignorePops += 1;
+          history.go(-diff);
+        }
+      };
+      const scheduleReconcile = () => { if (!reconcileTimer) reconcileTimer = setTimeout(reconcile, 40); };
+      window.addEventListener('popstate', () => {
+        if (ignorePops > 0) { ignorePops -= 1; return; }
+        if (pushed === 0) return;
+        pushed -= 1;
+        const open = overlays().sort((x, y) => (parseInt(y.style.zIndex, 10) || 0) - (parseInt(x.style.zIndex, 10) || 0));
+        const topEl = open.find((m) => m.classList.contains('img-lightbox')) || open[0];
+        if (!topEl) return;
+        const closeBtn = topEl.id === 'imgLightbox'
+          ? document.getElementById('btnCloseLightbox')
+          : topEl.querySelector('.modal-header [id^="btnClose"], .modal-header .tb-btn-icon, [id^="btnClose"]');
+        if (closeBtn) closeBtn.click();
+        if (topEl.classList.contains('open')) topEl.classList.remove('open');
+      });
+      const obs = new MutationObserver((list) => { list.forEach((r) => raise(r.target)); scheduleReconcile(); });
+      document.querySelectorAll('.modal-backdrop, .img-lightbox').forEach((m) => {
+        obs.observe(m, { attributes: true, attributeFilter: ['class'] });
+        if (m.classList.contains('modal-backdrop')) raise(m);
+      });
+    })();
+
     applySettings();
     loadAnkiConfigIntoUi();
     updateAuthBadgeUi();

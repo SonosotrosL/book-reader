@@ -25,7 +25,7 @@
         <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span>+ Abrir</span>
       </label>
-      <input type="file" id="fileInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.cbz,.zip,.fb2,.md,.markdown,.txt,.html,.htm,.srt,.vtt" class="hidden" />
+      <input type="file" id="fileInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.odt,.rtf,.cbz,.zip,.fb2,.md,.markdown,.txt,.html,.htm,.srt,.vtt" class="hidden" />
 
       <div class="toolbar-divider reader-only-ctrl"></div>
 
@@ -809,7 +809,7 @@
               <div id="convSelectedFileLabel" style="font-size:12px; color:var(--accent);">
                 Nenhum livro aberto — clique aqui ou arraste um arquivo para converter
               </div>
-              <input type="file" id="convUploadInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.fb2,.cbz,.md,.txt,.html,.htm" class="hidden" />
+              <input type="file" id="convUploadInput" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.odt,.rtf,.fb2,.cbz,.md,.txt,.html,.htm" class="hidden" />
             </div>
 
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--bg-toolbar); padding:10px 12px; border:1px solid var(--border-color); border-radius:6px;">
@@ -899,9 +899,9 @@
 
             <!-- Seção de Chave de IA / Modo Offline -->
             <div style="border:1px solid var(--border-color); border-radius:6px; padding:10px 12px; background:var(--bg-toolbar); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
-                <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">Chave Gemini API (Opcional):</span>
-                <input type="password" id="inputGeminiApiKey" placeholder="Cole sua chave gratuita do Google AI Studio..." style="flex:1; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px;" />
+              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; flex-wrap:wrap;">
+                <span style="font-size:12px; font-weight:600; color:var(--text-secondary); width:100%;">Chave do Gemini (opcional)</span>
+                <input type="password" id="inputGeminiApiKey" placeholder="Cole sua chave do Google AI Studio" style="flex:1; min-width:150px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11px;" />
                 <button class="tb-btn tb-btn-solid" id="btnSaveGeminiKey" style="height:28px; font-size:11px;">Salvar Chave</button>
               </div>
               <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="font-size:11px; color:var(--accent); text-decoration:none;">Obter chave gratuita (Google AI Studio) ↗</a>
@@ -1524,9 +1524,9 @@
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
             <select id="selectInviteRole" style="height:28px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); padding:0 8px; font-size:11.5px;">
-              <option value="viewer">Somente Ver e Baixar/Ler (+ Login Próprio)</option>
-              <option value="contributor">Ver + Sugerir livros p/ aprovação (+ Login Próprio)</option>
-              <option value="member">Membro Completo: Ver + Subir livros direto (+ Login Próprio)</option>
+              <option value="viewer">Só ler</option>
+              <option value="contributor">Ler e sugerir livros</option>
+              <option value="member">Ler e enviar livros</option>
             </select>
             <input type="email" id="inputInviteNotifyEmail" class="hidden" placeholder="" style="flex:1; min-width:160px; height:28px; padding:0 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-page); color:var(--text-primary); font-size:11.5px;" />
             <button class="tb-btn tb-btn-solid" id="btnGenerateInviteLink" style="height:28px; border-color:var(--accent); color:var(--accent); font-weight:600;">Copiar Link de Convite</button>
@@ -1634,7 +1634,7 @@
             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
               <button class="studio-btn-primary" id="btnExtractBuiltinCover" style="height:28px;">Pegar Capa do Arquivo</button>
               <button class="tb-btn tb-btn-solid" id="btnDownloadBookCover" style="height:28px;">Baixar Imagem</button>
-              <label class="tb-btn tb-btn-solid" for="inputCustomCoverFile" style="height:28px; cursor:pointer;">Enviar do Computador</label>
+              <label class="tb-btn tb-btn-solid" for="inputCustomCoverFile" style="height:28px; cursor:pointer;">Escolher Imagem</label>
               <input type="file" id="inputCustomCoverFile" accept="image/*" class="hidden" />
               <button class="tb-btn" id="btnRemoveBookCover" style="height:28px;">Remover</button>
             </div>
@@ -2186,7 +2186,7 @@
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button class="tb-btn tb-btn-solid" id="btnGuestSignIn" style="height:26px;">Entrar / Criar Minha Conta</button>
               <button class="tb-btn tb-btn-solid hidden" id="btnGuestSuggestBook" style="height:26px;">+ Sugerir Livro p/ Aprovação</button>
-              <input type="file" id="inputGuestUploadFile" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.doc,.odt,.rtf,.cbz,.zip,.fb2,.md,.txt,.html" class="hidden" />
+              <input type="file" id="inputGuestUploadFile" accept=".epub,.mobi,.azw,.azw3,.prc,.pdf,.docx,.odt,.rtf,.cbz,.zip,.fb2,.md,.txt,.html" class="hidden" />
               <button class="tb-btn" id="btnLeaveInviteMode" style="height:26px;">Voltar p/ Minha Estante</button>
             </div>
           </div>

@@ -2757,19 +2757,27 @@
         padding: 0 !important;
         background: var(--bg-page) !important;
       }
-      .viewport.paginated-mode .page-sheet,
       .page-sheet {
         width: 100% !important;
         max-width: 100% !important;
         min-height: calc(100dvh - 76px) !important;
-        height: calc(100dvh - 76px) !important;
-        padding: 10px 18px 6px !important;
+        height: auto !important;
+        padding: 14px 18px 36px !important;
         border: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
         background: var(--bg-page) !important;
         margin: 0 !important;
         background-image: none !important;
+      }
+      .viewport.paginated-mode .page-sheet {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        padding: 10px 18px 8px !important;
+        overflow: hidden !important;
       }
       .running-header {
         margin-bottom: 6px !important;
@@ -2778,9 +2786,16 @@
         opacity: 0.65;
         border-bottom: 1px solid var(--border-color);
       }
-      /* Ocultar rodapé duplo na folha porque a barra inferior nativa já exibe página e progresso */
-      .running-footer {
+      /* No modo paginado no celular, ocultar rodapé duplo para aproveitar 100% da altura da página;
+         no modo rolagem (Capítulo), manter o rodapé com botões Anterior/Próximo ao final do capítulo */
+      .viewport.paginated-mode .running-footer {
         display: none !important;
+      }
+      .viewport:not(.paginated-mode) .running-footer {
+        display: flex !important;
+        margin-top: 24px !important;
+        padding-top: 12px !important;
+        gap: 8px;
       }
       /* Desativar hifenização agressiva no celular (evita palavras cortadas com hífen a cada linha) */
       .reader-flow {
@@ -3066,27 +3081,30 @@
 
     /* Modo Leitura Imersivo Suave (Estilo App Kindle / Apple Books) */
     .toolbar, .statusbar {
-      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, margin 0.22s ease;
     }
     body.immersive-mode .toolbar {
       transform: translateY(-100%);
+      margin-top: -44px;
       opacity: 0;
       pointer-events: none;
     }
     body.immersive-mode .statusbar {
       transform: translateY(100%);
+      margin-bottom: -28px;
       opacity: 0;
       pointer-events: none;
     }
     body.immersive-mode .main-layout {
       height: 100dvh !important;
     }
-    body.immersive-mode .viewport {
+    body.immersive-mode .viewport:not(.paginated-mode) {
       padding-top: 10px !important;
       padding-bottom: 14px !important;
     }
     body.immersive-mode .viewport.paginated-mode .page-sheet {
-      height: calc(100dvh - 28px) !important;
+      height: 100% !important;
+      max-height: 100% !important;
     }
     body.immersive-mode .empty-state {
       inset: 0 !important;
@@ -4063,6 +4081,16 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
 
     <!-- Aba 1: Livro & Leitura -->
     <div id="tabContentTypoBook">
+      <div class="prop-row">
+        <div class="prop-label"><span>Modo de Leitura (Páginas / Rolagem)</span></div>
+        <div class="prop-controls">
+          <button type="button" data-flow="scroll-all" title="Rolagem contínua do livro inteiro do começo ao fim">Contínuo</button>
+          <button type="button" data-flow="scroll" title="Rolagem vertical por capítulo">Capítulo</button>
+          <button type="button" data-flow="paginated-1" title="Modo Livro Paginado (1 página por tela)">1 Pág</button>
+          <button type="button" data-flow="paginated-2" title="Livro aberto (2 páginas lado a lado)">2 Págs</button>
+        </div>
+      </div>
+
       <div class="prop-row">
         <div class="prop-label"><span>Cor da página</span></div>
         <div class="prop-controls">
@@ -6844,6 +6872,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
       if (isPaginated && state.sections.length) {
         requestAnimationFrame(updatePaginatedMetrics);
       } else {
+        dom.readerFlow.style.width = '';
         dom.readerFlow.style.columnWidth = '';
         dom.readerFlow.style.columnGap = '';
         dom.readerFlow.style.columnCount = '';
@@ -6856,6 +6885,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
       if (!dom.viewport.classList.contains('paginated-mode')) {
         state.subPageCount = 1;
         state.subPageIndex = 0;
+        flow.style.width = '';
         flow.style.columnWidth = '';
         flow.style.columnGap = '';
         flow.style.columnCount = '';
@@ -6867,6 +6897,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
       if (state.format === 'CBZ' || state.readingType === 'manga' || flow.querySelector('.manga-page-wrap')) {
         state.subPageCount = 1;
         state.subPageIndex = 0;
+        flow.style.width = '';
         flow.style.columnWidth = '';
         flow.style.columnGap = '';
         flow.style.columnCount = '';
@@ -6875,19 +6906,25 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         return;
       }
 
-      const w = flow.clientWidth;
+      // Resetar largura explícita antes de medir a caixa disponível para evitar erro de sub-pixel acumulado ao longo de dezenas de páginas
+      flow.style.width = '100%';
+      const availW = flow.parentElement ? flow.parentElement.clientWidth : flow.clientWidth;
+      const w = Math.floor(flow.getBoundingClientRect().width || flow.clientWidth || availW);
       if (w <= 0) return;
 
       const isTwoCols = state.flowMode === 'paginated-2' && window.innerWidth >= 700;
       const gap = isTwoCols ? 64 : 48;
-      const colW = isTwoCols ? ((w - gap) / 2) : w;
+      // Garantir que em 2 colunas (w - gap) seja par para que cada coluna tenha largura inteira exata
+      const exactW = (isTwoCols && ((w - gap) % 2 !== 0)) ? (w - 1) : w;
+      const colW = isTwoCols ? ((exactW - gap) / 2) : exactW;
 
+      flow.style.width = exactW + 'px';
       flow.style.columnGap = gap + 'px';
       flow.style.columnWidth = colW + 'px';
       flow.style.columnCount = isTwoCols ? '2' : '1';
 
-      // Em CSS multi-column, col1 + gap + col2 = w sempre; logo a próxima página começa em (w + gap) sem acumular erro de arredondamento
-      const stride = w + gap;
+      // Em CSS multi-column com largura inteira exata, a próxima página começa em (exactW + gap) sem acumular erro de arredondamento
+      const stride = exactW + gap;
       const totalWidth = flow.scrollWidth;
       state.subPageCount = Math.max(1, Math.round((totalWidth + gap) / Math.max(1, stride)));
       state.subPageIndex = Math.max(0, Math.min(state.subPageIndex, state.subPageCount - 1));
@@ -7123,13 +7160,19 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
       return doc;
     }
 
-    // Expande tags XHTML auto-fechadas (<title/>, <div/>, <a id="..."/>, <span/>)
-    // que no parser HTML5 ('text/html') engoliriam o restante do capítulo!
+    // Expande tags XHTML auto-fechadas (<title/>, <div/>, <a id="..."/>, <span/>, <p/>, etc.)
+    // que no parser HTML5 ('text/html') seriam tratadas como tags abertas e engoliriam o restante do capítulo!
+    const HTML_VOID_TAGS_RE = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr|mbp:pagebreak)$/i;
     function normalizeXhtmlForHtml(rawXhtml) {
+      if (!rawXhtml) return '';
       return rawXhtml
+        .replace(/<head\b[^>]*\/>/gi, '')
         .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, '')
         .replace(/<(title|script|style|textarea|iframe)\b[^>]*\/>/gi, '')
-        .replace(/<(div|p|span|a|section|article|header|footer|aside|nav|h[1-6]|blockquote|ul|ol|li|dl|dt|dd|table|thead|tbody|tr|td|th|em|strong|b|i|u|s|sup|sub|small|big|center|font|figure|figcaption)\b([^>]*?)\/>/gi, '<$1$2></$1>');
+        .replace(/<([a-zA-Z][a-zA-Z0-9:-]*)\b([^>]*?)\/>/g, (full, tag, attrs) => {
+          if (HTML_VOID_TAGS_RE.test(tag)) return full;
+          return `<${tag}${attrs}></${tag}>`;
+        });
     }
 
     /* =====================================================================
@@ -7929,7 +7972,16 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
           pos = lastLt;
         }
 
-        // 2. Se pos não está imediatamente antes de uma tag (<), recuar até a tag de bloco anterior ou avançar até o próximo '<'
+        // 2. Se pos caiu logo após a abertura de uma tag de bloco (ex: <h2><a id="toc_1">), recuar para o início da tag de bloco
+        const preWinStart = Math.max(0, pos - 240);
+        const preChunk = htmlStr.slice(preWinStart, pos);
+        const enclosingBlockMatch = preChunk.match(/<(?:h[1-6]|p|div|blockquote|center|section)\b[^>]*>\s*(?:<(?:a|span|font|b|i|em|strong|u|small|big)\b[^>]*>\s*)*$/i);
+        if (enclosingBlockMatch && enclosingBlockMatch.index !== undefined) {
+          const blockStart = preWinStart + enclosingBlockMatch.index;
+          if (blockStart > 0) return blockStart;
+        }
+
+        // 3. Se pos não está imediatamente antes de uma tag (<), recuar até a tag de bloco anterior ou avançar até o próximo '<'
         const afterSnippet = htmlStr.slice(pos, Math.min(len, pos + 32));
         if (!/^\s*</.test(afterSnippet)) {
           const backWinStart = Math.max(0, pos - 600);
@@ -8016,7 +8068,26 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         }
       }
 
-      const sortedSplits = Array.from(splitOffsets).sort((a, b) => a - b);
+      const rawSortedSplits = Array.from(splitOffsets).sort((a, b) => a - b);
+      // Evitar micro-seções (ex: <mbp:pagebreak/> seguido imediatamente por <h1>Capítulo 1</h1> e <h2>Título</h2>)
+      // que criariam páginas quase em branco só com o número do capítulo antes do texto
+      const sortedSplits = [];
+      for (let i = 0; i < rawSortedSplits.length; i++) {
+        const cur = rawSortedSplits[i];
+        if (sortedSplits.length > 0) {
+          const prev = sortedSplits[sortedSplits.length - 1];
+          if (cur - prev < 340) {
+            const betweenSlice = fullHtml.slice(prev, cur);
+            const hasPageBreakBetween = /<mbp:pagebreak\b|class=["'][^"']*pagebreak|id=["']calibre_pb_/i.test(betweenSlice.slice(16));
+            const hasImgBetween = /<(?:img|image|svg)\b/i.test(betweenSlice);
+            const plainBetween = betweenSlice.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
+            if (!hasPageBreakBetween && !hasImgBetween && plainBetween.length < 95) {
+              continue;
+            }
+          }
+        }
+        sortedSplits.push(cur);
+      }
 
       const finalRanges = [];
       const MAX_CHUNK = sortedSplits.length >= 4 ? 350000 : 90000;
@@ -8643,8 +8714,13 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
     }
 
     function applySavedHighlightsToHtml(html, sectionIndex) {
-      if (!state.bookKey) return html;
-      let out = html;
+      if (!state.bookKey || !html) return html;
+      // Proteger blocos <style>...</style> para que destaques, X-Ray e WordWise nunca corrompam regras CSS
+      const styleBlocks = [];
+      let out = html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, (m) => {
+        styleBlocks.push(m);
+        return `<!--__READER_STYLE_BLOCK_${styleBlocks.length - 1}__-->`;
+      });
 
       // 1. Reconhecimento automático em TODO O LIVRO de Personagens, Lugares, Conceitos e Notas (Estilo Kindle X-Ray)
       const entities = getEntityNotesMap()[state.bookKey] || [];
@@ -8703,6 +8779,9 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
             );
           } catch {}
         }
+      }
+      if (styleBlocks.length) {
+        out = out.replace(/<!--__READER_STYLE_BLOCK_(\d+)__-->/g, (_, idx) => styleBlocks[Number(idx)] || '');
       }
       return out;
     }
@@ -8867,7 +8946,9 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         } else {
           if (state.format === 'PDF') await ensurePdfSectionText(sec);
           else if (sec.html === null && sec.buildHtml) sec.html = sec.buildHtml(sec.rawSlice);
-          const secHtml = applySavedHighlightsToHtml(sec.html || '', secIdx);
+          let secHtml = renderLightweightMathHtml(sec.html || '');
+          secHtml = applySavedHighlightsToHtml(secHtml, secIdx);
+          if (state.bionicReading) secHtml = applyBionicReadingToHtml(secHtml);
           wrapEl.innerHTML = `<div class="continuous-chapter-badge">${escapeHtml(sec.title)}</div>${secHtml}`;
         }
         wrapEl.dataset.loaded = '1';
@@ -9176,6 +9257,15 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
 
           applySettings();
 
+          // Recalcular métricas de paginação assim que imagens internas do capítulo terminarem de carregar
+          dom.readerFlow.querySelectorAll('img').forEach(img => {
+            if (!img.complete) {
+              img.addEventListener('load', () => {
+                if (dom.viewport.classList.contains('paginated-mode')) updatePaginatedMetrics();
+              }, { once: true });
+            }
+          });
+
           if (options.anchor) {
             const targetEl = dom.readerFlow.querySelector(`[id="${CSS.escape(options.anchor)}"], a[name="${CSS.escape(options.anchor)}"]`);
             if (targetEl) targetEl.scrollIntoView({ block: 'start' });
@@ -9199,6 +9289,17 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
             updatePaginatedMetrics();
             state.subPageIndex = Math.max(0, state.subPageCount - 1);
             updatePaginatedMetrics();
+            requestAnimationFrame(() => {
+              updatePaginatedMetrics();
+              state.subPageIndex = Math.max(0, state.subPageCount - 1);
+              updatePaginatedMetrics();
+            });
+          } else if (options.fromEnd && !dom.viewport.classList.contains('paginated-mode')) {
+            state.subPageIndex = 0;
+            dom.readerFlow.scrollLeft = 0;
+            requestAnimationFrame(() => {
+              dom.viewport.scrollTop = Math.max(0, dom.viewport.scrollHeight - dom.viewport.clientHeight);
+            });
           } else {
             state.subPageIndex = 0;
             dom.viewport.scrollTop = 0;
@@ -9721,6 +9822,10 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
     }
 
     // No modo rolagem, o toque/seta anda uma tela; só troca de capítulo no fim (ou no topo, ao voltar)
+    let __scrollScreenTargetTop = null;
+    let __scrollScreenTargetAt = 0;
+    let __lastStepActionAt = 0;
+
     function scrollViewportByScreen(dir) {
       const v = dom.viewport;
       if (!v || v.classList.contains('paginated-mode')) return false;
@@ -9728,13 +9833,33 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
       const max = v.scrollHeight - v.clientHeight;
       if (max < 8) return false;
       const step = Math.max(80, v.clientHeight - 60);
-      if (dir > 0 && v.scrollTop < max - 4) { v.scrollTo({ top: Math.min(max, v.scrollTop + step), behavior: 'smooth' }); return true; }
-      if (dir < 0 && v.scrollTop > 4) { v.scrollTo({ top: Math.max(0, v.scrollTop - step), behavior: 'smooth' }); return true; }
+      const now = Date.now();
+      const baseTop = (now - __scrollScreenTargetAt < 340 && __scrollScreenTargetTop !== null)
+        ? __scrollScreenTargetTop
+        : v.scrollTop;
+      if (dir > 0 && baseTop < max - 6) {
+        const nextTop = Math.min(max, baseTop + step);
+        __scrollScreenTargetTop = nextTop;
+        __scrollScreenTargetAt = now;
+        v.scrollTo({ top: nextTop, behavior: 'smooth' });
+        return true;
+      }
+      if (dir < 0 && baseTop > 6) {
+        const nextTop = Math.max(0, baseTop - step);
+        __scrollScreenTargetTop = nextTop;
+        __scrollScreenTargetAt = now;
+        v.scrollTo({ top: nextTop, behavior: 'smooth' });
+        return true;
+      }
+      __scrollScreenTargetTop = null;
       return false;
     }
 
     function stepForward() {
       if (!state.sections.length) return;
+      const now = Date.now();
+      if (now - __lastStepActionAt < 110) return;
+      __lastStepActionAt = now;
       updateReadingSpeedSample(180);
       if (isTwoPageSpreadActive()) {
         const curSec = state.sections[state.currentIndex];
@@ -9754,6 +9879,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         return;
       }
       if (scrollViewportByScreen(1)) return;
+      if (state.flowMode === 'scroll-all') return;
       if (state.currentIndex < state.sections.length - 1) {
         state.currentIndex++;
         renderSection();
@@ -9762,6 +9888,9 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
 
     function stepBackward() {
       if (!state.sections.length) return;
+      const now = Date.now();
+      if (now - __lastStepActionAt < 110) return;
+      __lastStepActionAt = now;
       if (isTwoPageSpreadActive()) {
         if (state.currentIndex > 0) {
           state.currentIndex = Math.max(0, state.currentIndex - 2);
@@ -9777,6 +9906,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         return;
       }
       if (scrollViewportByScreen(-1)) return;
+      if (state.flowMode === 'scroll-all') return;
       if (state.currentIndex > 0) {
         state.currentIndex--;
         renderSection({ fromEnd: true });
@@ -10522,10 +10652,22 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
 
     function renderLightweightMathHtml(html) {
       if (!html || !html.includes('$')) return html;
-      return html.replace(/(<code[\s\S]*?<\/code>|<pre[\s\S]*?<\/pre>|<[^>]+>)|\$\$([\s\S]+?)\$\$|\$([^$\n]{1,160})\$/g, (m, tag, blockExpr, inlineExpr) => {
+      return html.replace(/(<style[\s\S]*?<\/style>|<code[\s\S]*?<\/code>|<pre[\s\S]*?<\/pre>|<[^>]+>)|\$\$([^$<>]{2,600}?)\$\$|\$([^$<>\n]{1,120})\$/g, (m, tag, blockExpr, inlineExpr, offset, fullStr) => {
         if (tag) return tag;
-        if (blockExpr !== undefined) return `<div class="math-block">${formatLatexExprLightweight(blockExpr)}</div>`;
-        if (inlineExpr !== undefined) return `<span class="math-inline">${formatLatexExprLightweight(inlineExpr)}</span>`;
+        if (blockExpr !== undefined) {
+          // Só tratar $$...$$ como bloco matemático se contiver comandos LaTeX ou operadores matemáticos reais (evita ornamentos de quebra de cena)
+          if (!/\\[a-zA-Z]+|[\^_=]/.test(blockExpr)) return m;
+          return `<div class="math-block">${formatLatexExprLightweight(blockExpr)}</div>`;
+        }
+        if (inlineExpr !== undefined) {
+          // Nunca tratar valores monetários (ex: "US$ 50 ... US$ 100", "R$ 10", "$10 ... $20") como LaTeX!
+          const prevChar = offset > 0 ? fullStr[offset - 1] : '';
+          if (/[A-Za-zÀ-ÿ0-9]/.test(prevChar)) return m;
+          if (/^\s|\s$/.test(inlineExpr)) return m;
+          if (/^\d/.test(inlineExpr) && !/\\[a-zA-Z]+|[\^_=]/.test(inlineExpr)) return m;
+          if (!/\\[a-zA-Z]+|[\^_=]/.test(inlineExpr)) return m;
+          return `<span class="math-inline">${formatLatexExprLightweight(inlineExpr)}</span>`;
+        }
         return m;
       });
     }
@@ -11407,10 +11549,12 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
 
     if (dom.viewport) {
       dom.viewport.addEventListener('click', (e) => {
+        // Ignorar click sintetizado pelo navegador mobile logo após um touchend já tratado
+        if (Date.now() - (window.__lastViewportTouchEnd || 0) < 480) return;
         if (!state.tapZones || !state.sections.length) return;
         if (document.body.classList.contains('is-shelf-home')) return;
         if (dom.emptyState && !dom.emptyState.classList.contains('hidden')) return;
-        if (e.target.closest('button, a, input, select, textarea, mark.user-hl, .entity-xray, .running-footer, .popover, .modal-backdrop')) return;
+        if (e.target.closest('button, a, input, select, textarea, mark.user-hl, .entity-note-ref, .entity-xray, .running-footer, .popover, .modal-backdrop, .selection-toolbar, .tools-dropdown')) return;
         const sel = window.getSelection && window.getSelection().toString();
         if (sel && sel.trim().length > 0) return;
         const rect = dom.viewport.getBoundingClientRect();
@@ -11423,30 +11567,6 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
           if (state.mangaRtl) stepBackward(); else stepForward();
         }
       });
-
-      let _swipeStartX = 0, _swipeStartY = 0, _swipeStartT = 0;
-      dom.viewport.addEventListener('touchstart', (e) => {
-        if (!e.touches || e.touches.length !== 1) return;
-        _swipeStartX = e.touches[0].clientX;
-        _swipeStartY = e.touches[0].clientY;
-        _swipeStartT = Date.now();
-      }, { passive: true });
-      dom.viewport.addEventListener('touchend', (e) => {
-        if (!state.sections.length || !e.changedTouches || !e.changedTouches.length) return;
-        if (document.body.classList.contains('is-shelf-home')) return;
-        if (dom.emptyState && !dom.emptyState.classList.contains('hidden')) return;
-        if (Date.now() - _swipeStartT > 650) return;
-        const dx = e.changedTouches[0].clientX - _swipeStartX;
-        const dy = e.changedTouches[0].clientY - _swipeStartY;
-        if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
-        const sel = window.getSelection && window.getSelection().toString();
-        if (sel && sel.trim().length > 0) return;
-        if (dx < 0) {
-          if (state.mangaRtl) stepBackward(); else stepForward();
-        } else {
-          if (state.mangaRtl) stepForward(); else stepBackward();
-        }
-      }, { passive: true });
     }
 
     const inpWebtoonWidthEl = document.getElementById('inputWebtoonWidth');
@@ -12710,7 +12830,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         const bk = activeBookInfoTarget.bookKey;
         const hlMap = getHighlightsMap();
         const highlights = Array.isArray(hlMap[bk]) ? hlMap[bk] : [];
-        const notes = typeof getEntityNotesMap === 'function' ? Object.values(getEntityNotesMap(bk) || {}) : [];
+        const notes = typeof getEntityNotesMap === 'function' ? ((getEntityNotesMap() || {})[bk] || []) : [];
         const rev = (getBookReviewsMap()[bk] || {});
         exportBookToObsidianMarkdown(activeBookInfoTarget, highlights, notes, rev);
       });
@@ -12723,7 +12843,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         const bk = activeBookInfoTarget.bookKey;
         const hlMap = getHighlightsMap();
         const highlights = Array.isArray(hlMap[bk]) ? hlMap[bk] : [];
-        const notes = typeof getEntityNotesMap === 'function' ? Object.values(getEntityNotesMap(bk) || {}) : [];
+        const notes = typeof getEntityNotesMap === 'function' ? ((getEntityNotesMap() || {})[bk] || []) : [];
         const rev = (getBookReviewsMap()[bk] || {});
         const md = buildBookStudyDossierMarkdown(activeBookInfoTarget, highlights, notes, rev);
         const safe = (activeBookInfoTarget.title || 'dossie').replace(/[^a-z0-9_-]/gi, '_').slice(0, 60);
@@ -14376,11 +14496,12 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
           speakCurrentParagraph();
         } else {
           const chkAutoNext = document.getElementById('chkTtsAutoNext');
-          const hasNextSec = state.book && Array.isArray(state.book.sections) && (state.currentSectionIndex + 1) < state.book.sections.length;
+          const hasNextSec = Array.isArray(state.sections) && (state.currentIndex + 1) < state.sections.length;
           if (chkAutoNext && chkAutoNext.checked && hasNextSec) {
-            await renderSection(state.currentSectionIndex + 1, { scrollToEnd: false });
+            state.currentIndex++;
+            await renderSection();
             setTimeout(() => {
-              if (typeof collectParagraphs === 'function') collectParagraphs();
+              ttsParagraphs = collectReadableParagraphs();
               if (ttsParagraphs.length > 0) {
                 ttsCurrentIdx = 0;
                 speakCurrentParagraph();
@@ -14488,7 +14609,7 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
             resetPomodoroTimer(true);
             try {
               const ins = getReadingInsights();
-              const dKey = getLocalDateKey();
+              const dKey = typeof getTodayIsoDate === 'function' ? getTodayIsoDate() : new Date().toISOString().slice(0, 10);
               ins.minutesByDate[dKey] = (ins.minutesByDate[dKey] || 0) + doneMins;
               saveReadingInsights(ins);
             } catch {}
@@ -15082,12 +15203,14 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
         document.getElementById('convSelectedFileLabel').textContent = `Carregando "${file.name}" para conversão...`;
         const buffer = await file.arrayBuffer();
         const parsed = await parseAnyBookBuffer(buffer, file.name);
-        if (parsed.format === 'PDF') {
-          for (const sec of parsed.sections) {
+        if (parsed.format === 'PDF' && state.pdfDoc) {
+          for (let i = 0; i < parsed.sections.length; i++) {
+            const sec = parsed.sections[i];
             if (sec.text === null) {
-              const page = await state.pdfDoc.getPage(sec.pdfPageNum);
+              const pgNum = sec.pageNumber || sec.pdfPageNum || (i + 1);
+              const page = await state.pdfDoc.getPage(pgNum);
               const tc = await page.getTextContent();
-              sec.text = tc.items.map(i => i.str).join(' ');
+              sec.text = tc.items.map(it => it.str).join(' ');
               sec.html = `<p>${escapeHtml(sec.text)}</p>`;
             }
           }
@@ -15513,6 +15636,19 @@ body:not([data-book-kind="pdf"]) .ctx-pdf-only { display: none !important; }
           if (content) content.innerText = `GUIA DE ESTUDO (MODO ESTRUTURADO LOCAL)\n\nObra: ${state.title}\nCapítulo: ${capTitle}\n\n1. RESUMO GERAL\nO capítulo desenvolve a narrativa a partir das premissas estabelecidas na obra, aprofundando o arco dos personagens e o ritmo da trama.\n\n2. MODO IA AVANÇADO\nPara gerar perguntas frequentes automatizadas, sínteses aprofundadas e análise conceitual via Google Gemini AI, insira sua chave gratuita no topo da janela.`;
           showToast('Guia básico gerado em modo offline');
         }
+      });
+    }
+
+    const btnCopyNlmGuideEl = document.getElementById('btnCopyNlmGuide');
+    if (btnCopyNlmGuideEl) {
+      btnCopyNlmGuideEl.addEventListener('click', () => {
+        const contentEl = document.getElementById('nlmStudyGuideContent');
+        const txt = contentEl ? contentEl.innerText.trim() : '';
+        if (!txt || txt.startsWith('Gerando')) {
+          showToast('Gere o Guia de Estudo primeiro.', true);
+          return;
+        }
+        navigator.clipboard.writeText(txt).then(() => showToast('Guia de Estudo copiado para a área de transferência'));
       });
     }
 
@@ -18647,7 +18783,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
       btnClozeEl.addEventListener('click', () => {
         const bk = state.bookKey;
         const hls = bk ? (getHighlightsMap()[bk] || []) : [];
-        const nts = bk && typeof getEntityNotesMap === 'function' ? Object.values(getEntityNotesMap(bk) || {}) : [];
+        const nts = bk && typeof getEntityNotesMap === 'function' ? ((getEntityNotesMap() || {})[bk] || []) : [];
         __clozeQueue = generateClozeQuizItems(hls, nts);
         __clozeScore = 0;
         if (!__clozeQueue.length) {
@@ -19510,14 +19646,13 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         btnImportFolderDb.disabled = true;
         let okCount = 0;
         try {
-          const profiles = getCloudProfilesList();
-          const prof = profiles.find(p => p.id === __driveBrowserProfileId);
-          if (!prof) throw new Error('Perfil não encontrado.');
-          const token = await ensureFreshOAuthToken(prof);
+          const fCfg = await ensureFreshOAuthToken(getCloudConfig());
+          if (!fCfg || !fCfg.accessToken) throw new Error('Perfil OAuth não autenticado.');
+          const token = fCfg.accessToken;
           for (let i = 0; i < files.length; i++) {
             const f = files[i];
             if (statusEl) statusEl.textContent = `Importando ${i + 1}/${files.length}: ${f.name}`;
-            const url = prof.provider === 'gdrive'
+            const url = fCfg.provider === 'gdrive'
               ? `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(f.id)}?alt=media`
               : `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(f.id)}/content`;
             const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -19899,7 +20034,7 @@ Responda com clareza, explicando termos difíceis, personagens ou motivações s
         btnApplyCoverUrlEl.disabled = true;
         try {
           const proxySrc = proxiedImgSrc(rawUrl);
-          const dataUrl = await fetchImageAsDataUrl(proxySrc).catch(() => rawUrl);
+          const dataUrl = (await resizeImageSrcToCoverThumb(proxySrc, 260, 390).catch(() => '')) || rawUrl;
           saveBookCoverDataUrl(activeCoverModalBook.bookKey, activeCoverModalBook.safeName, dataUrl);
           refreshCoverPreviewBox();
           if (typeof renderBookshelf === 'function') renderBookshelf();
@@ -23010,6 +23145,7 @@ ${r.reviewText || '_Sem resenha escrita._'}
 
     dom.viewport.addEventListener('touchend', (e) => {
       if (!state.sections.length || !dom.emptyState.classList.contains('hidden')) return;
+      if (document.body.classList.contains('is-shelf-home')) return;
       if (!e.changedTouches || e.changedTouches.length !== 1) return;
 
       // Não virar página se o usuário acabou de selecionar texto
@@ -23023,25 +23159,31 @@ ${r.reviewText || '_Sem resenha escrita._'}
       const isPaginatedOrManga = dom.viewport.classList.contains('paginated-mode') || state.format === 'CBZ' || (state.format === 'PDF' && state.pdfViewMode === 'canvas');
 
       // 1. Gesto de Swipe Horizontal (Deslizar o dedo para a esquerda ou direita)
-      if (dt < 650 && Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.35) {
-        if (isPaginatedOrManga || Math.abs(dx) >= 85) {
-          if (dx < 0) {
-            if (state.mangaRtl) stepBackward(); else stepForward();
-          } else {
-            if (state.mangaRtl) stepForward(); else stepBackward();
-          }
-          return;
+      // No modo rolagem vertical (Capítulo / Contínuo), exigir gesto estritamente horizontal para nunca disparar durante a rolagem normal com o polegar
+      const isSwipeGesture = isPaginatedOrManga
+        ? (dt < 650 && Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.45)
+        : (state.flowMode !== 'scroll-all' && dt < 550 && Math.abs(dx) >= 105 && Math.abs(dy) < 26 && Math.abs(dx) > Math.abs(dy) * 3.8);
+
+      if (isSwipeGesture) {
+        window.__lastViewportTouchEnd = Date.now();
+        if (dx < 0) {
+          if (state.mangaRtl) stepBackward(); else stepForward();
+        } else {
+          if (state.mangaRtl) stepForward(); else stepBackward();
         }
+        return;
       }
 
-      // 2. Toque rápido nas bordas laterais da folha no Modo Paginado (Estilo Kindle Touch)
+      // 2. Toque rápido nas bordas laterais da folha (Estilo Kindle Touch) ou no centro (Modo Imersivo)
       if (dt < 320 && Math.abs(dx) < 14 && Math.abs(dy) < 14) {
         const target = e.target;
-        if (target && target.closest('a, button, input, select, textarea, .entity-note-ref, mark.user-hl, img, .toolbar, .statusbar, .sidebar, .modal-backdrop, .modal-card, .selection-toolbar, .popover, .tools-dropdown')) return;
-        const w = window.innerWidth;
-        if (touchStartX <= w * 0.22) {
+        if (target && target.closest('a, button, input, select, textarea, .entity-note-ref, mark.user-hl, img, .running-footer, .toolbar, .statusbar, .sidebar, .modal-backdrop, .modal-card, .selection-toolbar, .popover, .tools-dropdown')) return;
+        window.__lastViewportTouchEnd = Date.now();
+        const w = window.innerWidth || dom.viewport.clientWidth;
+        const zone = typeof getTapZoneWidth === 'function' ? getTapZoneWidth() : 0.24;
+        if (state.tapZones !== false && touchStartX <= w * zone) {
           if (state.mangaRtl) stepForward(); else stepBackward();
-        } else if (touchStartX >= w * 0.78) {
+        } else if (state.tapZones !== false && touchStartX >= w * (1 - zone)) {
           if (state.mangaRtl) stepBackward(); else stepForward();
         } else {
           if (typeof setImmersiveMode === 'function') {
